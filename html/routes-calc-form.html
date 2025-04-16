@@ -1,191 +1,212 @@
 <!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Калькулятор маршрутов | Форма введения маршрута</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <style>
-    .autocomplete-items {
-      border: 1px solid #ced4da;
-      border-top: none;
-      max-height: 200px;
-      overflow-y: auto;
-      position: absolute;
-      width: 100%;
-      z-index: 1000;
-      background: white;
-    }
-    .autocomplete-item {
-      padding: 8px 12px;
-      cursor: pointer;
-    }
-    .autocomplete-item:hover {
-      background-color: #e9ecef;
-    }
-    .position-relative {
-      position: relative;
-    }
-    .alert-fixed {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      min-width: 300px;
-      z-index: 1050;
-    }
-  </style>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Калькулятор маршрутов | Форма введения маршрута</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .autocomplete-items {
+            border: 1px solid #ced4da;
+            border-top: none;
+            max-height: 200px;
+            overflow-y: auto;
+            position: absolute;
+            width: 100%;
+            z-index: 1000;
+            background: white;
+        }
+        .autocomplete-item {
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+        .autocomplete-item:hover {
+            background-color: #e9ecef;
+        }
+        .position-relative {
+            position: relative;
+        }
+        .alert-fixed {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            min-width: 300px;
+            z-index: 1050;
+        }
+    </style>
 </head>
 <body>
 
 <div class="container my-5">
-  <div class="card shadow-sm rounded-4 p-4">
-    <h2 class="mb-4 text-center">Калькулятор маршрутов</h2>
+    <div class="card shadow-sm rounded-4 p-4">
+        <h2 class="mb-4 text-center">Калькулятор маршрутов</h2>
 
-    <!-- Сообщения для пользователя -->
-    <div id="alertContainer" class="d-none"></div>
+        <!-- Сообщения для пользователя -->
+        <div id="alertContainer" class="d-none"></div>
 
-    <form id="calcForm">
-      <div class="mb-3">
-        <label for="dispatchDate" class="form-label">Дата отгрузки</label>
-        <input type="date" class="form-control" id="dispatchDate" value="" required>
-        <div class="invalid-feedback">Пожалуйста, выберите дату</div>
-      </div>
+        <form id="calcForm">
+            <div class="mb-3">
+                <label for="dispatchDate" class="form-label">Дата отгрузки</label>
+                <input type="date" class="form-control" id="dispatchDate" value="" required>
+                <div class="invalid-feedback">Пожалуйста, выберите дату</div>
+            </div>
 
-      <div class="mb-3 position-relative">
-        <label for="departure" class="form-label">Пункт отправки</label>
-        <input type="text" class="form-control" id="departure" placeholder="Выберите пункт отправки" autocomplete="off" required>
-        <div id="departureList" class="autocomplete-items d-none"></div>
-      </div>
+            <div class="mb-3 position-relative">
+                <label for="departure" class="form-label">Пункт отправки</label>
+                <input type="text" class="form-control" id="departure" placeholder="Выберите пункт отправки" autocomplete="off" required>
+                <div id="departureList" class="autocomplete-items d-none"></div>
+            </div>
 
-      <div class="mb-3 position-relative">
-        <label for="destination" class="form-label">Пункт назначения</label>
-        <input type="text" class="form-control" id="destination" placeholder="Выберите пункт назначения" autocomplete="off" required>
-        <div id="destinationList" class="autocomplete-items d-none"></div>
-      </div>
+            <div class="mb-3 position-relative">
+                <label for="destination" class="form-label">Пункт назначения</label>
+                <input type="text" class="form-control" id="destination" placeholder="Выберите пункт назначения" autocomplete="off" required>
+                <div id="destinationList" class="autocomplete-items d-none"></div>
+            </div>
 
-      <div class="mb-3">
-        <label for="containerType" class="form-label">Тип контейнера</label>
-        <select class="form-select" id="containerType" required>
-          <option selected disabled value="">Выберите тип контейнера</option>
-          <option value="20">20'DC</option>
-          <option value="40">40'HC</option>
-        </select>
-        <div class="invalid-feedback">Пожалуйста, выберите тип контейнера</div>
-      </div>
+            <div class="mb-3">
+                <label for="containerType" class="form-label">Тип контейнера</label>
+                <select class="form-select" id="containerType" required>
+                    <option selected disabled value="">Выберите тип контейнера</option>
+                    <option value="20">20'DC</option>
+                    <option value="40">40'HC</option>
+                </select>
+                <div class="invalid-feedback">Пожалуйста, выберите тип контейнера</div>
+            </div>
 
-      <button type="submit" class="btn btn-primary w-100">Расчитать!</button>
-    </form>
-  </div>
+            <div class="md-3 row">
+                <div class="col-md">
+                    <label for="cargoWeight" class="form-label">Вес груза (т)</label>
+                    <input type="number" class="form-control" id="cargoWeight" min="1" step="0.01" placeholder="Введите вес груза" required>
+                    <div class="invalid-feedback">Пожалуйста, укажите вес груза.</div>
+                </div>
+
+                <div class="col-md">
+                    <label for="currency" class="form-label">Валюта расчета</label>
+                    <select class="form-select" id="currency" required>
+                        <option selected disabled value="">Выберите валюту</option>
+                        <option value="USD">USD</option>
+                        <option value="RUB">RUB</option>
+                    </select>
+                    <div class="invalid-feedback">Пожалуйста, выберите валюту.</div>
+                </div>
+            </div>
+
+            <p><hr>
+            <div class="md-3">
+                <button type="submit" class="btn btn-primary w-100">Расчитать!</button>
+            </div>
+        </form>
+    </div>
 </div>
 
 <script>
-  const dateInputs = document.querySelectorAll('input[type=date]')
-  for (const i in dateInputs) {
-    dateInputs[i].valueAsDate = dateInputs[i].valueAsDate || new Date();
-    dateInputs[i].min = dateInputs[i].min || dateInputs[i].value;
-  }
-  // examples
-  const departures = [
-    "Qui Nhon, Viet Nam (VNUIH)",
-    "Ho Chi Minh City, Viet Nam (SGS)",
-    "Haiphong, Viet Nam (HPH)"
-  ];
+    const dateInputs = document.querySelectorAll('input[type=date]')
+    for (const i in dateInputs) {
+        dateInputs[i].valueAsDate = dateInputs[i].valueAsDate || new Date();
+        dateInputs[i].min = dateInputs[i].min || dateInputs[i].value;
+    }
+    // examples
+    const departures = [
+        "Qui Nhon, Viet Nam (VNUIH)",
+        "Ho Chi Minh City, Viet Nam (SGS)",
+        "Haiphong, Viet Nam (HPH)"
+    ];
 
-  // examples
-  const destinations = [
-    "Atyrau (Ex Guryev), Kazakhstan (KZGUW)",
-    "Almaty, Kazakhstan (KZALA)",
-    "Astana, Kazakhstan (KZNQZ)"
-  ];
+    // examples
+    const destinations = [
+        "Atyrau (Ex Guryev), Kazakhstan (KZGUW)",
+        "Almaty, Kazakhstan (KZALA)",
+        "Astana, Kazakhstan (KZNQZ)"
+    ];
 
-  function setupAutocomplete(inputId, listId, dataArray) {
-    const input = document.getElementById(inputId);
-    const list = document.getElementById(listId);
+    function setupAutocomplete(inputId, listId, dataArray) {
+        const input = document.getElementById(inputId);
+        const list = document.getElementById(listId);
 
-    input.addEventListener('input', function () {
-      const val = this.value.trim().toLowerCase();
-      list.innerHTML = '';
+        input.addEventListener('input', function () {
+            const val = this.value.trim().toLowerCase();
+            list.innerHTML = '';
 
-      if (!val) {
-        list.classList.add('d-none');
-        return;
-      }
+            if (!val) {
+                list.classList.add('d-none');
+                return;
+            }
 
-      const filtered = dataArray.filter(item => item.toLowerCase().includes(val));
-      if (filtered.length === 0) {
-        list.classList.add('d-none');
-        return;
-      }
+            const filtered = dataArray.filter(item => item.toLowerCase().includes(val));
+            if (filtered.length === 0) {
+                list.classList.add('d-none');
+                return;
+            }
 
-      filtered.forEach(item => {
-        const div = document.createElement('div');
-        div.textContent = item;
-        div.classList.add('autocomplete-item');
-        div.addEventListener('click', () => {
-          input.value = item;
-          input.classList.remove('is-invalid');
-          list.classList.add('d-none');
+            filtered.forEach(item => {
+                const div = document.createElement('div');
+                div.textContent = item;
+                div.classList.add('autocomplete-item');
+                div.addEventListener('click', () => {
+                    input.value = item;
+                    input.classList.remove('is-invalid');
+                    list.classList.add('d-none');
+                });
+                list.appendChild(div);
+            });
+
+            list.classList.remove('d-none');
         });
-        list.appendChild(div);
-      });
 
-      list.classList.remove('d-none');
-    });
+        input.addEventListener('blur', function () {
+            setTimeout(() => list.classList.add('d-none'), 150);
+        });
 
-    input.addEventListener('blur', function () {
-      setTimeout(() => list.classList.add('d-none'), 150);
-    });
+        input.addEventListener('focus', function () {
+            this.dispatchEvent(new Event('input'));
+        });
+    }
 
-    input.addEventListener('focus', function () {
-      this.dispatchEvent(new Event('input'));
-    });
-  }
+    setupAutocomplete('departure', 'departureList', departures);
+    setupAutocomplete('destination', 'destinationList', destinations);
 
-  setupAutocomplete('departure', 'departureList', departures);
-  setupAutocomplete('destination', 'destinationList', destinations);
-
-  function showGlobalAlert(message) {
-    const container = document.getElementById('alertContainer');
-    container.innerHTML = `<div class="alert alert-danger alert-fixed alert-dismissible fade show" role="alert">
+    function showGlobalAlert(message) {
+        const container = document.getElementById('alertContainer');
+        container.innerHTML = `<div class="alert alert-danger alert-fixed alert-dismissible fade show" role="alert">
       ${message}
       <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
     </div>`;
-    container.classList.remove('d-none');
+        container.classList.remove('d-none');
 
-    setTimeout(() => {
-      const alert = container.querySelector('.alert');
-      if (alert) new bootstrap.Alert(alert).close();
-    }, 3000);
-  }
-
-  document.getElementById('calcForm').addEventListener('submit', function (e) {
-    if (!this.checkValidity()) {
-      // стандартная браузерная валидация
-      return;
+        setTimeout(() => {
+            const alert = container.querySelector('.alert');
+            if (alert) new bootstrap.Alert(alert).close();
+        }, 3000);
     }
 
-    e.preventDefault();
+    document.getElementById('calcForm').addEventListener('submit', function (e) {
+        if (!this.checkValidity()) {
+            // стандартная браузерная валидация
+            return;
+        }
 
-    const departureInput = document.getElementById('departure');
-    const destinationInput = document.getElementById('destination');
+        e.preventDefault();
 
-    const isDepartureValid = departures.includes(departureInput.value.trim());
-    const isDestinationValid = destinations.includes(destinationInput.value.trim());
+        const departureInput = document.getElementById('departure');
+        const destinationInput = document.getElementById('destination');
 
-    if (!isDepartureValid || !isDestinationValid) {
-      showGlobalAlert("Пожалуйста, выберите один из вариантов пункта А и пункта Б.");
-      if (!isDepartureValid) departureInput.classList.add('is-invalid');
-      if (!isDestinationValid) destinationInput.classList.add('is-invalid');
-      return;
-    }
+        const isDepartureValid = departures.includes(departureInput.value.trim());
+        const isDestinationValid = destinations.includes(destinationInput.value.trim());
 
-    // Если всё корректно
-    departureInput.classList.remove('is-invalid');
-    destinationInput.classList.remove('is-invalid');
+        if (!isDepartureValid || !isDestinationValid) {
+            showGlobalAlert("Пожалуйста, выберите один из вариантов пункта А и пункта Б.");
+            if (!isDepartureValid) departureInput.classList.add('is-invalid');
+            if (!isDestinationValid) destinationInput.classList.add('is-invalid');
+            return;
+        }
 
-    alert(`Form submitted!\nDeparture: ${departureInput.value}\nDestination: ${destinationInput.value}`);
-    this.reset();
-  });
+        // Если всё корректно
+        departureInput.classList.remove('is-invalid');
+        destinationInput.classList.remove('is-invalid');
+
+        alert(`Form submitted!\nDeparture: ${departureInput.value}\nDestination: ${destinationInput.value}`);
+        this.reset();
+    });
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
