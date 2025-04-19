@@ -33,6 +33,10 @@
             min-width: 300px;
             z-index: 1050;
         }
+        .route-icon svg {
+            stroke:#FFA500;
+            fill:transparent;
+        }
     </style>
 </head>
 <body>
@@ -97,6 +101,8 @@
             </div>
         </form>
     </div>
+
+    <div id="results" class="mt-4"></div>
 </div>
 
 <script>
@@ -178,6 +184,61 @@
         }, 3000);
     }
 
+    const icons = {};
+
+    fetch('/res/route-icons/sea.svg').then(res => res.text()).then(svg => icons.sea = svg);
+    fetch('/res/route-icons/rail.svg').then(res => res.text()).then(svg => icons.rail = svg);
+    fetch('/res/route-icons/truck.svg').then(res => res.text()).then(svg => icons.truck = svg);
+
+    async function calculateAndRender(payload) {
+        const response = await fetch('/calculate', {
+            method: 'POST',
+            body: JSON.stringify(payload),
+        });
+        const data = await response.json();
+        const container = document.getElementById('results');
+        container.innerHTML = '';
+
+        data.forEach(route => {
+            const routeEl = document.createElement('div');
+            routeEl.className = 'p-3 mb-4 border rounded shadow-sm';
+
+            const segmentsHTML = route.segments.map(segment => {
+                let svg = icons[segment.type] || '';
+
+                const price = segment.price.map(p => `${p.sum.toLocaleString()} ${p.currency}`).join(', ');
+                return `
+                <div class="d-flex align-items-center my-2">
+                    <div class="route-icon" style="width:30px;height:30px;margin-right:10px;">${svg}</div>
+                    <div>
+                        <div><strong>${segment.from.name}</strong> → <strong>${segment.to.name}</strong></div>
+                        <div class="text-muted">${price}</div>
+                    </div>
+                </div>
+            `;
+            }).join('');
+
+            const servicesHTML = route.services
+                .filter(s => s.checked || s.isRequired)
+                .map(service => {
+                    const price = service.price.map(p => `${p.sum.toLocaleString()} ${p.currency}`).join(', ');
+                    return `<div class="text-muted">• ${service.name}: ${price}</div>`;
+                }).join('');
+
+            routeEl.innerHTML = `
+            <h5 class="mb-2">Ставка действует: ${new Date(route.dateFrom).toLocaleDateString()} — ${new Date(route.dateTo).toLocaleDateString()}</h5>
+            <div class="mb-2">Условия: ${route.beginCond} - ${route.finishCond}</div>
+            <div class="mb-3">Контейнер: ${route.containers.map(c => c.name).join(', ')}</div>
+            ${segmentsHTML}
+            <h6 class="mt-3">Дополнительные услуги</h6>
+            ${servicesHTML}
+            <button class="btn btn-primary mt-3">Оформить заявку</button>
+        `;
+
+            container.appendChild(routeEl);
+        });
+    }
+
     document.getElementById('calcForm').addEventListener('submit', function (e) {
         if (!this.checkValidity()) {
             // стандартная браузерная валидация
@@ -186,8 +247,12 @@
 
         e.preventDefault();
 
+        const dispatchDateInput = document.getElementById('dispatchDate');
         const departureInput = document.getElementById('departure');
         const destinationInput = document.getElementById('destination');
+        const cargoWeightInput = document.getElementById('cargoWeight');
+        const containerTypeInput = document.getElementById('containerType');
+        const currencyInput = document.getElementById('currency');
 
         const isDepartureValid = departures.includes(departureInput.value.trim());
         const isDestinationValid = destinations.includes(destinationInput.value.trim());
@@ -203,8 +268,17 @@
         departureInput.classList.remove('is-invalid');
         destinationInput.classList.remove('is-invalid');
 
-        alert(`Form submitted!\nDeparture: ${departureInput.value}\nDestination: ${destinationInput.value}`);
-        this.reset();
+        const payload = {
+            dispatchDate: dispatchDateInput.value,
+            departure: departureInput.value.trim(),
+            destination: destinationInput.value.trim(),
+            cargoWeight: cargoWeightInput.value,
+            containerType: containerTypeInput.value,
+            currency: currencyInput.value,
+        };
+
+        calculateAndRender(payload);
+        alert(`Form submitted!${JSON.stringify(payload)}`);
     });
 </script>
 
