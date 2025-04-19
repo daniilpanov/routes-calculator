@@ -1,3 +1,7 @@
+from dotenv import load_dotenv
+
+load_dotenv()
+
 import datetime
 
 from fastapi import FastAPI, Request
@@ -5,18 +9,51 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pycbrf.toolbox import ExchangeRates
 
-from src.requests import CalculateFormRequest
+from .requests import CalculateFormRequest
+from .api import fesco
 
 app = FastAPI()
 app.mount("/res", StaticFiles(directory="res"), name="res")
 templates = Jinja2Templates(directory="html")
 
 
+def union_country_and_name(country, name):
+    if country and name:
+        return country + ', ' + name
+    return name or country
+
+
+@app.get('/get_departures')
+async def all_departure_by_date(date: datetime.date):
+    prepared_from = dict()
+    # from FESCO
+    data_from = await fesco.get_departure_points_by_date(date, 'ru')
+    prepared_from.update(map(lambda x: (union_country_and_name(x.get('country'), x.get('name')), x['id']), data_from))
+
+    return prepared_from
+
+
+@app.get('/get_destinations')
+async def all_destination_by_date(date: datetime.date, departure_point_id: str):
+    prepared_to = dict()
+    # from FESCO
+    data_to = await fesco.get_destination_points_by_date(date, departure_point_id, 'ru')
+    prepared_to.update(map(lambda x: (x['country'] + ', ' + x['name'], x['id']), data_to))
+
+    return prepared_to
+
+
 @app.get('/')
-def home(request: Request):
-    rates = ExchangeRates(datetime.datetime.now())
+async def home(request: Request):
+    dt_now = datetime.datetime.now()
+    rates = ExchangeRates(dt_now)
     parsed_rates = {currency.code: float(currency.value) for currency in rates.rates}
-    return templates.TemplateResponse('routes-calc-form.html', {'request': request, 'rates': dict(parsed_rates)})
+    points_from = await all_departure_by_date(dt_now.date())
+    return templates.TemplateResponse('routes-calc-form.html', {
+        'request': request,
+        'rates': dict(parsed_rates),
+        'points_from': points_from,
+    })
 
 
 @app.post('/calculate')

@@ -89,12 +89,14 @@
                     <input type="text" class="form-control" id="departure" placeholder="Выберите пункт отправки" autocomplete="off" required>
                     <div id="departureList" class="autocomplete-items d-none"></div>
                 </div>
+                <input type="hidden" id="departureId" name="departureId" value="">
 
                 <div class="mb-3 position-relative">
                     <label for="destination" class="form-label">Пункт назначения</label>
                     <input type="text" class="form-control" id="destination" placeholder="Выберите пункт назначения" autocomplete="off" required>
                     <div id="destinationList" class="autocomplete-items d-none"></div>
                 </div>
+                <input type="hidden" id="destinationId" name="destinationId" value="">
 
                 <div class="mb-3">
                     <label for="containerType" class="form-label">Тип контейнера</label>
@@ -136,69 +138,86 @@
 </main>
 
 <script>
-    const dateInputs = document.querySelectorAll('input[type=date]')
-    for (const i in dateInputs) {
-        dateInputs[i].valueAsDate = dateInputs[i].valueAsDate || new Date();
-        dateInputs[i].min = dateInputs[i].min || dateInputs[i].value;
-    }
-    // examples
-    const departures = [
-        "Qui Nhon, Viet Nam (VNUIH)",
-        "Ho Chi Minh City, Viet Nam (SGS)",
-        "Haiphong, Viet Nam (HPH)"
-    ];
+    const dispatchDateInput = document.getElementById('dispatchDate');
+    const departureInput = document.getElementById('departure');
+    const destinationInput = document.getElementById('destination');
+    const departureHiddenInput = document.getElementById('departureId');
+    const destinationHiddenInput = document.getElementById('destinationId');
+    const cargoWeightInput = document.getElementById('cargoWeight');
+    const containerTypeInput = document.getElementById('containerType');
+    const currencyInput = document.getElementById('currency');
+
+    dispatchDateInput.valueAsDate = dispatchDateInput.valueAsDate || new Date();
+    dispatchDateInput.min = dispatchDateInput.min || dispatchDateInput.value;
+
+    const departures = { data: JSON.parse('{{ points_from | tojson }}') };
+
+    dispatchDateInput.addEventListener('input', async () => {
+        if (!dispatchDateInput.validity.valid) return;
+        const date = dispatchDateInput.value;
+        const resp = await fetch(`/get_departures?date=${date}`);
+        if (resp.ok) {
+            departures.data = await resp.json();
+        }
+    });
 
     // examples
-    const destinations = [
-        "Atyrau (Ex Guryev), Kazakhstan (KZGUW)",
-        "Almaty, Kazakhstan (KZALA)",
-        "Astana, Kazakhstan (KZNQZ)"
-    ];
+    const destinations = { data: {
+        "Atyrau (Ex Guryev), Kazakhstan (KZGUW)": 'ok1',
+        "Almaty, Kazakhstan (KZALA)": 'ok2',
+        "Astana, Kazakhstan (KZNQZ)": 'ok3',
+    }};
 
-    function setupAutocomplete(inputId, listId, dataArray) {
+    function setupAutocomplete(inputId, listId, dataObj, hiddenInputId) {
         const input = document.getElementById(inputId);
+        const hiddenInput = document.getElementById(hiddenInputId);
         const list = document.getElementById(listId);
 
         function autocompleteProcess() {
+            const data = dataObj.data;
             const val = this.value.trim().toLowerCase();
             list.innerHTML = '';
 
-            const filtered = dataArray.filter(item => item.toLowerCase().includes(val));
+            const filtered = Object.keys(data).filter(item => item.toLowerCase().includes(val));
             if (filtered.length === 0) {
                 list.classList.add('d-none');
                 return;
             }
 
+            let selectedVal = null;
+
             filtered.forEach(item => {
+                if (item.toLowerCase() === val.toLowerCase()) selectedVal = item;
                 const div = document.createElement('div');
                 div.textContent = item;
+                div.setAttribute('data-item-id', data[item]);
                 div.classList.add('autocomplete-item');
                 div.addEventListener('click', () => {
                     input.value = item;
+                    hiddenInput.value = data[item];
                     input.classList.remove('is-invalid');
                     list.classList.add('d-none');
                 });
                 list.appendChild(div);
             });
+            if (selectedVal) {
+                input.value = selectedVal;
+                hiddenInput.value = data[selectedVal];
+            } else hiddenInput.value = '';
 
             list.classList.remove('d-none');
         }
 
         input.addEventListener('input', autocompleteProcess);
-        input.addEventListener('click', autocompleteProcess);
         input.addEventListener('focus', autocompleteProcess);
 
         input.addEventListener('blur', function () {
             setTimeout(() => list.classList.add('d-none'), 150);
         });
-
-        input.addEventListener('focus', function () {
-            this.dispatchEvent(new Event('input'));
-        });
     }
 
-    setupAutocomplete('departure', 'departureList', departures);
-    setupAutocomplete('destination', 'destinationList', destinations);
+    setupAutocomplete('departure', 'departureList', departures, 'departureId');
+    setupAutocomplete('destination', 'destinationList', destinations, 'destinationId');
 
     function showGlobalAlert(message) {
         const container = document.getElementById('alertContainer');
@@ -280,20 +299,10 @@
 
         e.preventDefault();
 
-        const dispatchDateInput = document.getElementById('dispatchDate');
-        const departureInput = document.getElementById('departure');
-        const destinationInput = document.getElementById('destination');
-        const cargoWeightInput = document.getElementById('cargoWeight');
-        const containerTypeInput = document.getElementById('containerType');
-        const currencyInput = document.getElementById('currency');
-
-        const isDepartureValid = departures.includes(departureInput.value.trim());
-        const isDestinationValid = destinations.includes(destinationInput.value.trim());
-
-        if (!isDepartureValid || !isDestinationValid) {
+        if (!departureHiddenInput.value || !destinationHiddenInput.value) {
             showGlobalAlert("Пожалуйста, выберите один из вариантов пункта А и пункта Б.");
-            if (!isDepartureValid) departureInput.classList.add('is-invalid');
-            if (!isDestinationValid) destinationInput.classList.add('is-invalid');
+            if (!departureHiddenInput.value) departureInput.classList.add('is-invalid');
+            if (!destinationHiddenInput.value) destinationInput.classList.add('is-invalid');
             return;
         }
 
@@ -303,8 +312,8 @@
 
         const payload = {
             dispatchDate: dispatchDateInput.value,
-            departure: departureInput.value.trim(),
-            destination: destinationInput.value.trim(),
+            departureId: departureHiddenInput.value,
+            destinationId: destinationHiddenInput.value,
             cargoWeight: cargoWeightInput.value,
             containerType: containerTypeInput.value,
             currency: currencyInput.value,
