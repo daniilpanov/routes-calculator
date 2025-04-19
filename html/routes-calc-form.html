@@ -171,7 +171,7 @@
         "Astana, Kazakhstan (KZNQZ)": 'ok3',
     }};
 
-    function setupAutocomplete(inputId, listId, dataObj, hiddenInputId) {
+    function setupAutocomplete(inputId, listId, dataObj, hiddenInputId, callbackOnCompleted, callbackOnUncompleted) {
         const input = document.getElementById(inputId);
         const hiddenInput = document.getElementById(hiddenInputId);
         const list = document.getElementById(listId);
@@ -184,6 +184,7 @@
             const filtered = Object.keys(data).filter(item => item.toLowerCase().includes(val));
             if (!filtered.length) {
                 list.classList.add('d-none');
+                if (callbackOnUncompleted) callbackOnUncompleted();
                 return;
             }
 
@@ -200,13 +201,18 @@
                     hiddenInput.value = data[item];
                     input.classList.remove('is-invalid');
                     list.classList.add('d-none');
+                    if (callbackOnCompleted) callbackOnCompleted();
                 });
                 list.appendChild(div);
             });
             if (selectedVal) {
                 input.value = selectedVal;
                 hiddenInput.value = data[selectedVal];
-            } else hiddenInput.value = '';
+                if (callbackOnCompleted) callbackOnCompleted();
+            } else {
+                hiddenInput.value = '';
+                if (callbackOnUncompleted) callbackOnUncompleted();
+            }
 
             list.classList.remove('d-none');
         }
@@ -219,7 +225,10 @@
         });
     }
 
-    setupAutocomplete('departure', 'departureList', departures, 'departureId');
+    setupAutocomplete('departure', 'departureList', departures, 'departureId', () => destinationInput.disabled = false, () => {
+        destinationInput.disabled = true;
+        destinationInput.value = '';
+    });
     setupAutocomplete('destination', 'destinationList', destinations, 'destinationId');
 
     function showGlobalAlert(message) {
