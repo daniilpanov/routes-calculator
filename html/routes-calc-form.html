@@ -123,14 +123,9 @@
         const input = document.getElementById(inputId);
         const list = document.getElementById(listId);
 
-        input.addEventListener('input', function () {
+        function autocompleteProcess() {
             const val = this.value.trim().toLowerCase();
             list.innerHTML = '';
-
-            if (!val) {
-                list.classList.add('d-none');
-                return;
-            }
 
             const filtered = dataArray.filter(item => item.toLowerCase().includes(val));
             if (filtered.length === 0) {
@@ -151,7 +146,11 @@
             });
 
             list.classList.remove('d-none');
-        });
+        }
+
+        input.addEventListener('input', autocompleteProcess);
+        input.addEventListener('click', autocompleteProcess);
+        input.addEventListener('focus', autocompleteProcess);
 
         input.addEventListener('blur', function () {
             setTimeout(() => list.classList.add('d-none'), 150);
