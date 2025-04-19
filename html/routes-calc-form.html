@@ -37,73 +37,103 @@
             stroke:#FFA500;
             fill:transparent;
         }
+        .header-rates > div {
+            display: table;
+        }
+        .header-rates > div > * {
+            display: table-cell;
+            vertical-align: middle;
+            margin: 0 .5rem;
+        }
     </style>
 </head>
 <body>
-
-<div class="container my-5">
-    <div class="card shadow-sm rounded-4 p-4">
-        <h2 class="mb-4 text-center">Калькулятор маршрутов</h2>
-
-        <!-- Сообщения для пользователя -->
-        <div id="alertContainer" class="d-none"></div>
-
-        <form id="calcForm">
-            <div class="mb-3">
-                <label for="dispatchDate" class="form-label">Дата отгрузки</label>
-                <input type="date" class="form-control" id="dispatchDate" value="" required>
-                <div class="invalid-feedback">Пожалуйста, выберите дату</div>
+<header class="bg-light">
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">Калькулятор</a>
+            <div class="collapse navbar-collapse" id="navbarNavAltMarkup"></div>
+            <div class="navbar-nav">
             </div>
-
-            <div class="mb-3 position-relative">
-                <label for="departure" class="form-label">Пункт отправки</label>
-                <input type="text" class="form-control" id="departure" placeholder="Выберите пункт отправки" autocomplete="off" required>
-                <div id="departureList" class="autocomplete-items d-none"></div>
+            <div class="header-rates">
+                <div>
+                    <object data="{{ url_for('res', path='/currency/USD.svg') }}" type="image/svg+xml"></object>
+                    <span>{{ rates['USD'] }} ₽</span>
+                </div>
+                <div>
+                    <object data="{{ url_for('res', path='/currency/EUR.svg') }}" type="image/svg+xml"></object>
+                    <span>{{ rates['EUR'] }} ₽</span>
+                </div>
             </div>
+        </div>
+    </nav>
+</header>
 
-            <div class="mb-3 position-relative">
-                <label for="destination" class="form-label">Пункт назначения</label>
-                <input type="text" class="form-control" id="destination" placeholder="Выберите пункт назначения" autocomplete="off" required>
-                <div id="destinationList" class="autocomplete-items d-none"></div>
-            </div>
+<main class="container">
+    <div class="my-5">
+        <div class="card shadow-sm rounded-4 p-4">
+            <h2 class="mb-4 text-center">Калькулятор маршрутов</h2>
 
-            <div class="mb-3">
-                <label for="containerType" class="form-label">Тип контейнера</label>
-                <select class="form-select" id="containerType" required>
-                    <option selected disabled value="">Выберите тип контейнера</option>
-                    <option value="20">20'DC</option>
-                    <option value="40">40'HC</option>
-                </select>
-                <div class="invalid-feedback">Пожалуйста, выберите тип контейнера</div>
-            </div>
+            <!-- Сообщения для пользователя -->
+            <div id="alertContainer" class="d-none"></div>
 
-            <div class="md-3 row">
-                <div class="col-md">
-                    <label for="cargoWeight" class="form-label">Вес груза (т)</label>
-                    <input type="number" class="form-control" id="cargoWeight" min="1" step="0.01" placeholder="Введите вес груза" required>
-                    <div class="invalid-feedback">Пожалуйста, укажите вес груза.</div>
+            <form id="calcForm">
+                <div class="mb-3">
+                    <label for="dispatchDate" class="form-label">Дата отгрузки</label>
+                    <input type="date" class="form-control" id="dispatchDate" value="" required>
+                    <div class="invalid-feedback">Пожалуйста, выберите дату</div>
                 </div>
 
-                <div class="col-md">
-                    <label for="currency" class="form-label">Валюта рассчета</label>
-                    <select class="form-select" id="currency" required>
-                        <option selected disabled value="">Выберите валюту</option>
-                        <option value="USD">USD</option>
-                        <option value="RUB">RUB</option>
+                <div class="mb-3 position-relative">
+                    <label for="departure" class="form-label">Пункт отправки</label>
+                    <input type="text" class="form-control" id="departure" placeholder="Выберите пункт отправки" autocomplete="off" required>
+                    <div id="departureList" class="autocomplete-items d-none"></div>
+                </div>
+
+                <div class="mb-3 position-relative">
+                    <label for="destination" class="form-label">Пункт назначения</label>
+                    <input type="text" class="form-control" id="destination" placeholder="Выберите пункт назначения" autocomplete="off" required>
+                    <div id="destinationList" class="autocomplete-items d-none"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="containerType" class="form-label">Тип контейнера</label>
+                    <select class="form-select" id="containerType" required>
+                        <option selected disabled value="">Выберите тип контейнера</option>
+                        <option value="20">20'DC</option>
+                        <option value="40">40'HC</option>
                     </select>
-                    <div class="invalid-feedback">Пожалуйста, выберите валюту.</div>
+                    <div class="invalid-feedback">Пожалуйста, выберите тип контейнера</div>
                 </div>
-            </div>
 
-            <p><hr>
-            <div class="md-3">
-                <button type="submit" class="btn btn-primary w-100">Расcчитать!</button>
-            </div>
-        </form>
+                <div class="md-3 row">
+                    <div class="col-md">
+                        <label for="cargoWeight" class="form-label">Вес груза (т)</label>
+                        <input type="number" class="form-control" id="cargoWeight" min="1" step="0.01" placeholder="Введите вес груза" required>
+                        <div class="invalid-feedback">Пожалуйста, укажите вес груза.</div>
+                    </div>
+
+                    <div class="col-md">
+                        <label for="currency" class="form-label">Валюта рассчета</label>
+                        <select class="form-select" id="currency" required>
+                            <option selected disabled value="">Выберите валюту</option>
+                            <option value="USD">USD</option>
+                            <option value="RUB">RUB</option>
+                        </select>
+                        <div class="invalid-feedback">Пожалуйста, выберите валюту.</div>
+                    </div>
+                </div>
+
+                <p><hr>
+                <div class="md-3">
+                    <button type="submit" class="btn btn-primary w-100">Расcчитать!</button>
+                </div>
+            </form>
+        </div>
+
+        <div id="results" class="mt-4"></div>
     </div>
-
-    <div id="results" class="mt-4"></div>
-</div>
+</main>
 
 <script>
     const dateInputs = document.querySelectorAll('input[type=date]')

@@ -1,6 +1,9 @@
+import datetime
+
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from pycbrf.toolbox import ExchangeRates
 
 from src.requests import CalculateFormRequest
 
@@ -11,7 +14,9 @@ templates = Jinja2Templates(directory="html")
 
 @app.get('/')
 def home(request: Request):
-    return templates.TemplateResponse('routes-calc-form.html', {'request': request})
+    rates = ExchangeRates(datetime.datetime.now())
+    parsed_rates = {currency.code: float(currency.value) for currency in rates.rates}
+    return templates.TemplateResponse('routes-calc-form.html', {'request': request, 'rates': dict(parsed_rates)})
 
 
 @app.post('/calculate')
