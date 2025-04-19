@@ -93,7 +93,7 @@
 
                 <div class="mb-3 position-relative">
                     <label for="destination" class="form-label">Пункт назначения</label>
-                    <input type="text" class="form-control" id="destination" placeholder="Выберите пункт назначения" autocomplete="off" required>
+                    <input type="text" disabled class="form-control" id="destination" placeholder="Выберите пункт назначения" autocomplete="off" required>
                     <div id="destinationList" class="autocomplete-items d-none"></div>
                 </div>
                 <input type="hidden" id="destinationId" name="destinationId" value="">
@@ -158,6 +158,9 @@
         const resp = await fetch(`/get_departures?date=${date}`);
         if (resp.ok) {
             departures.data = await resp.json();
+            destinationInput.value = "";
+            destinationHiddenInput.value = "";
+            destinationInput.disabled = true;
         }
     });
 
