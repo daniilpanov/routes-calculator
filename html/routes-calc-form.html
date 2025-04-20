@@ -128,7 +128,7 @@
 
                 <p><hr>
                 <div class="md-3">
-                    <button type="submit" class="btn btn-primary w-100">Расcчитать!</button>
+                    <button type="submit" id="calculate" class="btn btn-primary w-100">Расcчитать!</button>
                 </div>
             </form>
         </div>
@@ -146,6 +146,7 @@
     const cargoWeightInput = document.getElementById('cargoWeight');
     const containerTypeInput = document.getElementById('containerType');
     const currencyInput = document.getElementById('currency');
+    const calculateButton = document.getElementById('calculate');
 
     dispatchDateInput.valueAsDate = dispatchDateInput.valueAsDate || new Date();
     dispatchDateInput.min = dispatchDateInput.min || dispatchDateInput.value;
@@ -295,6 +296,7 @@
     fetch('/res/route-icons/truck.svg').then(res => res.text()).then(svg => icons.truck = svg);
 
     async function calculateAndRender(payload) {
+        calculateButton.disabled = true;
         const response = await fetch('/calculate', {
             method: 'POST',
             headers: {
@@ -303,6 +305,7 @@
             body: JSON.stringify(payload),
         });
         if (!response.ok) {
+            calculateButton.disabled = false;
             return showGlobalAlert(`[${response.status} ${response.statusText}]<p>` + await response.text());
         }
         const data = transformResponseData(await response.json());
@@ -347,6 +350,7 @@
 
             container.appendChild(routeEl);
         });
+        calculateButton.disabled = false;
     }
 
     document.getElementById('calcForm').addEventListener('submit', function (e) {
