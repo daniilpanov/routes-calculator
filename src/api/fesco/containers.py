@@ -35,7 +35,7 @@ def search_container_id(containers: list, weight: int, size: int):
                 csize, cweight = map(int, r1.groups())
             else:
                 csize = int(container['ContainerNameEng'].strip().split('-', maxsplit=1)[0])
-                cweight = None
+                cweight = 999999999
         except Exception as e:
             print(e)
             continue
