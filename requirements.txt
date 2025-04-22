@@ -1,0 +1,6 @@
+aiohttp
+pydantic
+fastapi[standard]
+python-dotenv
+a2wsgi
+pycbrf
