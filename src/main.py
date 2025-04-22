@@ -10,6 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi import HTTPException
 from pycbrf.toolbox import ExchangeRates
+from a2wsgi import ASGIMiddleware
 
 from .requests import CalculateFormRequest
 from .api import fesco
@@ -18,6 +19,8 @@ app = FastAPI()
 app.mount("/res", StaticFiles(directory="res"), name="res")
 app.mount("/lib", StaticFiles(directory="lib"), name="lib")
 templates = Jinja2Templates(directory="html")
+
+application = ASGIMiddleware(app)
 
 
 def union_country_and_name(country, name):
