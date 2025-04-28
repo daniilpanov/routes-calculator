@@ -23,8 +23,8 @@ async def get_containers(date: datetime.date, departure_id: str, destination_id:
     return data_to.get('data')
 
 
-def search_container_id(containers: list, weight: int, size: int):
-    needle = None
+def search_container_ids(containers: list, weight: int, size: int):
+    needle = []
     seeking_expr = re.compile(r'^(\d+)-.+[^ 0-9](\d+)t$')
     containers_map = {}
     containers_variants = []
@@ -44,6 +44,5 @@ def search_container_id(containers: list, weight: int, size: int):
     containers_variants.sort()
     for csize, cweight in containers_variants:
         if csize == size and not cweight or csize >= size and cweight >= weight:
-            needle = containers_map[(csize, cweight)]
-            break
+            needle.append(containers_map[(csize, cweight)])
     return needle

@@ -1,3 +1,5 @@
+import asyncio
+
 from dotenv import load_dotenv
 from starlette.status import HTTP_400_BAD_REQUEST, HTTP_500_INTERNAL_SERVER_ERROR
 
@@ -98,11 +100,14 @@ async def home(request: Request):
 async def calculate(request: CalculateFormRequest):
     dtc = datetime.date.today()
     containers = await fesco.get_containers(dtc, request.departureId, request.destinationId, 'ru')
-    container_id = fesco.search_container_id(containers, request.cargoWeight, request.containerType)
-    if not container_id:
+    container_ids = fesco.search_container_ids(containers, request.cargoWeight, request.containerType)
+    if not container_ids:
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail='No container found')
     try:
-        routes = await fesco.get_routes(dtc, request.departureId, request.destinationId, container_id, 'ru')
+        routes_groups = await asyncio.gather(*(fesco.get_routes(dtc, request.departureId, request.destinationId, container_id, 'ru') for container_id in container_ids))
+        routes = []
+        for route_group in routes_groups:
+            routes.extend(route_group)
         parsed_rates = get_rates(datetime.datetime.combine(dtc, datetime.time()))
         return Converter.create_with_ru(parsed_rates).recursive_currency_convertion(routes, request.currency)
     except Exception as e:
