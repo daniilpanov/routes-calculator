@@ -88,13 +88,8 @@ def get_rates(dt_now: datetime.datetime = None):
 
 @app.get('/')
 async def home(request: Request):
-    dt_now = datetime.datetime.now()
-    points_from = await all_departure_by_date(dt_now.date())
-    parsed_rates = get_rates(dt_now)
     return templates.TemplateResponse('index.html', {
         'request': request,
-        'rates': dict(parsed_rates),
-        'points_from': points_from,
     })
 
 
