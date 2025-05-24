@@ -13,7 +13,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi import HTTPException
 from pycbrf.toolbox import ExchangeRates
 
-from .requests import CalculateFormRequest
+from .form_requests import CalculateFormRequest
 from .api import fesco
 
 app = FastAPI()
