@@ -1,3 +1,6 @@
+aiomysql
+sqlalchemy
+pydantic
 aiohttp
 pydantic
 fastapi[standard]
