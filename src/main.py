@@ -1,28 +1,27 @@
+from importlib.util import find_spec
+
+if find_spec('dotenv') is not None:
+    from dotenv import load_dotenv
+    load_dotenv()
+
 import asyncio
-
-from dotenv import load_dotenv
-from starlette.status import HTTP_400_BAD_REQUEST, HTTP_500_INTERNAL_SERVER_ERROR
-
-load_dotenv()
-
 import datetime
 
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi import HTTPException
-from pycbrf.toolbox import ExchangeRates
-from a2wsgi import ASGIMiddleware
+from starlette.status import HTTP_400_BAD_REQUEST, HTTP_500_INTERNAL_SERVER_ERROR
 
-from .requests import CalculateFormRequest
+from pycbrf.toolbox import ExchangeRates
+
+from .form_requests import CalculateFormRequest
 from .api import fesco
 
 app = FastAPI()
-app.mount("/res", StaticFiles(directory="res"), name="res")
-app.mount("/lib", StaticFiles(directory="lib"), name="lib")
-templates = Jinja2Templates(directory="html")
-
-application = ASGIMiddleware(app)
+app.mount('/res', StaticFiles(directory='res'), name='res')
+app.mount('/lib', StaticFiles(directory='lib'), name='lib')
+templates = Jinja2Templates(directory='.')
 
 
 def union_country_and_name(country, name):
@@ -79,7 +78,10 @@ async def all_destination_by_date(date: datetime.date, departure_point_id: str):
     return prepared_to
 
 
-def get_rates(dt_now):
+@app.get('/get_rates')
+def get_rates(dt_now: datetime.datetime = None):
+    if dt_now is None:
+        dt_now = datetime.datetime.now()
     rates = ExchangeRates(dt_now)
     return {currency.code: float(currency.value) for currency in rates.rates}
 
@@ -89,7 +91,7 @@ async def home(request: Request):
     dt_now = datetime.datetime.now()
     points_from = await all_departure_by_date(dt_now.date())
     parsed_rates = get_rates(dt_now)
-    return templates.TemplateResponse('routes-calc-form.html', {
+    return templates.TemplateResponse('index.html', {
         'request': request,
         'rates': dict(parsed_rates),
         'points_from': points_from,

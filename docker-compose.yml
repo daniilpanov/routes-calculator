@@ -1,0 +1,55 @@
+services:
+  calculator:
+    build:
+      dockerfile: "Dockerfile"
+      target: "calculator"
+    env_file:
+      - ".env"
+    volumes:
+      - "./src:/app/src:r"
+      - "./index.html:/app/index.html:r"
+      - "./res:/app/res:r"
+      - "./lib:/app/lib:r"
+    expose:
+      - 8080
+    ports:
+      - "${APP_PORT}:8080"
+    networks:
+      local:
+    command:
+      - "src"
+      - "--port"
+      - "8080"
+  database:
+    build:
+      dockerfile: "Dockerfile"
+      target: "database"
+    environment:
+      MARIADB_RANDOM_ROOT_PASSWORD: 1
+      MARIADB_USER: ${DB_USER}
+      MARIADB_PASSWORD: ${DB_PASS}
+      MARIADB_DATABASE: ${DB_NAME}
+    volumes:
+      - "./database-backups/:/backup:rw"
+      - "./mariadb-data/:/var/lib/mysql/:rw"
+    expose:
+      - 3306
+    networks:
+      local:
+    healthcheck:
+      test: docker compose exec database mariadb-dump -u${DB_USER} -p${DB_PASS} ${DB_NAME} | gzip > /backup/$(date -I)-dump.gzip
+      interval: 24h
+      retries: 3
+  dbadmin:
+    build:
+      dockerfile: "Dockerfile"
+      target: "dbadmin"
+    expose:
+      - 8080
+    ports:
+      - "${ADMINER_PORT}:8080"
+    networks:
+      local:
+
+networks:
+  local:
