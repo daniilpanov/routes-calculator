@@ -19,7 +19,7 @@ from .api import fesco
 app = FastAPI()
 app.mount('/res', StaticFiles(directory='res'), name='res')
 app.mount('/lib', StaticFiles(directory='lib'), name='lib')
-templates = Jinja2Templates(directory='html')
+templates = Jinja2Templates(directory='.')
 
 
 def union_country_and_name(country, name):
@@ -76,7 +76,10 @@ async def all_destination_by_date(date: datetime.date, departure_point_id: str):
     return prepared_to
 
 
-def get_rates(dt_now):
+@app.get('/get_rates')
+def get_rates(dt_now: datetime.datetime = None):
+    if dt_now is None:
+        dt_now = datetime.datetime.now()
     rates = ExchangeRates(dt_now)
     return {currency.code: float(currency.value) for currency in rates.rates}
 
@@ -86,7 +89,7 @@ async def home(request: Request):
     dt_now = datetime.datetime.now()
     points_from = await all_departure_by_date(dt_now.date())
     parsed_rates = get_rates(dt_now)
-    return templates.TemplateResponse('routes-calc-form.html', {
+    return templates.TemplateResponse('index.html', {
         'request': request,
         'rates': dict(parsed_rates),
         'points_from': points_from,
