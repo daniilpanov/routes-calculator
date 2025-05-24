@@ -1,16 +1,18 @@
+from importlib.util import find_spec
+
+if find_spec('dotenv') is not None:
+    from dotenv import load_dotenv
+    load_dotenv()
+
 import asyncio
-
-from dotenv import load_dotenv
-from starlette.status import HTTP_400_BAD_REQUEST, HTTP_500_INTERNAL_SERVER_ERROR
-
-load_dotenv()
-
 import datetime
 
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi import HTTPException
+from starlette.status import HTTP_400_BAD_REQUEST, HTTP_500_INTERNAL_SERVER_ERROR
+
 from pycbrf.toolbox import ExchangeRates
 
 from .form_requests import CalculateFormRequest
