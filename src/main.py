@@ -17,9 +17,9 @@ from .requests import CalculateFormRequest
 from .api import fesco
 
 app = FastAPI()
-app.mount("/res", StaticFiles(directory="res"), name="res")
-app.mount("/lib", StaticFiles(directory="lib"), name="lib")
-templates = Jinja2Templates(directory="html")
+app.mount('/res', StaticFiles(directory='res'), name='res')
+app.mount('/lib', StaticFiles(directory='lib'), name='lib')
+templates = Jinja2Templates(directory='html')
 
 
 def union_country_and_name(country, name):
