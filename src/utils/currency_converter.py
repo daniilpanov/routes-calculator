@@ -1,13 +1,8 @@
 class Converter:
-    @classmethod
-    def create_with_ru(cls, conversion_rates, plus_percents=0):
-        inst = cls(conversion_rates, plus_percents)
-        inst.conversion_rates['RUB'] = 1
-        inst.conversion_rates['RUR'] = 1
-        return inst
-
     def __init__(self, conversion_rates, plus_percents=0):
         self.conversion_rates = conversion_rates
+        self.conversion_rates['RUB'] = 1
+        self.conversion_rates['RUR'] = 1
         self.plus_percents = plus_percents
 
     def _convert(self, value, from_currency, to_currency):

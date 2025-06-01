@@ -15,7 +15,7 @@ from starlette.status import HTTP_400_BAD_REQUEST, HTTP_500_INTERNAL_SERVER_ERRO
 
 from pycbrf.toolbox import ExchangeRates
 
-from .currency_converter import Converter
+from .utils.currency_converter import Converter
 from .form_requests import CalculateFormRequest
 from .services import fesco
 
@@ -79,6 +79,6 @@ async def calculate(request: CalculateFormRequest):
         for route_group in routes_groups:
             routes.extend(route_group)
         parsed_rates = get_rates(datetime.datetime.combine(dtc, datetime.time()))
-        return Converter.create_with_ru(parsed_rates).recursive_currency_convertion(routes, request.currency)
+        return Converter(parsed_rates).recursive_currency_convertion(routes, request.currency)
     except Exception as e:
         raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)) from e
