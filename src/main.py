@@ -16,7 +16,7 @@ from starlette.status import HTTP_400_BAD_REQUEST, HTTP_500_INTERNAL_SERVER_ERRO
 from pycbrf.toolbox import ExchangeRates
 
 from .form_requests import CalculateFormRequest
-from .api import fesco
+from .services import fesco
 
 app = FastAPI()
 app.mount('/res', StaticFiles(directory='res'), name='res')
