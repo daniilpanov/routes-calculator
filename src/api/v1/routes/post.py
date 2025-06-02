@@ -1,4 +1,3 @@
-import asyncio
 import datetime
 from functools import lru_cache
 
@@ -22,10 +21,7 @@ async def calculate(request: CalculateFormRequest):
     if not container_ids:
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail='No container found')
     try:
-        routes_groups = await asyncio.gather(*(fesco.get_routes(dtc, request.departureId, request.destinationId, container_id, 'ru') for container_id in container_ids))
-        routes = []
-        for route_group in routes_groups:
-            routes.extend(route_group)
+        routes = await fesco.find_all_paths(dtc, request.departureId, request.destinationId, container_ids, 'ru')
         parsed_rates = get_rates(datetime.datetime.combine(dtc, datetime.time()))
         return Converter(parsed_rates).recursive_currency_convertion(routes, request.currency)
     except Exception as e:
