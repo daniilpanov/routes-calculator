@@ -137,13 +137,11 @@
     </div>
 </main>
 
-<script>
-    const baseUrl = (location.host === 'localhost') ? ''
-        : !!location.port ? ''
-        : (location.protocol + '//' + location.host + ':8000');
+<script src="res/js/baseUrl.js"></script>
 
+<script>
     (async () => {
-        const rates = await fetch(baseUrl + '/get_rates').then(res => res.json());
+        const rates = await fetch(window.baseUrl + '/get_rates').then(res => res.json());
         document.getElementById('USD-rates').innerHTML = rates.USD + ' ₽';
         document.getElementById('EUR-rates').innerHTML = rates.EUR + ' ₽';
     })();
@@ -166,7 +164,7 @@
     async function updateDepartures () {
         if (!dispatchDateInput.validity.valid) return;
         const date = dispatchDateInput.value;
-        const resp = await fetch(`${baseUrl}/get_departures?date=${date}`);
+        const resp = await fetch(`${window.baseUrl}/get_departures?date=${date}`);
         if (resp.ok) {
             departures.data = await resp.json();
             destinationInput.value = "";
@@ -238,7 +236,7 @@
         destinationInput.disabled = false;
         const date = dispatchDateInput.value;
         const departureId = departureHiddenInput.value;
-        const resp = await fetch(`${baseUrl}/get_destinations?date=${date}&departure_point_id=${departureId}`);
+        const resp = await fetch(`${window.baseUrl}/get_destinations?date=${date}&departure_point_id=${departureId}`);
         if (resp.ok) destinations.data = await resp.json();
     }, () => {
         destinationInput.disabled = true;
@@ -303,13 +301,13 @@
 
     const icons = {};
 
-    fetch(baseUrl + '/res/img/route-icons/sea.svg').then(res => res.text()).then(svg => icons.sea = svg);
-    fetch(baseUrl + '/res/img/route-icons/rail.svg').then(res => res.text()).then(svg => icons.rail = svg);
-    fetch(baseUrl + '/res/img/route-icons/truck.svg').then(res => res.text()).then(svg => icons.truck = svg);
+    fetch(window.baseUrl + '/res/img/route-icons/sea.svg').then(res => res.text()).then(svg => icons.sea = svg);
+    fetch(window.baseUrl + '/res/img/route-icons/rail.svg').then(res => res.text()).then(svg => icons.rail = svg);
+    fetch(window.baseUrl + '/res/img/route-icons/truck.svg').then(res => res.text()).then(svg => icons.truck = svg);
 
     async function calculateAndRender(payload) {
         calculateButton.disabled = true;
-        const response = await fetch(baseUrl + '/calculate', {
+        const response = await fetch(window.baseUrl + '/calculate', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
