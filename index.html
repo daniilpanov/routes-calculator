@@ -138,13 +138,10 @@
 </main>
 
 <script src="res/js/baseUrl.js"></script>
+<script src="res/js/rates.js"></script>
 
 <script>
-    (async () => {
-        const rates = await fetch(window.baseUrl + '/get_rates').then(res => res.json());
-        document.getElementById('USD-rates').innerHTML = rates.USD + ' ₽';
-        document.getElementById('EUR-rates').innerHTML = rates.EUR + ' ₽';
-    })();
+    updateRates();
 
     const dispatchDateInput = document.getElementById('dispatchDate');
     const departureInput = document.getElementById('departure');
