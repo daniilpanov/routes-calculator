@@ -57,11 +57,11 @@
             </div>
             <div class="header-rates">
                 <div>
-                    <object data="res/currency/USD.svg" type="image/svg+xml"></object>
+                    <object data="res/img/currency/USD.svg" type="image/svg+xml"></object>
                     <span id="USD-rates"></span>
                 </div>
                 <div>
-                    <object data="res/currency/EUR.svg" type="image/svg+xml"></object>
+                    <object data="res/img/currency/EUR.svg" type="image/svg+xml"></object>
                     <span id="EUR-rates"></span>
                 </div>
             </div>
@@ -303,9 +303,9 @@
 
     const icons = {};
 
-    fetch(baseUrl + '/res/route-icons/sea.svg').then(res => res.text()).then(svg => icons.sea = svg);
-    fetch(baseUrl + '/res/route-icons/rail.svg').then(res => res.text()).then(svg => icons.rail = svg);
-    fetch(baseUrl + '/res/route-icons/truck.svg').then(res => res.text()).then(svg => icons.truck = svg);
+    fetch(baseUrl + '/res/img/route-icons/sea.svg').then(res => res.text()).then(svg => icons.sea = svg);
+    fetch(baseUrl + '/res/img/route-icons/rail.svg').then(res => res.text()).then(svg => icons.rail = svg);
+    fetch(baseUrl + '/res/img/route-icons/truck.svg').then(res => res.text()).then(svg => icons.truck = svg);
 
     async function calculateAndRender(payload) {
         calculateButton.disabled = true;
