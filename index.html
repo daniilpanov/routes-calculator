@@ -50,18 +50,18 @@
 <body>
 <header class="bg-light">
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <div class="container-fluid">
+        <div class="container">
             <a class="navbar-brand" href="#">Калькулятор</a>
             <div class="collapse navbar-collapse" id="navbarNavAltMarkup"></div>
             <div class="navbar-nav">
             </div>
             <div class="header-rates">
                 <div>
-                    <object data="res/currency/USD.svg" type="image/svg+xml"></object>
+                    <object data="res/img/currency/USD.svg" type="image/svg+xml"></object>
                     <span id="USD-rates"></span>
                 </div>
                 <div>
-                    <object data="res/currency/EUR.svg" type="image/svg+xml"></object>
+                    <object data="res/img/currency/EUR.svg" type="image/svg+xml"></object>
                     <span id="EUR-rates"></span>
                 </div>
             </div>
@@ -70,6 +70,16 @@
 </header>
 
 <main class="container">
+    <div class="alert alert-warning d-flex align-items-center" role="alert">
+        <svg class="bi flex-shrink-0 me-2" width="24" height="24" role="img" aria-label="Warning:" xmlns="http://www.w3.org/2000/svg" id="exclamation-triangle-fill" width="16" height="16" fill="currentColor" class="bi bi-exclamation-triangle-fill" viewBox="0 0 16 16">
+            <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5m.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2"/>
+        </svg>
+        <div>
+            Сервис находится на стадии бета-тестирования. Некоторые функции могут работать нестабильно.
+            Пожалуйста, сообщите нам, если заметите ошибку.
+        </div>
+    </div>
+
     <div class="my-5">
         <div class="card shadow-sm rounded-4 p-4">
             <h2 class="mb-4 text-center">Калькулятор маршрутов</h2>
@@ -137,233 +147,20 @@
     </div>
 </main>
 
+<script src="res/js/baseUrl.js"></script>
+<script src="res/js/rates.js"></script>
+<script src="res/js/autocomplete.js"></script>
+<script src="res/js/transformers.js"></script>
+
 <script>
-    const baseUrl = (location.host === 'localhost') ? ''
-        : !!location.port ? ''
-        : (location.protocol + '//' + location.host + ':8000');
-
-    (async () => {
-        const rates = await fetch(baseUrl + '/get_rates').then(res => res.json());
-        document.getElementById('USD-rates').innerHTML = rates.USD + ' ₽';
-        document.getElementById('EUR-rates').innerHTML = rates.EUR + ' ₽';
-    })();
-
-    const dispatchDateInput = document.getElementById('dispatchDate');
-    const departureInput = document.getElementById('departure');
-    const destinationInput = document.getElementById('destination');
-    const departureHiddenInput = document.getElementById('departureId');
-    const destinationHiddenInput = document.getElementById('destinationId');
-    const cargoWeightInput = document.getElementById('cargoWeight');
-    const containerTypeInput = document.getElementById('containerType');
-    const currencyInput = document.getElementById('currency');
-    const calculateButton = document.getElementById('calculate');
-
-    dispatchDateInput.valueAsDate = dispatchDateInput.valueAsDate || new Date();
-    dispatchDateInput.min = dispatchDateInput.min || dispatchDateInput.value;
-
-    const departures = { data: null };
-
-    async function updateDepartures () {
-        if (!dispatchDateInput.validity.valid) return;
-        const date = dispatchDateInput.value;
-        const resp = await fetch(`${baseUrl}/get_departures?date=${date}`);
-        if (resp.ok) {
-            departures.data = await resp.json();
-            destinationInput.value = "";
-            destinationHiddenInput.value = "";
-            destinationInput.disabled = true;
-        }
-    }
-
+    updateRates();
     updateDepartures();
-    dispatchDateInput.addEventListener('input', updateDepartures);
-
-    const destinations = { data: {} };
-
-    function setupAutocomplete(inputId, listId, dataObj, hiddenInputId, callbackOnCompleted, callbackOnUncompleted) {
-        const input = document.getElementById(inputId);
-        const hiddenInput = document.getElementById(hiddenInputId);
-        const list = document.getElementById(listId);
-
-        function autocompleteProcess() {
-            const data = dataObj.data;
-            const val = this.value.trim().toLowerCase();
-            list.innerHTML = '';
-
-            const filtered = Object.keys(data).filter(item => item.toLowerCase().includes(val));
-            if (!filtered.length) {
-                list.classList.add('d-none');
-                if (callbackOnUncompleted) callbackOnUncompleted();
-                return;
-            }
-
-            let selectedVal = null;
-
-            filtered.forEach(item => {
-                if (item.toLowerCase() === val.toLowerCase()) selectedVal = item;
-                const div = document.createElement('div');
-                div.textContent = item;
-                div.setAttribute('data-item-id', data[item]);
-                div.classList.add('autocomplete-item');
-                div.addEventListener('mousedown', () => {
-                    input.value = item;
-                    hiddenInput.value = data[item];
-                    input.classList.remove('is-invalid');
-                    list.classList.add('d-none');
-                    if (callbackOnCompleted) callbackOnCompleted();
-                });
-                list.appendChild(div);
-            });
-            if (selectedVal) {
-                input.value = selectedVal;
-                hiddenInput.value = data[selectedVal];
-                if (callbackOnCompleted) callbackOnCompleted();
-            } else {
-                hiddenInput.value = '';
-                if (callbackOnUncompleted) callbackOnUncompleted();
-            }
-
-            list.classList.remove('d-none');
-        }
-
-        input.addEventListener('input', autocompleteProcess);
-        input.addEventListener('focus', autocompleteProcess);
-
-        input.addEventListener('blur', () => {
-            setTimeout(() => list.classList.add('d-none'), 50);
-        });
-    }
-
-    setupAutocomplete('departure', 'departureList', departures, 'departureId', async () => {
-        destinationInput.disabled = false;
-        const date = dispatchDateInput.value;
-        const departureId = departureHiddenInput.value;
-        const resp = await fetch(`${baseUrl}/get_destinations?date=${date}&departure_point_id=${departureId}`);
-        if (resp.ok) destinations.data = await resp.json();
-    }, () => {
-        destinationInput.disabled = true;
-        destinationInput.value = '';
-    });
-    setupAutocomplete('destination', 'destinationList', destinations, 'destinationId');
-
-    function mapSegmentType(type) {
-        switch (type) {
-            case 1: return 'rail';
-            case 2: return 'sea';
-            case 3: return 'truck';
-            default: return 'unknown';
-        }
-    }
-
-    function transformResponseData(routes) {
-        return routes.map(route => ({
-            dateFrom: route.DateFrom,
-            dateTo: route.DateTo,
-            beginCond: route.BeginCond,
-            finishCond: route.FinishCond,
-            containers: route.Containers.map(c => ({ name: c.ContainerName })),
-            segments: route.Segments.map(segment => ({
-                segmentOrder: segment.SegmentOrder,
-                type: mapSegmentType(segment.SegmentType),
-                from: { name: segment.BeginLocName },
-                to: { name: segment.FinishLocName },
-                price: segment.Containers.map(c => ({
-                    containerId: c.ContainerCode,
-                    sum: c.Price,
-                    currency: c.Currency
-                }))
-            })),
-            services: route.Services.map(service => ({
-                name: service.ServiceName,
-                checked: service.checked || service.Default,
-                isRequired: service.Default,
-                price: service.ContPrice.map(p => ({
-                    containerId: p.ContainerCode,
-                    sum: p.Price,
-                    currency: p.Currency
-                }))
-            }))
-        }));
-    }
-
-
-    function showGlobalAlert(message) {
-        const container = document.getElementById('alertContainer');
-        container.innerHTML = `<div class="alert alert-danger alert-fixed alert-dismissible fade show" role="alert">
-      ${message}
-      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
-    </div>`;
-        container.classList.remove('d-none');
-
-        setTimeout(() => {
-            const alert = container.querySelector('.alert');
-            if (alert) new bootstrap.Alert(alert).close();
-        }, 3000);
-    }
 
     const icons = {};
 
-    fetch(baseUrl + '/res/route-icons/sea.svg').then(res => res.text()).then(svg => icons.sea = svg);
-    fetch(baseUrl + '/res/route-icons/rail.svg').then(res => res.text()).then(svg => icons.rail = svg);
-    fetch(baseUrl + '/res/route-icons/truck.svg').then(res => res.text()).then(svg => icons.truck = svg);
-
-    async function calculateAndRender(payload) {
-        calculateButton.disabled = true;
-        const response = await fetch(baseUrl + '/calculate', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload),
-        });
-        if (!response.ok) {
-            calculateButton.disabled = false;
-            return showGlobalAlert(`[${response.status} ${response.statusText}]<p>` + await response.text());
-        }
-        const data = transformResponseData(await response.json());
-        const container = document.getElementById('results');
-        container.innerHTML = '';
-
-        data.forEach(route => {
-            const routeEl = document.createElement('div');
-            routeEl.className = 'p-3 mb-4 border rounded shadow-sm';
-
-            const segmentsHTML = route.segments.map(segment => {
-                let svg = icons[segment.type] || '';
-
-                const price = segment.price.map(p => `${p.sum.toLocaleString()} ${p.currency}`).join(', ');
-                return `
-                <div class="d-flex align-items-center my-2">
-                    <div class="route-icon" style="width:30px;height:30px;margin-right:10px;">${svg}</div>
-                    <div>
-                        <div><strong>${segment.from.name}</strong> → <strong>${segment.to.name}</strong></div>
-                        <div class="text-muted">${price}</div>
-                    </div>
-                </div>
-            `;
-            }).join('');
-
-            const servicesHTML = route.services
-                .filter(s => s.checked || s.isRequired)
-                .map(service => {
-                    const price = service.price.map(p => `${p.sum.toLocaleString()} ${p.currency}`).join(', ');
-                    return `<div class="text-muted">• ${service.name}: ${price}</div>`;
-                }).join('');
-
-            routeEl.innerHTML = `
-            <h5 class="mb-2">Ставка действует: ${new Date(route.dateFrom).toLocaleDateString()} — ${new Date(route.dateTo).toLocaleDateString()}</h5>
-            <div class="mb-2">Условия: ${route.beginCond} - ${route.finishCond}</div>
-            <div class="mb-3">Контейнер: ${route.containers.map(c => c.name).join(', ')}</div>
-            ${segmentsHTML}
-            <h6 class="mt-3">Дополнительные услуги</h6>
-            ${servicesHTML}
-            <button class="btn btn-primary mt-3">Оформить заявку</button>
-        `;
-
-            container.appendChild(routeEl);
-        });
-        calculateButton.disabled = false;
-    }
+    fetch(window.baseUrl + '/res/img/route-icons/sea.svg').then(res => res.text()).then(svg => icons.sea = svg);
+    fetch(window.baseUrl + '/res/img/route-icons/rail.svg').then(res => res.text()).then(svg => icons.rail = svg);
+    fetch(window.baseUrl + '/res/img/route-icons/truck.svg').then(res => res.text()).then(svg => icons.truck = svg);
 
     document.getElementById('calcForm').addEventListener('submit', function (e) {
         if (!this.checkValidity()) {
@@ -393,7 +190,7 @@
             currency: currencyInput.value,
         };
 
-        calculateAndRender(payload);
+        calculateAndRender(payload, icons);
         alert(`Form submitted!${JSON.stringify(payload)}`);
     });
 </script>
