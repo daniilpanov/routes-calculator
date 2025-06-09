@@ -83,20 +83,11 @@ async function calculateAndRender(payload, icons) {
             `;
         }).join('');
 
-        const servicesHTML = route.services
-            .filter(s => s.checked || s.isRequired)
-            .map(service => {
-                const price = service.price.map(p => `${p.sum.toLocaleString()} ${p.currency}`).join(', ');
-                return `<div class="text-muted">• ${service.name}: ${price}</div>`;
-            }).join('');
-
         routeEl.innerHTML = `
             <h5 class="mb-2">Ставка действует: ${new Date(route.dateFrom).toLocaleDateString()} — ${new Date(route.dateTo).toLocaleDateString()}</h5>
             <div class="mb-2">Условия: ${route.beginCond} - ${route.finishCond}</div>
             <div class="mb-3">Контейнер: ${route.containers.map(c => c.name).join(', ')}</div>
             ${segmentsHTML}
-            <h6 class="mt-3">Дополнительные услуги</h6>
-            ${servicesHTML}
             <button class="btn btn-primary mt-3">Оформить заявку</button>
         `;
 
