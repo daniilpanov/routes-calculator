@@ -16,7 +16,7 @@ const departures = { data: null };
 async function updateDepartures() {
     if (!dispatchDateInput.validity.valid) return;
     const date = dispatchDateInput.value;
-    const resp = await fetch(`${window.baseUrl}/get_departures?date=${date}`);
+    const resp = await fetch(`${window.baseUrl}/v1/points/departures?date=${date}`);
     if (resp.ok) {
         departures.data = await resp.json();
         destinationInput.value = '';
@@ -33,7 +33,7 @@ setupAutocomplete('departure', 'departureList', departures, 'departureId', async
     destinationInput.disabled = false;
     const date = dispatchDateInput.value;
     const departureId = departureHiddenInput.value;
-    const resp = await fetch(`${window.baseUrl}/get_destinations?date=${date}&departure_point_id=${departureId}`);
+    const resp = await fetch(`${window.baseUrl}/v1/points/destinations?date=${date}&departure_point_id=${departureId}`);
     if (resp.ok) destinations.data = await resp.json();
 }, () => {
     destinationInput.disabled = true;
@@ -43,7 +43,7 @@ setupAutocomplete('destination', 'destinationList', destinations, 'destinationId
 
 async function calculateAndRender(payload, icons) {
     calculateButton.disabled = true;
-    const response = await fetch(window.baseUrl + '/calculate', {
+    const response = await fetch(window.baseUrl + '/v1/routes/calculate', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -54,7 +54,7 @@ async function calculateAndRender(payload, icons) {
         calculateButton.disabled = false;
         return showGlobalAlert(`[${response.status} ${response.statusText}]<p>` + await response.text());
     }
-    const data = transformResponseData(await response.json());
+    const data = await response.json();
     const container = document.getElementById('results');
     container.innerHTML = '';
 
@@ -77,20 +77,11 @@ async function calculateAndRender(payload, icons) {
             `;
         }).join('');
 
-        const servicesHTML = route.services
-            .filter(s => s.checked || s.isRequired)
-            .map(service => {
-                const price = service.price.map(p => `${p.sum.toLocaleString()} ${p.currency}`).join(', ');
-                return `<div class="text-muted">• ${service.name}: ${price}</div>`;
-            }).join('');
-
         routeEl.innerHTML = `
             <h5 class="mb-2">Ставка действует: ${new Date(route.dateFrom).toLocaleDateString()} — ${new Date(route.dateTo).toLocaleDateString()}</h5>
             <div class="mb-2">Условия: ${route.beginCond} - ${route.finishCond}</div>
             <div class="mb-3">Контейнер: ${route.containers.map(c => c.name).join(', ')}</div>
             ${segmentsHTML}
-            <h6 class="mt-3">Дополнительные услуги</h6>
-            ${servicesHTML}
             <button class="btn btn-primary mt-3">Оформить заявку</button>
         `;
 

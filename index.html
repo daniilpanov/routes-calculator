@@ -147,10 +147,10 @@
     </div>
 </main>
 
+<script src="res/js/alerts.js"></script>
 <script src="res/js/baseUrl.js"></script>
 <script src="res/js/rates.js"></script>
 <script src="res/js/autocomplete.js"></script>
-<script src="res/js/transformers.js"></script>
 <script src="res/js/calculating.js"></script>
 
 <script>
@@ -191,8 +191,8 @@
             currency: currencyInput.value,
         };
 
-        calculateAndRender(payload, icons);
-        alert(`Form submitted!${JSON.stringify(payload)}`);
+        calculateAndRender(payload, icons)
+            .catch(e => showGlobalAlert(`An error occurred when calculating: ${e.message}`));
     });
 </script>
 
