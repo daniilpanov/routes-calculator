@@ -5,6 +5,34 @@ import aiohttp
 import asyncio
 
 
+_segment_types = {
+    1: 'rail',
+    2: 'sea',
+    3: 'truck',
+}
+
+
+def _transform_item(route):
+    return {
+        'dateFrom': route['DateFrom'],
+        'dateTo': route['DateTo'],
+        'beginCond': route['BeginCond'],
+        'finishCond': route['FinishCond'],
+        'containers': [{'name': container['ContainerName']} for container in route.get('Containers', [])],
+        'segments': [{
+            'segmentOrder': segment['SegmentOrder'],
+            'type': _segment_types.get(segment['SegmentType']),
+            'from': {'name': segment['BeginLocName']},
+            'to': {'name': segment['FinishLocName']},
+            'price': [{
+                'containerId': container['ContainerCode'],
+                'sum': container['Price'],
+                'currency': container['Currency'],
+            } for container in segment.get('Containers', [])]
+        } for segment in route.get('Segments', [])],
+    }
+
+
 async def _get_routes(date: datetime.date, departure_id: str, destination_id: str, wte_id: str, lang: str, session):
     resp = await session.get(
         'https://my.fesco.com/api/v2/lk/offers/fit?date={}&from={}&to={}&wte={}&co=COC'.format(
@@ -18,8 +46,9 @@ async def _get_routes(date: datetime.date, departure_id: str, destination_id: st
         },
     )
     resp.raise_for_status()
-    data_to = await resp.json()
-    return data_to.get('data', [])
+    routes = (await resp.json()).get('data', [])
+
+    return map(_transform_item, routes)
 
 
 async def find_all_paths(date: datetime.date, departure_id: str, destination_id: str, wte_ids: list[str], lang: str):

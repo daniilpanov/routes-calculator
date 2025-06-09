@@ -54,13 +54,7 @@ async function calculateAndRender(payload, icons) {
         calculateButton.disabled = false;
         return showGlobalAlert(`[${response.status} ${response.statusText}]<p>` + await response.text());
     }
-    let data;
-    try {
-        data = transformResponseData(await response.json());
-    } catch (error) {
-        calculateButton.disabled = false;
-        return showGlobalAlert(`Invalid data returned: ${error}<p>${data}`);
-    }
+    const data = await response.json();
     const container = document.getElementById('results');
     container.innerHTML = '';
 
