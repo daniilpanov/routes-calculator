@@ -1,3 +1,5 @@
+from typing import List
+
 import datetime
 import os
 
@@ -51,7 +53,7 @@ async def _get_routes(date: datetime.date, departure_id: str, destination_id: st
     return map(_transform_item, routes)
 
 
-async def find_all_paths(date: datetime.date, departure_id: str, destination_id: str, wte_ids: list[str], lang: str):
+async def find_all_paths(date: datetime.date, departure_id: str, destination_id: str, wte_ids: List[str], lang: str):
     async with aiohttp.ClientSession() as session:
         coroutines = [_get_routes(date, departure_id, destination_id, wte_id, lang, session) for wte_id in wte_ids]
         res = await asyncio.gather(*coroutines, return_exceptions=True)
