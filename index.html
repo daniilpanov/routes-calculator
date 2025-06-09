@@ -191,8 +191,8 @@
             currency: currencyInput.value,
         };
 
-        calculateAndRender(payload, icons);
-        alert(`Form submitted!${JSON.stringify(payload)}`);
+        calculateAndRender(payload, icons)
+            .catch(e => showGlobalAlert(`An error occurred when calculating: ${e.message}`));
     });
 </script>
 
