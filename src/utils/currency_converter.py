@@ -14,8 +14,8 @@ class Converter:
         if isinstance(obj, (list, tuple, set)):
             return [self.recursive_currency_convertion(item, needle_currency) for item in obj]
         elif isinstance(obj, dict):
-            if 'Currency' in obj and 'Price' in obj:
-                obj['Price'] = self._convert(obj['Price'], obj['Currency'], needle_currency)
-                obj['Currency'] = needle_currency
+            if 'currency' in obj and 'sum' in obj:
+                obj['sum'] = self._convert(obj['sum'], obj['currency'], needle_currency)
+                obj['currency'] = needle_currency
             return dict((i, self.recursive_currency_convertion(v, needle_currency)) for i, v in obj.items())
         return obj
