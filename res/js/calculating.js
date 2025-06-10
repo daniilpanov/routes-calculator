@@ -62,13 +62,14 @@ async function calculateAndRender(payload, icons) {
         const segmentsHTML = route.segments.map(segment => {
             let svg = icons[segment.type] || '';
 
-            const price = segment.containers.map(p => `${p.price.toLocaleString()} ${p.currency}`).join(', ');
+            const price = segment.containers.reduce((accumulator, p) => accumulator + p, 0);
+            const currency = segment.containers[0]?.currency || '';
             return `
                 <div class="d-flex align-items-center my-2">
                     <div class="route-icon" style="width:30px;height:30px;margin-right:10px;">${svg}</div>
                     <div>
                         <div><strong>${segment.from.name}</strong> → <strong>${segment.to.name}</strong></div>
-                        <div class="text-muted">${price}</div>
+                        <div class="text-muted">${price} ${currency}</div>
                     </div>
                 </div>
             `;
@@ -79,7 +80,7 @@ async function calculateAndRender(payload, icons) {
             <div class="mb-2">Условия: ${route.beginCond} - ${route.finishCond}</div>
             <div class="mb-3">Контейнер: ${route.containers.map(c => c.name).join(', ')}</div>
             ${segmentsHTML}
-            <div class="mb-3">Суммарная стоимость: ${route.price}</div>
+            <div class="mb-3">Суммарная стоимость: ${route.price} ${route.currency}</div>
         `;
 
         container.appendChild(routeEl);
