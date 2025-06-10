@@ -65,7 +65,7 @@ async function calculateAndRender(payload, icons) {
         const segmentsHTML = route.segments.map(segment => {
             let svg = icons[segment.type] || '';
 
-            const price = segment.price.map(p => `${p.sum.toLocaleString()} ${p.currency}`).join(', ');
+            const price = segment.containers.map(p => `${p.sum.toLocaleString()} ${p.currency}`).join(', ');
             return `
                 <div class="d-flex align-items-center my-2">
                     <div class="route-icon" style="width:30px;height:30px;margin-right:10px;">${svg}</div>
