@@ -31,6 +31,7 @@ async def calculate(request: CalculateFormRequest):
                 for container in segment['containers']:
                     sum_containers += container['price']
             route['price'] = sum_containers
+            route['currency'] = request.currency
             summed_routes.append(route)
         summed_routes.sort(key=lambda item: item['price'])
         return summed_routes
