@@ -26,9 +26,9 @@ def _transform_item(route):
             'type': _segment_types.get(segment['SegmentType']),
             'from': {'name': segment['BeginLocName']},
             'to': {'name': segment['FinishLocName']},
-            'price': [{
+            'containers': [{
                 'containerId': container['ContainerCode'],
-                'sum': container['Price'],
+                'price': container['Price'],
                 'currency': container['Currency'],
             } for container in segment.get('Containers', [])]
         } for segment in route.get('Segments', [])],
