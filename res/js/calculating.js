@@ -6,7 +6,6 @@ const destinationHiddenInput = document.getElementById('destinationId');
 const cargoWeightInput = document.getElementById('cargoWeight');
 const containerTypeInput = document.getElementById('containerType');
 const currencyInput = document.getElementById('currency');
-const calculateButton = document.getElementById('calculate');
 
 dispatchDateInput.valueAsDate = dispatchDateInput.valueAsDate || new Date();
 dispatchDateInput.min = dispatchDateInput.min || dispatchDateInput.value;
@@ -42,7 +41,6 @@ setupAutocomplete('departure', 'departureList', departures, 'departureId', async
 setupAutocomplete('destination', 'destinationList', destinations, 'destinationId');
 
 async function calculateAndRender(payload, icons) {
-    calculateButton.disabled = true;
     const response = await fetch(window.baseUrl + '/v1/routes/calculate', {
         method: 'POST',
         headers: {
@@ -50,10 +48,9 @@ async function calculateAndRender(payload, icons) {
         },
         body: JSON.stringify(payload),
     });
-    if (!response.ok) {
-        calculateButton.disabled = false;
-        return showGlobalAlert(`[${response.status} ${response.statusText}]<p>` + await response.text());
-    }
+    if (!response.ok)
+        throw new Error(`[${response.status} ${response.statusText}]<p>` + await response.text());
+
     const data = await response.json();
     const container = document.getElementById('results');
     container.innerHTML = '';
@@ -87,5 +84,4 @@ async function calculateAndRender(payload, icons) {
 
         container.appendChild(routeEl);
     });
-    calculateButton.disabled = false;
 }

@@ -191,8 +191,12 @@
             currency: currencyInput.value,
         };
 
+        const calculateButton = document.getElementById('calculate');
+        calculateButton.disabled = true;
+
         calculateAndRender(payload, icons)
-            .catch(e => showGlobalAlert(`An error occurred when calculating: ${e.message}`));
+            .catch(e => showGlobalAlert(`Error: ${e.message}`))
+            .finally(() => calculateButton.disabled = false);
     });
 </script>
 
