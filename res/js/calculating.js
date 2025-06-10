@@ -62,7 +62,7 @@ async function calculateAndRender(payload, icons) {
         const segmentsHTML = route.segments.map(segment => {
             let svg = icons[segment.type] || '';
 
-            const price = segment.containers.reduce((accumulator, p) => accumulator + p, 0);
+            const price = segment.containers.reduce((accumulator, p) => accumulator + p.price, 0);
             const currency = segment.containers[0]?.currency || '';
             return `
                 <div class="d-flex align-items-center my-2">
