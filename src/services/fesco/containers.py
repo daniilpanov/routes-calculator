@@ -24,25 +24,37 @@ async def get_containers(date: datetime.date, departure_id: str, destination_id:
 
 
 def search_container_ids(containers: list, weight: int, size: int):
-    needle = []
     seeking_expr = re.compile(r'^(\d+)-.+[^ 0-9](\d+)t$')
     containers_map = {}
     containers_variants = []
+    unweighted_containers_variants = []
+    needle = []
+
     for container in containers:
         try:
             r1 = seeking_expr.match(container['ContainerNameEng'])
             if r1:
                 csize, cweight = map(int, r1.groups())
+                containers_variants.append((csize, cweight))
             else:
                 csize = int(container['ContainerNameEng'].strip().split('-', maxsplit=1)[0])
-                cweight = 999999999
+                cweight = None
+                unweighted_containers_variants.append(csize)
         except Exception as e:
             print(e)
             continue
         containers_map[(csize, cweight)] = container['ContainerCode']
-        containers_variants.append((csize, cweight))
+
     containers_variants.sort()
+    unweighted_containers_variants.sort()
+
     for csize, cweight in containers_variants:
-        if csize == size and not cweight or csize >= size and cweight >= weight:
+        if csize >= size and cweight >= weight:
             needle.append(containers_map[(csize, cweight)])
+            break
+    for csize in unweighted_containers_variants:
+        if csize >= size:
+            needle.append(containers_map[(csize, None)])
+            break
+
     return needle
