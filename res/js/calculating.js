@@ -82,7 +82,7 @@ async function calculateAndRender(payload, icons) {
             <div class="mb-2">Условия: ${route.beginCond} - ${route.finishCond}</div>
             <div class="mb-3">Контейнер: ${route.containers.map(c => c.name).join(', ')}</div>
             ${segmentsHTML}
-            <button class="btn btn-primary mt-3">Оформить заявку</button>
+            <div class="mb-3">Суммарная стоимость: ${route.price}</div>
         `;
 
         container.appendChild(routeEl);
