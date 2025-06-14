@@ -14,7 +14,7 @@ router = APIRouter(prefix='/v1/points', tags=['points'])
 async def all_departure_by_date(date: datetime.date):
     prepared_from = dict()
     # from FESCO
-    data_from = await fesco.get_departure_points_by_date(date, 'ru')
+    data_from = await fesco.get_departure_points_by_date(date)
     prepared_from.update(map(lambda x: (union_country_and_name(x.get('country'), x.get('name')), x['id']), data_from))
 
     return prepared_from
@@ -25,7 +25,7 @@ async def all_departure_by_date(date: datetime.date):
 async def all_destination_by_date(date: datetime.date, departure_point_id: str):
     prepared_to = dict()
     # from FESCO
-    data_to = await fesco.get_destination_points_by_date(date, departure_point_id, 'ru')
+    data_to = await fesco.get_destination_points_by_date(date, departure_point_id)
     prepared_to.update(map(lambda x: (union_country_and_name(x.get('country'), x.get('name')), x['id']), data_to))
 
     return prepared_to
