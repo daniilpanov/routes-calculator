@@ -17,7 +17,7 @@ services:
     networks:
       local:
     command:
-      - "src"
+      - "src/main.py"
       - "--port"
       - "8080"
   database:
