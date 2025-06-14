@@ -37,8 +37,18 @@ services:
     networks:
       local:
     healthcheck:
-      test: docker compose exec database mariadb-dump -u${DB_USER} -p${DB_PASS} ${DB_NAME} | gzip > /backup/$(date -I)-dump.gzip
-      interval: 24h
+      test: >
+        sh -c '
+        mariadb-dump -u$${MARIADB_USER} -p$${MARIADB_PASSWORD} $${MARIADB_DATABASE} > /backup/last_dump.sql 2>/backup/dump_error.log;
+        if [ $$? -eq 0 ]; then
+        gzip /backup/last_dump.sql -c > /backup/$$(date -I)-dump.gz;
+        rm /backup/last_dump.sql;
+        exit 0;
+        else
+        exit 1;
+        fi
+        '
+      interval: 5m
       retries: 3
   dbadmin:
     build:
