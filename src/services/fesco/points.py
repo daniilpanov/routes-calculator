@@ -3,14 +3,18 @@ import os
 
 import aiohttp
 
+from src.mapper_decorator import apply_mapper
+from .mappers.points import map_points
 
-async def get_departure_points_by_date(date: datetime.date, lang: str):
+
+@apply_mapper(map_points)
+async def get_departure_points_by_date(date: datetime.date):
     async with aiohttp.ClientSession() as session:
         resp = await session.get(
             'https://api.fesco.com/api/v1/lk/calc/fit/from?date={}'.format(date.isoformat()),
             headers={
                 'Authorization': 'Bearer {}'.format(os.environ.get('FESCO_API_KEY')),
-                'X-Lk-Lang': lang,
+                'X-Lk-Lang': 'RU',
             },
         )
         resp.raise_for_status()
@@ -18,13 +22,14 @@ async def get_departure_points_by_date(date: datetime.date, lang: str):
     return data_from.get('data')
 
 
-async def get_destination_points_by_date(date: datetime.date, departure_point_id: str, lang: str):
+@apply_mapper(map_points)
+async def get_destination_points_by_date(date: datetime.date, departure_point_id: str):
     async with aiohttp.ClientSession() as session:
         resp = await session.get(
             'https://api.fesco.com/api/v1/lk/calc/fit/to?date={}&from={}'.format(date.isoformat(), departure_point_id),
             headers={
                 'Authorization': 'Bearer {}'.format(os.environ.get('FESCO_API_KEY')),
-                'X-Lk-Lang': lang,
+                'X-Lk-Lang': 'RU',
             },
         )
         resp.raise_for_status()
