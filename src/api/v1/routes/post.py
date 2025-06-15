@@ -23,6 +23,17 @@ async def calculate(request: CalculateFormRequest):
     try:
         routes = await fesco.find_all_paths(dtc, request.departureId, request.destinationId, container_ids, 'ru')
         parsed_rates = get_rates(datetime.datetime.combine(dtc, datetime.time()))
-        return Converter(parsed_rates).recursive_currency_convertion(routes, request.currency)
+        routes = Converter(parsed_rates).recursive_currency_convertion(routes, request.currency)
+        summed_routes = []
+        for route in routes:
+            sum_containers = 0
+            for segment in route['segments']:
+                for container in segment['containers']:
+                    sum_containers += container['price']
+            route['price'] = sum_containers
+            route['currency'] = request.currency
+            summed_routes.append(route)
+        summed_routes.sort(key=lambda item: item['price'])
+        return summed_routes
     except Exception as e:
         raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)) from e

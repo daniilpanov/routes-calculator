@@ -6,7 +6,6 @@ const destinationHiddenInput = document.getElementById('destinationId');
 const cargoWeightInput = document.getElementById('cargoWeight');
 const containerTypeInput = document.getElementById('containerType');
 const currencyInput = document.getElementById('currency');
-const calculateButton = document.getElementById('calculate');
 
 dispatchDateInput.valueAsDate = dispatchDateInput.valueAsDate || new Date();
 dispatchDateInput.min = dispatchDateInput.min || dispatchDateInput.value;
@@ -42,7 +41,6 @@ setupAutocomplete('departure', 'departureList', departures, 'departureId', async
 setupAutocomplete('destination', 'destinationList', destinations, 'destinationId');
 
 async function calculateAndRender(payload, icons) {
-    calculateButton.disabled = true;
     const response = await fetch(window.baseUrl + '/v1/routes/calculate', {
         method: 'POST',
         headers: {
@@ -50,10 +48,9 @@ async function calculateAndRender(payload, icons) {
         },
         body: JSON.stringify(payload),
     });
-    if (!response.ok) {
-        calculateButton.disabled = false;
-        return showGlobalAlert(`[${response.status} ${response.statusText}]<p>` + await response.text());
-    }
+    if (!response.ok)
+        throw new Error(`[${response.status} ${response.statusText}]<p>` + await response.text());
+
     const data = await response.json();
     const container = document.getElementById('results');
     container.innerHTML = '';
@@ -65,13 +62,15 @@ async function calculateAndRender(payload, icons) {
         const segmentsHTML = route.segments.map(segment => {
             let svg = icons[segment.type] || '';
 
-            const price = segment.price.map(p => `${p.sum.toLocaleString()} ${p.currency}`).join(', ');
+            const price = segment.containers.reduce((accumulator, p) => accumulator + p.price, 0);
+            const roundedPrice = Math.round((price + Number.EPSILON) * 100) / 100;
+            const currency = segment.containers[0]?.currency || '';
             return `
                 <div class="d-flex align-items-center my-2">
                     <div class="route-icon" style="width:30px;height:30px;margin-right:10px;">${svg}</div>
                     <div>
                         <div><strong>${segment.from.name}</strong> → <strong>${segment.to.name}</strong></div>
-                        <div class="text-muted">${price}</div>
+                        <div class="text-muted">${roundedPrice} ${currency}</div>
                     </div>
                 </div>
             `;
@@ -82,10 +81,9 @@ async function calculateAndRender(payload, icons) {
             <div class="mb-2">Условия: ${route.beginCond} - ${route.finishCond}</div>
             <div class="mb-3">Контейнер: ${route.containers.map(c => c.name).join(', ')}</div>
             ${segmentsHTML}
-            <button class="btn btn-primary mt-3">Оформить заявку</button>
+            <div class="mb-3">Суммарная стоимость: ${Math.round((route.price + Number.EPSILON) * 100) / 100} ${route.currency}</div>
         `;
 
         container.appendChild(routeEl);
     });
-    calculateButton.disabled = false;
 }
