@@ -124,16 +124,6 @@
                         <input type="number" class="form-control" id="cargoWeight" min="1" step="0.01" placeholder="Введите вес груза" required>
                         <div class="invalid-feedback">Пожалуйста, укажите вес груза.</div>
                     </div>
-
-                    <div class="col-md">
-                        <label for="currency" class="form-label">Валюта рассчета</label>
-                        <select class="form-select" id="currency" required>
-                            <option selected disabled value="">Выберите валюту</option>
-                            <option value="USD">USD</option>
-                            <option value="RUB">RUB</option>
-                        </select>
-                        <div class="invalid-feedback">Пожалуйста, выберите валюту.</div>
-                    </div>
                 </div>
 
                 <p><hr>
@@ -143,6 +133,15 @@
             </form>
         </div>
 
+        <hr>
+        <h3>Просуммировать стоимость маршрутов в валюте:</h3>
+        <div class="mb-3 position-relative">
+            <label for="currencySwitcher" class="form-label">Валюта</label>
+            <input type="text" class="form-control" id="currencySwitcher" placeholder="Выберите валюту" autocomplete="off" required>
+            <div id="currencySwitcherList" class="autocomplete-items d-none"></div>
+        </div>
+
+        <hr>
         <div id="results" class="mt-4"></div>
     </div>
 </main>
@@ -154,7 +153,39 @@
 <script src="res/js/calculating.js"></script>
 
 <script>
-    updateRates();
+    function updateResults(selectedCurrency) {
+        const results = document.querySelectorAll('#results .result-item');
+        for (const result of results) {
+            const sumPriceEl = result.getElementsByClassName('sum-price')[0];
+            if (!sumPriceEl)
+                continue;
+
+            let sumPrice = 0;
+            for (const item of result.querySelectorAll('.segments .result-segment')) {
+                const price = item.getAttribute('data-bs-price');
+                const currency = item.getAttribute('data-bs-currency');
+                sumPrice += updateResultRates(Number.parseFloat(price), currency, selectedCurrency);
+            }
+
+            sumPriceEl.innerHTML = `Суммарная стоимость: ${Math.round((sumPrice + Number.EPSILON) * 100) / 100} ${selectedCurrency}`;
+        }
+    }
+
+    updateRates().then(rates => {
+        const currencySelect = document.getElementById('currencySwitcherList');
+        for (const rate in rates) {
+            const optionEl = document.createElement('option');
+            optionEl.value = rate;
+            currencySelect.appendChild(optionEl);
+        }
+
+        let mappedRates = {};
+        for (const rate in rates)
+            mappedRates[rate] = rate;
+
+        setupAutocomplete('currencySwitcher', 'currencySwitcherList', { data: mappedRates }, null, updateResults);
+    });
+
     updateDepartures();
 
     const icons = {};
@@ -178,23 +209,13 @@
             return;
         }
 
-        // Если всё корректно
         departureInput.classList.remove('is-invalid');
         destinationInput.classList.remove('is-invalid');
-
-        const payload = {
-            dispatchDate: dispatchDateInput.value,
-            departureId: departureHiddenInput.value,
-            destinationId: destinationHiddenInput.value,
-            cargoWeight: cargoWeightInput.value,
-            containerType: containerTypeInput.value,
-            currency: currencyInput.value,
-        };
 
         const calculateButton = document.getElementById('calculate');
         calculateButton.disabled = true;
 
-        calculateAndRender(payload, icons)
+        calculateAndRender(icons)
             .catch(e => showGlobalAlert(`Error: ${e.message}`))
             .finally(() => calculateButton.disabled = false);
     });
