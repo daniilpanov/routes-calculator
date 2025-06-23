@@ -153,12 +153,27 @@
 <script src="res/js/calculating.js"></script>
 
 <script>
+    function numberWithSpaces(x) {
+        const parts = x.toString().split(".");
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+        return parts.join(".");
+    }
+
     function updateResults(selectedCurrency) {
-        const results = document.querySelectorAll('#results .result-item');
+        let i = 0;
+        const keys = [];
+        const values = [];
+        const elements = [];
+        const resultsEl = document.getElementById('results');
+        const results = [...resultsEl.getElementsByClassName('result-item')];
+
         for (const result of results) {
             const sumPriceEl = result.getElementsByClassName('sum-price')[0];
             if (!sumPriceEl)
                 continue;
+
+            elements.push(result);
+            result.remove();
 
             let sumPrice = 0;
             for (const item of result.querySelectorAll('.segments .result-segment')) {
@@ -167,8 +182,16 @@
                 sumPrice += updateResultRates(Number.parseFloat(price), currency, selectedCurrency);
             }
 
-            sumPriceEl.innerHTML = `Суммарная стоимость: ${Math.round((sumPrice + Number.EPSILON) * 100) / 100} ${selectedCurrency}`;
+            const price = Math.round((sumPrice + Number.EPSILON) * 100) / 100;
+            keys.push(i++);
+            values.push(price);
+            sumPriceEl.innerHTML = `Суммарная стоимость: ${numberWithSpaces(price)} ${selectedCurrency}`;
         }
+
+        keys.sort((a, b) => values[a] - values[b]);
+
+        for (const key of keys)
+            resultsEl.appendChild(results[key]);
     }
 
     updateRates().then(rates => {
@@ -184,6 +207,7 @@
             mappedRates[rate] = rate;
 
         setupAutocomplete('currencySwitcher', 'currencySwitcherList', { data: mappedRates }, null, updateResults);
+        document.getElementById('currencySwitcher').value = 'RUB';
     });
 
     updateDepartures();
