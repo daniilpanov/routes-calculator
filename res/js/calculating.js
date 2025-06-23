@@ -5,19 +5,21 @@ const departureHiddenInput = document.getElementById('departureId');
 const destinationHiddenInput = document.getElementById('destinationId');
 const cargoWeightInput = document.getElementById('cargoWeight');
 const containerTypeInput = document.getElementById('containerType');
-const currencyInput = document.getElementById('currency');
 
 dispatchDateInput.valueAsDate = dispatchDateInput.valueAsDate || new Date();
 dispatchDateInput.min = dispatchDateInput.min || dispatchDateInput.value;
 
-const departures = { data: null };
+const departures = { data: {} };
 
 async function updateDepartures() {
     if (!dispatchDateInput.validity.valid) return;
     const date = dispatchDateInput.value;
     const resp = await fetch(`${window.baseUrl}/v1/points/departures?date=${date}`);
     if (resp.ok) {
-        departures.data = await resp.json();
+        const data = await resp.json();
+        departures.data = {};
+        for (const loc in data)
+            departures.data[loc] = JSON.stringify(data[loc]);
         destinationInput.value = '';
         destinationHiddenInput.value = '';
         destinationInput.disabled = true;
@@ -33,14 +35,27 @@ setupAutocomplete('departure', 'departureList', departures, 'departureId', async
     const date = dispatchDateInput.value;
     const departureId = departureHiddenInput.value;
     const resp = await fetch(`${window.baseUrl}/v1/points/destinations?date=${date}&departure_point_id=${departureId}`);
-    if (resp.ok) destinations.data = await resp.json();
+    if (resp.ok) {
+        const data = await resp.json();
+        destinations.data = {};
+        for (const loc in data)
+            destinations.data[loc] = JSON.stringify(data[loc]);
+    }
 }, () => {
     destinationInput.disabled = true;
     destinationInput.value = '';
 });
 setupAutocomplete('destination', 'destinationList', destinations, 'destinationId');
 
-async function calculateAndRender(payload, icons) {
+async function calculateAndRender(icons) {
+    const payload = {
+        dispatchDate: dispatchDateInput.value,
+        departureId: departureHiddenInput.value,
+        destinationId: destinationHiddenInput.value,
+        cargoWeight: cargoWeightInput.value,
+        containerType: containerTypeInput.value,
+    };
+
     const response = await fetch(window.baseUrl + '/v1/routes/calculate', {
         method: 'POST',
         headers: {
@@ -57,33 +72,38 @@ async function calculateAndRender(payload, icons) {
 
     data.forEach(route => {
         const routeEl = document.createElement('div');
-        routeEl.className = 'p-3 mb-4 border rounded shadow-sm';
+        routeEl.className = 'p-3 mb-4 border rounded shadow-sm result-item';
 
-        const segmentsHTML = route.segments.map(segment => {
+        const segmentsHTML = route.map(segment => {
             let svg = icons[segment.type] || '';
 
-            const price = segment.containers.reduce((accumulator, p) => accumulator + p.price, 0);
-            const roundedPrice = Math.round((price + Number.EPSILON) * 100) / 100;
-            const currency = segment.containers[0]?.currency || '';
+            const roundedPrice = Math.round((segment.price + Number.EPSILON) * 100) / 100;
             return `
-                <div class="d-flex align-items-center my-2">
-                    <div class="route-icon" style="width:30px;height:30px;margin-right:10px;">${svg}</div>
+                <div class="align-items-center my-2 result-segment" data-bs-price="${roundedPrice}" data-bs-currency="${segment.currency}">
+                    <div class="route-icon">${svg} &emsp; ${segment.company}</div>
+                    <div class="mb-2">${segment.beginCond ? `Условия: ${segment.beginCond} - ${segment.finishCond}` : ''}</div>
+                    <div class="mb-2">Ставка действует: ${new Date(segment.effectiveFrom).toLocaleDateString()} — ${new Date(segment.effectiveTo).toLocaleDateString()}</div>
+                    <div class="mb-3">Контейнер: ${segment.container.name}</div>
                     <div>
-                        <div><strong>${segment.from.name}</strong> → <strong>${segment.to.name}</strong></div>
-                        <div class="text-muted">${roundedPrice} ${currency}</div>
+                        <div>
+                            <strong>${segment.startPointCountry.toUpperCase()}, ${segment.startPointName}</strong>
+                             →
+                             <strong>${segment.endPointCountry.toUpperCase()}, ${segment.endPointName}</strong>
+                         </div>
+                        <div class="text-muted">${roundedPrice} ${segment.currency}</div>
                     </div>
                 </div>
             `;
-        }).join('');
+        }).join('<div class="text-center mb-3 col-md-2">↓</div>');
 
         routeEl.innerHTML = `
-            <h5 class="mb-2">Ставка действует: ${new Date(route.dateFrom).toLocaleDateString()} — ${new Date(route.dateTo).toLocaleDateString()}</h5>
-            <div class="mb-2">Условия: ${route.beginCond} - ${route.finishCond}</div>
-            <div class="mb-3">Контейнер: ${route.containers.map(c => c.name).join(', ')}</div>
-            ${segmentsHTML}
-            <div class="mb-3">Суммарная стоимость: ${Math.round((route.price + Number.EPSILON) * 100) / 100} ${route.currency}</div>
+            <div class="segments">
+                ${segmentsHTML}
+            </div>
+            <div class="mb-3 sum-price"></div>
         `;
 
         container.appendChild(routeEl);
     });
+    updateResults(document.getElementById('currencySwitcher').value);
 }

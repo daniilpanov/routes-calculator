@@ -1,39 +1,32 @@
-import datetime
 from functools import lru_cache
 
 from fastapi import APIRouter, HTTPException
 from starlette.status import HTTP_400_BAD_REQUEST, HTTP_500_INTERNAL_SERVER_ERROR
 
-from src.services import fesco
-from src.utils.currency_converter import Converter
+from src.services import custom, fesco
 from .models.form_requests import CalculateFormRequest
-from ..rates.get import get_rates
 
 router = APIRouter(prefix='/v1/routes', tags=['routes'])
 
 
-@lru_cache(1024)
+async def _get_routes(modul, date, dep, dest, cweight, ctype):
+    containers = await modul.get_containers(date, dep, dest)
+    container_ids = modul.search_container_ids(containers, cweight, ctype)
+    if not container_ids:
+        return []
+    try:
+        return await modul.find_all_paths(date, dep, dest, container_ids)
+    except Exception as e:
+        print(e)
+        return []
+
+
 @router.post('/calculate')
 async def calculate(request: CalculateFormRequest):
-    dtc = datetime.date.today()
-    containers = await fesco.get_containers(dtc, request.departureId, request.destinationId, 'ru')
-    container_ids = fesco.search_container_ids(containers, request.cargoWeight, request.containerType)
-    if not container_ids:
-        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail='No container found')
-    try:
-        routes = await fesco.find_all_paths(dtc, request.departureId, request.destinationId, container_ids, 'ru')
-        parsed_rates = get_rates(datetime.datetime.combine(dtc, datetime.time()))
-        routes = Converter(parsed_rates).recursive_currency_convertion(routes, request.currency)
-        summed_routes = []
-        for route in routes:
-            sum_containers = 0
-            for segment in route['segments']:
-                for container in segment['containers']:
-                    sum_containers += container['price']
-            route['price'] = sum_containers
-            route['currency'] = request.currency
-            summed_routes.append(route)
-        summed_routes.sort(key=lambda item: item['price'])
-        return summed_routes
-    except Exception as e:
-        raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)) from e
+    routes = []
+    if 'FESCO' in request.destinationId:
+        routes.extend(await _get_routes(fesco, request.dispatchDate, request.departureId.pop('FESCO'), request.destinationId.pop('FESCO'), request.cargoWeight, request.containerType))
+    for service in request.destinationId:
+        print(service)
+        routes.extend(await _get_routes(custom, request.dispatchDate, request.departureId[service], request.destinationId[service], request.cargoWeight, request.containerType))
+    return routes

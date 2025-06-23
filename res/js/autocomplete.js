@@ -1,6 +1,6 @@
 function setupAutocomplete(inputId, listId, dataObj, hiddenInputId, callbackOnCompleted, callbackOnUncompleted) {
     const input = document.getElementById(inputId);
-    const hiddenInput = document.getElementById(hiddenInputId);
+    const hiddenInput = hiddenInputId ? document.getElementById(hiddenInputId) : null;
     const list = document.getElementById(listId);
 
     function autocompleteProcess() {
@@ -25,19 +25,22 @@ function setupAutocomplete(inputId, listId, dataObj, hiddenInputId, callbackOnCo
             div.classList.add('autocomplete-item');
             div.addEventListener('mousedown', () => {
                 input.value = item;
-                hiddenInput.value = data[item];
+                if (hiddenInput)
+                    hiddenInput.value = data[item];
                 input.classList.remove('is-invalid');
                 list.classList.add('d-none');
-                if (callbackOnCompleted) callbackOnCompleted();
+                if (callbackOnCompleted) callbackOnCompleted(item);
             });
             list.appendChild(div);
         });
         if (selectedVal) {
             input.value = selectedVal;
-            hiddenInput.value = data[selectedVal];
-            if (callbackOnCompleted) callbackOnCompleted();
+            if (hiddenInput)
+                hiddenInput.value = data[selectedVal];
+            if (callbackOnCompleted) callbackOnCompleted(selectedVal);
         } else {
-            hiddenInput.value = '';
+            if (hiddenInput)
+                hiddenInput.value = '';
             if (callbackOnUncompleted) callbackOnUncompleted();
         }
 
