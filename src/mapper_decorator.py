@@ -6,5 +6,7 @@ def apply_mapper(mapper):
         @wraps(func)
         async def wrapper(*args, **kwargs):
             return mapper(await func(*args, **kwargs))
+
         return wrapper
+
     return decorator

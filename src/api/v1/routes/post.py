@@ -1,12 +1,9 @@
-from functools import lru_cache
-
-from fastapi import APIRouter, HTTPException
-from starlette.status import HTTP_400_BAD_REQUEST, HTTP_500_INTERNAL_SERVER_ERROR
+from fastapi import APIRouter
 
 from src.services import custom, fesco
 from .models.form_requests import CalculateFormRequest
 
-router = APIRouter(prefix='/v1/routes', tags=['routes'])
+router = APIRouter(prefix="/v1/routes", tags=["routes"])
 
 
 async def _get_routes(modul, date, dep, dest, cweight, ctype):
@@ -21,12 +18,30 @@ async def _get_routes(modul, date, dep, dest, cweight, ctype):
         return []
 
 
-@router.post('/calculate')
+@router.post("/calculate")
 async def calculate(request: CalculateFormRequest):
     routes = []
-    if 'FESCO' in request.destinationId:
-        routes.extend(await _get_routes(fesco, request.dispatchDate, request.departureId.pop('FESCO'), request.destinationId.pop('FESCO'), request.cargoWeight, request.containerType))
+    if "FESCO" in request.destinationId:
+        routes.extend(
+            await _get_routes(
+                fesco,
+                request.dispatchDate,
+                request.departureId.pop("FESCO"),
+                request.destinationId.pop("FESCO"),
+                request.cargoWeight,
+                request.containerType,
+            )
+        )
     for service in request.destinationId:
         print(service)
-        routes.extend(await _get_routes(custom, request.dispatchDate, request.departureId[service], request.destinationId[service], request.cargoWeight, request.containerType))
+        routes.extend(
+            await _get_routes(
+                custom,
+                request.dispatchDate,
+                request.departureId[service],
+                request.destinationId[service],
+                request.cargoWeight,
+                request.containerType,
+            )
+        )
     return routes
