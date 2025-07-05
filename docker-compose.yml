@@ -17,7 +17,9 @@ services:
     networks:
       local:
     command:
-      - "src/main.py"
+      - "src.main:app"
+      - "--host"
+      - "0.0.0.0"
       - "--port"
       - "8080"
   database:
@@ -26,16 +28,14 @@ services:
       target: "database"
     environment:
       MARIADB_RANDOM_ROOT_PASSWORD: 1
-      MARIADB_USER: ${DB_USER}
-      MARIADB_PASSWORD: ${DB_PASS}
-      MARIADB_DATABASE: ${DB_NAME}
+      MARIADB_USER: "${DB_USER}"
+      MARIADB_PASSWORD: "${DB_PASS}"
+      MARIADB_DATABASE: "${DB_NAME}"
     volumes:
       - "./database-backups/:/backup:rw"
       - "./mariadb-data/:/var/lib/mysql/:rw"
     expose:
       - 3306
-    ports:
-      - "3306:3306"
     networks:
       local:
     healthcheck:
@@ -50,7 +50,7 @@ services:
         exit 1;
         fi
         '
-      interval: 5m
+      interval: 30m
       retries: 3
   dbadmin:
     build:
