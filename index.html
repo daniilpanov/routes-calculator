@@ -147,7 +147,6 @@
 </main>
 
 <script src="res/js/alerts.js"></script>
-<script src="res/js/baseUrl.js"></script>
 <script src="res/js/rates.js"></script>
 <script src="res/js/autocomplete.js"></script>
 <script src="res/js/calculating.js"></script>
@@ -214,9 +213,9 @@
 
     const icons = {};
 
-    fetch(window.baseUrl + '/res/img/route-icons/sea.svg').then(res => res.text()).then(svg => icons.sea = svg);
-    fetch(window.baseUrl + '/res/img/route-icons/rail.svg').then(res => res.text()).then(svg => icons.rail = svg);
-    fetch(window.baseUrl + '/res/img/route-icons/truck.svg').then(res => res.text()).then(svg => icons.truck = svg);
+    fetch('/res/img/route-icons/sea.svg').then(res => res.text()).then(svg => icons.sea = svg);
+    fetch('/res/img/route-icons/rail.svg').then(res => res.text()).then(svg => icons.rail = svg);
+    fetch('/res/img/route-icons/truck.svg').then(res => res.text()).then(svg => icons.truck = svg);
 
     document.getElementById('calcForm').addEventListener('submit', function (e) {
         if (!this.checkValidity()) {
