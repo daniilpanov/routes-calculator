@@ -1,0 +1,69 @@
+services:
+  calculator:
+    build:
+      dockerfile: "Dockerfile"
+      target: "calculator"
+    env_file:
+      - ".env"
+    volumes:
+      - "./src:/app/src:r"
+      - "./index.html:/app/index.html:r"
+      - "./res:/app/res:r"
+      - "./lib:/app/lib:r"
+    expose:
+      - 8080
+    ports:
+      - "${APP_PORT}:8080"
+    networks:
+      local:
+    command:
+      - "src.main:app"
+      - "--host"
+      - "0.0.0.0"
+      - "--port"
+      - "8080"
+  database:
+    build:
+      dockerfile: "Dockerfile"
+      target: "database"
+    environment:
+      MARIADB_RANDOM_ROOT_PASSWORD: 1
+      MARIADB_USER: "${DB_USER}"
+      MARIADB_PASSWORD: "${DB_PASS}"
+      MARIADB_DATABASE: "${DB_NAME}"
+    volumes:
+      - "./database-backups/:/backup:rw"
+      - "./mariadb-data/:/var/lib/mysql/:rw"
+    expose:
+      - 3306
+    ports:
+      - "3306:3306"
+    networks:
+      local:
+    healthcheck:
+      test: >
+        sh -c '
+        mariadb-dump -u$${MARIADB_USER} -p$${MARIADB_PASSWORD} $${MARIADB_DATABASE} > /backup/last_dump.sql 2>/backup/dump_error.log;
+        if [ $$? -eq 0 ]; then
+        gzip /backup/last_dump.sql -c > /backup/$$(date -I)-dump.gz;
+        rm /backup/last_dump.sql;
+        exit 0;
+        else
+        exit 1;
+        fi
+        '
+      interval: 30m
+      retries: 3
+  dbadmin:
+    build:
+      dockerfile: "Dockerfile"
+      target: "dbadmin"
+    expose:
+      - 8080
+    ports:
+      - "${ADMINER_PORT}:8080"
+    networks:
+      local:
+
+networks:
+  local:
