@@ -1,9 +1,8 @@
 import asyncio
 
+import pandas as pd
 from dotenv import load_dotenv
 from sqlalchemy import select
-
-import pandas as pd
 
 load_dotenv(".env.local") or load_dotenv("../.env.local")
 
@@ -225,10 +224,16 @@ async def write_routes(routes, session):
 def validate_route_data(df):
     # Проверка дубликатов в исходных данных
     dup_check_cols = [
-        'Service', 'POL COUNTRY', 'POL FULL NAME',
-        'POD COUNTRY', 'POD FULL NAME', 'CONTAINER TYPE',
-        'CONTAINER SIZE', 'Container weight limit',
-        'EFFECTIVE FROM', 'EFFECTIVE TO'
+        "Service",
+        "POL COUNTRY",
+        "POL FULL NAME",
+        "POD COUNTRY",
+        "POD FULL NAME",
+        "CONTAINER TYPE",
+        "CONTAINER SIZE",
+        "Container weight limit",
+        "EFFECTIVE FROM",
+        "EFFECTIVE TO",
     ]
     duplicates = df[df.duplicated(subset=dup_check_cols, keep=False)]
     if not duplicates.empty:
@@ -239,7 +244,7 @@ def validate_route_data(df):
 
 def parse_date(date_str):
     try:
-        return pd.to_datetime(date_str, format='%d-%b-%y', errors='raise')
+        return pd.to_datetime(date_str, format="%d-%b-%y", errors="raise")
     except Exception:
         print(f"Date parsing error: {date_str}")
         raise
@@ -250,19 +255,13 @@ async def main():
         "./upload-data/rail.csv",
         index_col=None,
         delimiter=";",
-        converters={
-            'EFFECTIVE FROM': parse_date,
-            'EFFECTIVE TO': parse_date
-        },
+        converters={"EFFECTIVE FROM": parse_date, "EFFECTIVE TO": parse_date},
     )
     df_sea = pd.read_csv(
         "./upload-data/sea.csv",
         index_col=None,
         delimiter=";",
-        converters={
-            'EFFECTIVE FROM': parse_date,
-            'EFFECTIVE TO': parse_date
-        },
+        converters={"EFFECTIVE FROM": parse_date, "EFFECTIVE TO": parse_date},
     )
     df = pd.concat([df_sea, df_rail])
     validate_route_data(df)
