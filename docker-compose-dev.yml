@@ -33,11 +33,14 @@ services:
       MARIADB_DATABASE: "${DB_NAME}"
     volumes:
       - "./database-backups/:/backup:rw"
-      - "./mariadb-data/:/var/lib/mysql/:rw"
+      - "./database-dev-version/:/docker-entrypoint-initdb.d:ro"
     expose:
       - 3306
+    ports:
+      - "3306:3306"
     networks:
       local:
+    entrypoint: ["docker-entrypoint.sh", "mariadbd"]
     healthcheck:
       test: >
         sh -c '

@@ -1,9 +1,9 @@
 def _map_point(point):
     return {
-        'id': point['id'],
-        'company': 'FESCO',
-        'country': point['country'],
-        'name': point['name'],
+        "id": point["id"],
+        "company": "FESCO",
+        "country": point["country"],
+        "name": point["name"],
     }
 
 

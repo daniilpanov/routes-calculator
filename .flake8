@@ -1,0 +1,22 @@
+[flake8]
+exclude =
+  .git,
+  __pycache__,
+  .venv,
+statistics = True
+max-line-length = 100
+max-complexity = 10
+ignore =
+  PIE783
+  PIE785
+  PIE786
+  PIE798
+  PIE803
+  B009
+  B010
+  B008
+  B024
+  E402
+  F401
+  T201
+  W503

@@ -2,4 +2,8 @@ __pycache__
 **/__pycache__
 venv
 .idea
-.env
+.env*
+!.env.example
+.python-version
+poetry.lock
+database-dev-versions/*.sql
