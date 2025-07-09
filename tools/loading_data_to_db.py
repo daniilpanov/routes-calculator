@@ -3,9 +3,10 @@ import asyncio
 from dotenv import load_dotenv
 from sqlalchemy import select
 
+import pandas as pd
+
 load_dotenv(".env.local") or load_dotenv("../.env.local")
 
-import pandas as pd
 
 from src.database import database
 from src.services.custom.models import (
@@ -38,19 +39,9 @@ def extract_data(df: pd.DataFrame):
     return services, points, containers
 
 
-def create_independent_models(services, points, containers):
-    service_models = {}
-    point_models = {}
+def group_containers(containers):
     container_models = {}
     container_typed_models = {}
-
-    for service in services:
-        service_models[service] = CompanyModel(name=service)
-
-    for _, point in points.iterrows():
-        point_models[(point["Country"], point["City"])] = PointModel(
-            country=point["Country"], city=point["City"]
-        )
 
     list_containers = sorted(
         containers.values.tolist(), key=lambda x: x[1] * 100 + x[2]
@@ -80,6 +71,34 @@ def create_independent_models(services, points, containers):
         container_models[(_type, _size, _weight_to)] = inst
         container_typed_models.setdefault((_type, _size), []).append(inst)
 
+    return container_models, container_typed_models
+
+
+def group_containers_from_db(containers):
+    container_models = {}
+    container_typed_models = {}
+
+    for inst in containers:
+        container_models[(inst.type.value, inst.size, inst.weight_to)] = inst
+        container_typed_models.setdefault((inst.type.value, inst.size), []).append(inst)
+
+    return container_models, container_typed_models
+
+
+def create_independent_models(services, points, containers):
+    service_models = {}
+    point_models = {}
+
+    for service in services:
+        service_models[service] = CompanyModel(name=service)
+
+    for _, point in points.iterrows():
+        point_models[(point["Country"], point["City"])] = PointModel(
+            country=point["Country"], city=point["City"]
+        )
+
+    container_models, container_typed_models = group_containers(containers)
+
     return service_models, point_models, container_models, container_typed_models
 
 
@@ -88,15 +107,11 @@ def create_routes(
 ):
     models = []
     for _, route in df.iterrows():
-        _skip = False
         for ff in filter_fields:
             f = route.get(ff)
             if f and not pd.isna(f):
                 break
         else:
-            _skip = True
-
-        if _skip:
             continue
 
         values = {
@@ -117,7 +132,7 @@ def create_routes(
             ),
         }
         values.update({v: _parse_price(route[k]) for k, v in price_fields.items()})
-        container = containers.get(
+        container_key = (
             (
                 route["CONTAINER TYPE"],
                 route["CONTAINER SIZE"],
@@ -129,9 +144,9 @@ def create_routes(
                 route["Container weight limit"],
             )
         )
+        container = containers.get(container_key)
         if isinstance(container, list):
             for cont in container:
-                print(cont)
                 models.append(model_type(**values, container=cont))
         else:
             models.append(model_type(**values, container=container))
@@ -195,28 +210,75 @@ async def write_routes(routes, session):
         route.container = await session.merge(route.container, load=True)
         route.start_point = await session.merge(route.start_point, load=True)
         route.end_point = await session.merge(route.end_point, load=True)
-    session.add_all(routes)
+
+    for route in routes:
+        try:
+            await session.merge(route)
+            await session.commit()
+        except Exception as e:
+            await session.rollback()
+            print(f"Merge error: {e}")
+            continue
     await session.flush()
+
+
+def validate_route_data(df):
+    # Проверка дубликатов в исходных данных
+    dup_check_cols = [
+        'Service', 'POL COUNTRY', 'POL FULL NAME',
+        'POD COUNTRY', 'POD FULL NAME', 'CONTAINER TYPE',
+        'CONTAINER SIZE', 'Container weight limit',
+        'EFFECTIVE FROM', 'EFFECTIVE TO'
+    ]
+    duplicates = df[df.duplicated(subset=dup_check_cols, keep=False)]
+    if not duplicates.empty:
+        print("Duplicates occurred:")
+        print(duplicates.sort_values(dup_check_cols).to_string())
+        raise ValueError("Duplicates occurred")
+
+
+def parse_date(date_str):
+    try:
+        return pd.to_datetime(date_str, format='%d-%b-%y', errors='raise')
+    except Exception:
+        print(f"Date parsing error: {date_str}")
+        raise
 
 
 async def main():
     df_rail = pd.read_csv(
-        "rail-data-updated.csv",
+        "./upload-data/rail.csv",
         index_col=None,
         delimiter=";",
-        parse_dates=["EFFECTIVE FROM", "EFFECTIVE TO"],
+        converters={
+            'EFFECTIVE FROM': parse_date,
+            'EFFECTIVE TO': parse_date
+        },
     )
     df_sea = pd.read_csv(
-        "sea-data-updated.csv",
+        "./upload-data/sea.csv",
         index_col=None,
         delimiter=";",
-        parse_dates=["EFFECTIVE FROM", "EFFECTIVE TO"],
+        converters={
+            'EFFECTIVE FROM': parse_date,
+            'EFFECTIVE TO': parse_date
+        },
     )
     df = pd.concat([df_sea, df_rail])
+    validate_route_data(df)
     services, points, containers = extract_data(df)
     services, points, containers, typed_containers = create_independent_models(
         services, points, containers
     )
+
+    # Add existing containers.
+    async with database.session() as session:
+        db_containers = (await session.execute(select(ContainerModel))).scalars().all()
+
+    db_containers, db_typed_containers = group_containers_from_db(db_containers)
+    containers = {**containers, **db_containers}
+    typed_containers = {**typed_containers, **db_typed_containers}
+
     print(", ".join([s.name for s in services.values()]))
     print(", ".join([p.country + " " + p.city for p in points.values()]))
     print(", ".join([c.name for c in containers.values()]))
@@ -238,6 +300,7 @@ async def main():
         points,
         typed_containers,
     )
+
     async with database.session() as session:
         await write_independent_data(services, points, containers, session)
         await write_routes(rail_routes, session)
