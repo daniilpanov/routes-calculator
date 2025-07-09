@@ -6,33 +6,37 @@ from sqlalchemy import select
 from src.database import database
 from src.mapper_decorator import apply_mapper
 from .mappers.points import map_points
-from .models import PointModel, RailRouteModel, SeaRouteModel
+from .models import CompanyModel, PointModel, RailRouteModel, SeaRouteModel
+
+
+def _build_stmt(date, route_class, id_field):
+    return (  # noqa: ECE001
+        select(
+            PointModel,
+            CompanyModel.name.label("company_name"),
+        )
+        .distinct()
+        .join(
+            route_class,
+            (getattr(route_class, id_field) == PointModel.id)
+            & (route_class.effective_from <= date)
+            & (route_class.effective_to >= date),
+        )
+        .join(CompanyModel)
+    )
 
 
 @apply_mapper(map_points)
-async def get_points(date: datetime.date, _=None, *, _id_field):
+async def get_points(date: datetime.date, _=None, *, id_field):
     async with database.session() as session:
-        stmt = select(PointModel).where(
-            PointModel.id.in_(
-                select(getattr(SeaRouteModel, _id_field))
-                .distinct()
-                .where(
-                    (SeaRouteModel.effective_from <= date)
-                    & (SeaRouteModel.effective_to >= date)
-                )
-            )
-            | PointModel.id.in_(
-                select(getattr(RailRouteModel, _id_field))
-                .distinct()
-                .where(
-                    (RailRouteModel.effective_from <= date)
-                    & (RailRouteModel.effective_to >= date)
-                )
-            )
-        )
+        stmt_from_rail = _build_stmt(date, RailRouteModel, id_field)
+        stmt_from_sea = _build_stmt(date, SeaRouteModel, id_field)
+
+        stmt = stmt_from_rail.union(stmt_from_sea)
         result = await session.execute(stmt)
-    return result.scalars().all()
+
+    return result.all()
 
 
-get_departure_points_by_date = partial(get_points, _id_field="start_point_id")
-get_destination_points_by_date = partial(get_points, _id_field="end_point_id")
+get_departure_points_by_date = partial(get_points, id_field="start_point_id")
+get_destination_points_by_date = partial(get_points, id_field="end_point_id")

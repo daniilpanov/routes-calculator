@@ -1,7 +1,7 @@
 def _map_point(point):
     return {
         "id": point.id,
-        "company": "HUB",  # TODO: replace with primary-join with routes
+        "company": point.company_name,
         "country": point.RU_country,
         "name": point.RU_city,
     }
