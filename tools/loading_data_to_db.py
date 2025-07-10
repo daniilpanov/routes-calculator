@@ -102,7 +102,14 @@ def create_independent_models(services, points, containers):
 
 
 def create_routes(
-    df, model_type, price_fields, filter_fields, services, points, containers
+    df,
+    model_type,
+    price_fields,
+    filter_fields,
+    services,
+    points,
+    containers_3_keys,
+    containers_2_keys,
 ):
     models = []
     for _, route in df.iterrows():
@@ -131,19 +138,21 @@ def create_routes(
             ),
         }
         values.update({v: _parse_price(route[k]) for k, v in price_fields.items()})
-        container_key = (
-            (
+
+        if pd.isna(route["Container weight limit"]):
+            container_key = (
                 route["CONTAINER TYPE"],
                 route["CONTAINER SIZE"],
             )
-            if pd.isna(route["Container weight limit"])
-            else (
+            container = containers_2_keys.get(container_key)
+        else:
+            container_key = (
                 route["CONTAINER TYPE"],
                 route["CONTAINER SIZE"],
                 route["Container weight limit"],
             )
-        )
-        container = containers.get(container_key)
+            container = containers_3_keys.get(container_key)
+
         if isinstance(container, list):
             for cont in container:
                 models.append(model_type(**values, container=cont))
@@ -158,7 +167,7 @@ def _parse_price(s):
         return None
     if isinstance(s, (int, float)):
         return float(s)
-    return float(s.replace(" ", "").replace("$", ""))
+    return float(s.replace(" ", "").replace(",", ".").replace("$", ""))
 
 
 def uid_extract(orm_obj):
@@ -222,7 +231,7 @@ async def write_routes(routes, session):
 
 
 def validate_route_data(df):
-    # Проверка дубликатов в исходных данных
+    # Check duplicates.
     dup_check_cols = [
         "Service",
         "POL COUNTRY",
@@ -289,6 +298,7 @@ async def main():
         services,
         points,
         containers,
+        typed_containers,
     )
     sea_routes = create_routes(
         df_sea,
@@ -297,6 +307,7 @@ async def main():
         ["FIFO", "FILO"],
         services,
         points,
+        containers,
         typed_containers,
     )
 
