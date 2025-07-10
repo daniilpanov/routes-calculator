@@ -29,7 +29,7 @@ class SeaRouteModel(Base):
     effective_from: Mapped[datetime.date] = mapped_column(DateTime(timezone=False))
     effective_to: Mapped[datetime.date] = mapped_column(DateTime(timezone=False))
 
-    fifo: Mapped[float] = mapped_column()
+    fifo: Mapped[float | None] = mapped_column()
     filo: Mapped[float | None] = mapped_column()
 
     start_point: Mapped[PointModel] = relationship(
