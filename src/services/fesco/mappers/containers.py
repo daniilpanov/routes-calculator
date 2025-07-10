@@ -29,7 +29,6 @@ def _map_container(container):
 
     return {
         "id": container["ContainerCode"],
-        "company": "FESCO",
         "type": ctype,
         "size": csize,
         "weight_from": cweight_from,
