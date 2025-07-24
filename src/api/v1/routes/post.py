@@ -33,6 +33,9 @@ async def calculate(request: CalculateFormRequest):
             )
         )
     for service in request.destinationId:
+        if service not in request.departureId:
+            continue
+
         print(service)
         routes.extend(
             await _get_routes(
