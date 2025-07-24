@@ -65,7 +65,7 @@ def group_containers(containers):
             size=_size,
             weight_from=_weight_from,
             weight_to=_weight_to,
-            name=f"{_size}'{_type} ≥{int(_weight_to)}t",
+            name=f"{_size}'{_type} ≤ {int(_weight_to)}t",
         )
         container_models[(_type, _size, _weight_to)] = inst
         container_typed_models.setdefault((_type, _size), []).append(inst)
