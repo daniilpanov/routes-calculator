@@ -29,14 +29,15 @@ async def get_containers(date: datetime.date, departure_id: str, destination_id:
     return data_to.get("data")
 
 
-def search_container_ids(containers: list, weight: int, size: int):
+def search_container_ids(containers: list, weight: int, container_type: int):
     needle = []
 
     for container in containers:
-        if container["weight_to"]:
-            if container["weight_from"] <= weight <= container["weight_to"]:
+        if container["size"] == container_type:
+            if container["weight_to"]:
+                if container["weight_from"] <= weight <= container["weight_to"]:
+                    needle.append(container["id"])
+            else:
                 needle.append(container["id"])
-        elif container["size"] == size:
-            needle.append(container["id"])
 
     return needle
