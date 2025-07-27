@@ -6,13 +6,17 @@ from .models.form_requests import CalculateFormRequest
 router = APIRouter(prefix="/v1/routes", tags=["routes"])
 
 
-async def _get_routes(modul, date, dep, dest, cweight, ctype):
-    containers = await modul.get_containers(date, dep, dest)
-    container_ids = modul.search_container_ids(containers, cweight, ctype)
+async def _get_routes(
+    modul, date, departure, destination, container_weight, container_type
+):
+    containers = await modul.get_containers(date, departure, destination)
+    container_ids = modul.search_container_ids(
+        containers, container_weight, container_type
+    )
     if not container_ids:
         return []
     try:
-        return await modul.find_all_paths(date, dep, dest, container_ids)
+        return await modul.find_all_paths(date, departure, destination, container_ids)
     except Exception as e:
         print(e)
         return []
