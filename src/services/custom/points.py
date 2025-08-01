@@ -6,35 +6,36 @@ from sqlalchemy import select
 from src.database import database
 from src.mapper_decorator import apply_mapper
 from .mappers.points import map_points
-from .models import CompanyModel, PointModel, RailRouteModel, SeaRouteModel
+from .models import CompanyModel, PointModel, RouteModel
 
 
-def _build_stmt(date, route_class, id_field):
+def _build_stmt(date: datetime.date, id_field: str):
+    route_col = getattr(RouteModel, id_field)
+
+    cond_point_match = route_col == PointModel.id
+    cond_valid_from = RouteModel.effective_from <= date
+    cond_valid_to = RouteModel.effective_to >= date
+
+    # Упростим выражение по шагам
+    join_cond_1 = cond_point_match & cond_valid_from
+    join_condition = join_cond_1 & cond_valid_to
+
     return (  # noqa: ECE001
         select(
             PointModel,
             CompanyModel.name.label("company_name"),
         )
         .distinct()
-        .join(
-            route_class,
-            (getattr(route_class, id_field) == PointModel.id)
-            & (route_class.effective_from <= date)
-            & (route_class.effective_to >= date),
-        )
-        .join(CompanyModel)
+        .join(RouteModel, join_condition)
+        .join(CompanyModel, CompanyModel.id == RouteModel.company_id)
     )
 
 
 @apply_mapper(map_points)
-async def get_points(date: datetime.date, _=None, *, id_field):
+async def get_points(date: datetime.date, _=None, *, id_field: str):
     async with database.session() as session:
-        stmt_from_rail = _build_stmt(date, RailRouteModel, id_field)
-        stmt_from_sea = _build_stmt(date, SeaRouteModel, id_field)
-
-        stmt = stmt_from_rail.union(stmt_from_sea)
+        stmt = _build_stmt(date, id_field)
         result = await session.execute(stmt)
-
     return result.all()
 
 
