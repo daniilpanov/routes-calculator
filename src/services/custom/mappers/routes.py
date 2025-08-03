@@ -4,6 +4,15 @@ from .containers import _map_container
 def _map_segment(
     route, price, currency, _type, services, begin_cond=None, finish_cond=None
 ):
+    services_result = {}
+    for k, c in services.items():
+        matched = next(
+            (p for p in getattr(route, "prices", []) if p.price_type.name == k),
+            None,
+        )
+        if matched:
+            services_result[k] = {"price": matched.value, "currency": c}
+
     item = {
         "company": route.company.name,
         "type": _type,
@@ -16,17 +25,10 @@ def _map_segment(
         "container": _map_container(route.container),
         "price": getattr(route, price),
         "currency": currency,
-        "services": {
-            k: {"price": getattr(route, k), "currency": c} for k, c in services.items()
-        },
+        "services": services_result,
     }
     if begin_cond is not None:
-        item.update(
-            {
-                "beginCond": begin_cond,
-                "finishCond": finish_cond,
-            }
-        )
+        item.update({"beginCond": begin_cond, "finishCond": finish_cond})
     return item
 
 
