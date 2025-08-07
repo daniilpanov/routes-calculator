@@ -4,6 +4,8 @@ import pandas as pd
 from dotenv import load_dotenv
 from sqlalchemy import select
 
+from src.services.custom.models.point import PointAliasesModel
+
 load_dotenv(".env.local") or load_dotenv("../.env.local")
 
 
@@ -83,8 +85,10 @@ def group_containers_from_db(containers):
 
     return container_models, container_typed_models
 
-
+# WARNING: not checked
 def create_independent_models(services, points, containers):
+    """ WARNING: not checked """
+
     service_models = {}
     point_models = {}
 
@@ -92,9 +96,20 @@ def create_independent_models(services, points, containers):
         service_models[service] = CompanyModel(name=service)
 
     for _, point in points.iterrows():
-        point_models[(point["Country"], point["City"])] = PointModel(
-            country=point["Country"], city=point["City"]
-        )
+        key = (point["Country"], point["City"])
+
+        if key not in point_models:
+            new_point = PointModel()
+
+            city_alias = PointAliasesModel(
+                name=point["City"],
+                lang="EN",
+                is_main=True,
+                point=new_point
+            )
+
+            new_point.aliases = [city_alias]
+            point_models[key] = new_point
 
     container_models, container_typed_models = group_containers(containers)
 
