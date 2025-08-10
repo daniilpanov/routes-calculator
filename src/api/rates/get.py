@@ -5,7 +5,7 @@ from fastapi import APIRouter
 
 from pycbrf.toolbox import ExchangeRates
 
-router = APIRouter(prefix="/v1/rates", tags=["rates"])
+router = APIRouter(prefix="/rates", tags=["rates"])
 
 
 @lru_cache(1024)

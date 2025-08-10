@@ -2,12 +2,12 @@ import pkgutil
 from importlib import import_module
 
 
-def api_discover(v: int = 1) -> list:
+def api_discover() -> list:
     routers = []
-    pkg = import_module("src.api.v" + str(v))
+    pkg = import_module("src.api")
 
     for api_pkg in pkgutil.iter_modules(pkg.__path__):
-        module_name = f"src.api.v{v}.{api_pkg.name}"
+        module_name = f"src.api.{api_pkg.name}"
         try:
             module = import_module(module_name)
         except (ModuleNotFoundError, AttributeError) as ex:
