@@ -85,10 +85,8 @@ def group_containers_from_db(containers):
 
     return container_models, container_typed_models
 
-# WARNING: not checked
-def create_independent_models(services, points, containers):
-    """ WARNING: not checked """
 
+def create_independent_models(services, points, containers):  # WARNING: not checked
     service_models = {}
     point_models = {}
 
