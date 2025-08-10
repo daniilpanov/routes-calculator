@@ -3,7 +3,7 @@ from fastapi import APIRouter
 from src.services import custom, fesco
 from .models.form_requests import CalculateFormRequest
 
-router = APIRouter(prefix="/v1/routes", tags=["routes"])
+router = APIRouter(prefix="/routes", tags=["routes"])
 
 
 async def _get_routes(
