@@ -2,8 +2,8 @@ import datetime
 import os
 
 import aiohttp
+from backend.mapper_decorator import apply_mapper
 
-from src.mapper_decorator import apply_mapper
 from .mappers.points import map_points
 
 

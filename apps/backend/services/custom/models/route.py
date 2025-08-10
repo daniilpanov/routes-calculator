@@ -1,9 +1,9 @@
 import datetime
 
+from backend.database import Base
 from sqlalchemy import DateTime, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.database import Base
 from . import CompanyModel, ContainerModel
 from .point import PointModel
 

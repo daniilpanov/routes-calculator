@@ -1,8 +1,6 @@
-# HUB SERVICE
+from backend.database import Base
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
-
-from src.database import Base
 
 
 class CompanyModel(Base):

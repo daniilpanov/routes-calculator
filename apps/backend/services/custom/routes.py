@@ -1,11 +1,11 @@
 import asyncio
 import datetime
 
+from backend.database import database
+from backend.mapper_decorator import apply_mapper
 from sqlalchemy import select
 from sqlalchemy.orm import aliased, joinedload
 
-from src.database import database
-from src.mapper_decorator import apply_mapper
 from .mappers.routes import map_routes
 from .models import RailRouteModel, SeaRouteModel
 

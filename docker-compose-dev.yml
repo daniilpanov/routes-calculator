@@ -6,10 +6,7 @@ services:
     env_file:
       - ".env"
     volumes:
-      - "./src:/app/src:r"
-      - "./index.html:/app/index.html:r"
-      - "./res:/app/res:r"
-      - "./lib:/app/lib:r"
+      - "./apps/backend/:/app/backend/:r"
     expose:
       - 8080
     ports:
@@ -17,11 +14,12 @@ services:
     networks:
       local:
     command:
-      - "src.main:app"
+      - "backend.main:app"
       - "--host"
       - "0.0.0.0"
       - "--port"
       - "8080"
+      - "--reload"
   database:
     build:
       dockerfile: "Dockerfile"

@@ -4,8 +4,8 @@ from functools import lru_cache
 
 from fastapi import APIRouter
 
-from src.services import custom, fesco
-from src.utils.string_formatters import union_country_and_name
+from backend.services import custom, fesco
+from backend.utils.string_formatters import union_country_and_name
 
 router = APIRouter(prefix="/points", tags=["points"])
 

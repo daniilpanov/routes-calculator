@@ -1,7 +1,6 @@
+from backend.database import Base
 from sqlalchemy import String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
-
-from src.database import Base
 
 
 class PointModel(Base):

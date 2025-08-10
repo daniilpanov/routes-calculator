@@ -4,10 +4,10 @@ from importlib import import_module
 
 def api_discover() -> list:
     routers = []
-    pkg = import_module("src.api")
+    pkg = import_module("backend.api")
 
     for api_pkg in pkgutil.iter_modules(pkg.__path__):
-        module_name = f"src.api.{api_pkg.name}"
+        module_name = f"backend.api.{api_pkg.name}"
         try:
             module = import_module(module_name)
         except (ModuleNotFoundError, AttributeError) as ex:
