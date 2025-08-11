@@ -32,8 +32,8 @@ services:
       MARIADB_PASSWORD: "${DB_PASS}"
       MARIADB_DATABASE: "${DB_NAME}"
     volumes:
-      - "./database-backups/:/backup:rw"
-      - "./mariadb-data/:/var/lib/mysql/:rw"
+      - "./config/database/backups/:/backup:rw"
+      - "./config/database/mariadb-data/:/var/lib/mysql/:rw"
     expose:
       - 3306
     networks:
