@@ -14,7 +14,7 @@ const departures = { data: {} };
 async function updateDepartures() {
     if (!dispatchDateInput.validity.valid) return;
     const date = dispatchDateInput.value;
-    const resp = await fetch(`/points/departures?date=${date}`);
+    const resp = await fetch(`/api/points/departures?date=${date}`);
     if (resp.ok) {
         const data = await resp.json();
         departures.data = {};
@@ -34,7 +34,7 @@ setupAutocomplete('departure', 'departureList', departures, 'departureId', async
     destinationInput.disabled = false;
     const date = dispatchDateInput.value;
     const departureId = departureHiddenInput.value;
-    const resp = await fetch(`/points/destinations?date=${date}&departure_point_id=${departureId}`);
+    const resp = await fetch(`/api/points/destinations?date=${date}&departure_point_id=${departureId}`);
     if (resp.ok) {
         const data = await resp.json();
         destinations.data = {};
@@ -56,7 +56,7 @@ async function calculateAndRender(icons) {
         containerType: containerTypeInput.value,
     };
 
-    const response = await fetch('/routes/calculate', {
+    const response = await fetch('/api/routes/calculate', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
