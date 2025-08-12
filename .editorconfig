@@ -8,5 +8,8 @@ indent_style = space
 indent_size = 2
 charset = utf-8
 
+[*.md]
+indent_size = 4
+
 [*.py]
 indent_size = 4
