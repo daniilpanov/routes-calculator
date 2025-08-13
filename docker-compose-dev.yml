@@ -6,22 +6,18 @@ services:
     env_file:
       - ".env"
     volumes:
-      - "./src:/app/src:r"
-      - "./index.html:/app/index.html:r"
-      - "./res:/app/res:r"
-      - "./lib:/app/lib:r"
+      - "./apps/backend/:/app/backend/:r"
     expose:
       - 8080
-    ports:
-      - "${APP_PORT}:8080"
     networks:
       local:
     command:
-      - "src.main:app"
+      - "backend.main:app"
       - "--host"
       - "0.0.0.0"
       - "--port"
       - "8080"
+      - "--reload"
   database:
     build:
       dockerfile: "Dockerfile"
@@ -32,8 +28,8 @@ services:
       MARIADB_PASSWORD: "${DB_PASS}"
       MARIADB_DATABASE: "${DB_NAME}"
     volumes:
-      - "./database-backups/:/backup:rw"
-      - "./database-dev-version/:/docker-entrypoint-initdb.d:ro"
+      - "./config/database/backups/:/backup:rw"
+      - "./config/database/dev-version/:/docker-entrypoint-initdb.d:ro"
     expose:
       - 3306
     ports:
@@ -65,6 +61,17 @@ services:
       - "${ADMINER_PORT}:8080"
     networks:
       local:
+  reverseproxy:
+    build:
+      dockerfile: "Dockerfile"
+      target: "reverseproxy"
+    volumes:
+      - "./config/nginx/conf/:/etc/nginx/:ro"
+      - "./apps/frontend/:/www/frontend/:ro"
+    networks:
+      local:
+    ports:
+      - "${APP_PORT}:80"
 
 networks:
   local:
