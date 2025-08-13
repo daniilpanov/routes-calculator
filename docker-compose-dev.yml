@@ -18,6 +18,25 @@ services:
       - "--port"
       - "8080"
       - "--reload"
+  auth:
+    build:
+      dockerfile: "Dockerfile"
+      target: "calculator"
+    env_file:
+      - ".env"
+    volumes:
+       - "./apps/auth/:/app/auth/:r"
+    expose:
+      - 8081
+    networks:
+      local:
+    command:
+      - "auth.main:app"
+      - "--host"
+      - "0.0.0.0"
+      - "--port"
+      - "8081"
+      - "--reload"
   database:
     build:
       dockerfile: "Dockerfile"

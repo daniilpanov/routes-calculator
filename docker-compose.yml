@@ -17,6 +17,24 @@ services:
       - "0.0.0.0"
       - "--port"
       - "8080"
+  auth:
+    build:
+      dockerfile: "Dockerfile"
+      target: "calculator"
+    env_file:
+      - ".env"
+    volumes:
+      - "./apps/aurh/:/app/auth/:r"
+    expose:
+      - 8081
+    networks:
+      local:
+    command:
+      - "auth.main:app"
+      - "--host"
+      - "0.0.0.0"
+      - "--port"
+      - "8081"
   database:
     build:
       dockerfile: "Dockerfile"
