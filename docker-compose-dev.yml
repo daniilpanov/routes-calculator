@@ -32,8 +32,6 @@ services:
       - "./config/database/dev-version/:/docker-entrypoint-initdb.d:ro"
     expose:
       - 3306
-    ports:
-      - "3306:3306"
     networks:
       local:
     entrypoint: ["docker-entrypoint.sh", "mariadbd"]
