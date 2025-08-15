@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 interface FormInputProps {
     type: string;
@@ -10,16 +10,16 @@ interface FormInputProps {
     className?: string;
 }
 
-export default function FormInput({type, name, value, placeholder, onChange, required = false, className}: FormInputProps) {
+export default function FormInput({ type, name, value, placeholder, onChange, required = false, className }: FormInputProps) {
     return (
         <input
-            type={type}
-            name={name}
-            value={value}
-            placeholder={placeholder}
-            onChange={onChange}
-            required={required}
-            className={className}
+            type={ type }
+            name={ name }
+            value={ value }
+            placeholder={ placeholder }
+            onChange={ onChange }
+            required={ required }
+            className={ className }
         />
     );
 }

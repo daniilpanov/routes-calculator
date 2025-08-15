@@ -10,5 +10,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+
     - uses: actions/setup-python@v3
+
     - uses: pre-commit/action@v3.0.1
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+
+    - name: Install dependencies
+      run: |
+        cd apps/front-admin
+        npm install
+
+    - name: Run ESLint
+      run: |
+        cd apps/front-admin
+        npm run lint

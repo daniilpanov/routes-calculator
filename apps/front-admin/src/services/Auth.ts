@@ -1,5 +1,5 @@
-import axios from 'axios';
-import { BASE_API_URL, API_ENDPOINTS } from './ApiConfig';
+import axios from "axios";
+import { BASE_API_URL, API_ENDPOINTS } from "./ApiConfig";
 
 interface LoginData {
     login: string;
@@ -19,13 +19,13 @@ export const authService = {
                 credentials,
                 {
                     headers: {
-                        'Content-Type': 'application/json',
+                        "Content-Type": "application/json",
                     },
-                }
+                },
             );
             return response.data;
         } catch (error) {
-            throw new Error('Login failed');
+            throw new Error("Login failed");
         }
     },
 };

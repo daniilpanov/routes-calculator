@@ -1,9 +1,9 @@
 export const ROUTES = {
-    LOGIN: '/login',
-    HOME: '/',
-    DASHBOARD: '/dashboard',
-    ROUTES_MANAGEMENT: '/routes_management',
-    POINTS_MANAGEMENT: '/points_management',
-    DATA_IMPORT: '/data_import',
-    MAIN_SITE: 'https://ru.pinterest.com/', //todo Поменять ссылку на главный сайт
+    ROOT: process.env.PUBLIC_URL || "",
+    LOGIN: `${process.env.PUBLIC_URL || ""}/login`,
+    DASHBOARD: `${process.env.PUBLIC_URL || ""}/dashboard`,
+    ROUTES_MANAGEMENT: `${process.env.PUBLIC_URL || ""}/routes-management`,
+    POINTS_MANAGEMENT: `${process.env.PUBLIC_URL || ""}/points-management`,
+    DATA_IMPORT: `${process.env.PUBLIC_URL || ""}/data-import`,
+    MAIN_SITE: process.env.REACT_ROUTING_MAIN_SITE || "/",
 };

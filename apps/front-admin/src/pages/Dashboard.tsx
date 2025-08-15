@@ -1,4 +1,4 @@
-import "resources/images/logo.png"
+import "resources/images/logo.png";
 export default function Dashboard() {
     return (
         <div className="in_development">

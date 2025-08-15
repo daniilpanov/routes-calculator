@@ -24,7 +24,7 @@ services:
     env_file:
       - ".env"
     volumes:
-      - "./apps/aurh/:/app/auth/:r"
+      - "./apps/auth/:/app/auth/:r"
     expose:
       - 8081
     networks:
@@ -35,6 +35,27 @@ services:
       - "0.0.0.0"
       - "--port"
       - "8081"
+  adminfrontinstaller:
+    build:
+      dockerfile: "Dockerfile"
+      target: "reactapp"
+    volumes:
+      - "./apps/front-admin/:/app:rw"
+    networks:
+      local:
+    command: ["i"]
+  adminfrontbuilder:
+    depends_on:
+      adminfrontinstaller:
+        condition: service_completed_successfully
+    build:
+      dockerfile: "Dockerfile"
+      target: "reactapp"
+    volumes:
+      - "./apps/front-admin/:/app:rw"
+    networks:
+      local:
+    command: ["run", "build"]
   database:
     build:
       dockerfile: "Dockerfile"
@@ -76,12 +97,22 @@ services:
     networks:
       local:
   reverseproxy:
+    depends_on:
+      calculator:
+        condition: service_started
+      auth:
+        condition: service_started
+      adminfrontbuilder:
+        condition: service_completed_successfully
     build:
       dockerfile: "Dockerfile"
       target: "reverseproxy"
+    restart: unless-stopped
     volumes:
-      - "./config/nginx/conf/:/etc/nginx/:ro"
+      - "./config/nginx/conf/nginx-prod.conf.template:/etc/nginx/templates/default.conf.template:ro"
+      - "./config/nginx/conf/mime.types:/etc/nginx/conf.d/mime.types:ro"
       - "./apps/frontend/:/www/frontend/:ro"
+      - "./apps/front-admin/build/:/www/admin/:ro"
     networks:
       local:
     ports:

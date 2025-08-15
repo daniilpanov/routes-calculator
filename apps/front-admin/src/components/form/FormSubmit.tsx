@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 interface FormSubmitProps {
     children: React.ReactNode;
@@ -7,9 +7,9 @@ interface FormSubmitProps {
     disabled?: boolean;
 }
 
-export default function FormSubmit({children, type = "submit", className, disabled}: FormSubmitProps) {
+export default function FormSubmit({ children, type = "submit", className, disabled }: FormSubmitProps) {
     return (
-        <button type={type} className={className} disabled={disabled}>
+        <button type={ type } className={ className } disabled={ disabled }>
             {children}
         </button>
     );

@@ -2,8 +2,8 @@ import React, { useState } from "react";
 import FormInput from "../components/form/FormInput";
 import FormSubmit from "../components/form/FormSubmit";
 import "../resources/scss/login_style.scss";
-import { authService } from '../services/Auth';
-import { useNavigate } from 'react-router-dom';
+import { authService } from "../services/Auth";
+import { useNavigate } from "react-router-dom";
 
 interface LoginFormData {
     login: string;
@@ -13,12 +13,12 @@ interface LoginFormData {
 
 
 export function LoginForm() {
-    const [dataForm, setDataForm] = useState<LoginFormData>({
-        login: '',
-        password: '',
+    const [ dataForm, setDataForm ] = useState<LoginFormData>({
+        login: "",
+        password: "",
     });
-    const [error, setError] = useState<String | null>(null);
-    const [loading, setLoading] = useState(false);
+    const [ error, setError ] = useState<String | null>(null);
+    const [ loading, setLoading ] = useState(false);
 
     const navigate = useNavigate();
 
@@ -26,7 +26,7 @@ export function LoginForm() {
         const { name, value } = e.target;
         setDataForm(prev => ({
             ...prev,
-            [name]: value
+            [name]: value,
         }));
     };
 
@@ -38,10 +38,10 @@ export function LoginForm() {
             const response = await authService.login(dataForm);
             //localStorage.setItem('user', JSON.stringify(response.username));
 
-            navigate('/dashboard');
+            navigate("/dashboard");
         } catch (err) {
             setError("Неверное имя пользователя или пароль");
-            console.error('Login error:', err);
+            console.error("Login error:", err);
         } finally {
             setLoading(false);
         }
@@ -50,27 +50,27 @@ export function LoginForm() {
     return (
         <div className="login_page_container">
             <div className="form_div">
-                <form onSubmit={handleSubmit} className="forma_login">
+                <form onSubmit={ handleSubmit } className="forma_login">
                     <p className="form_p">Авторизация</p>
                     <FormInput
                         type="text"
                         name="login"
-                        value={dataForm.login}
+                        value={ dataForm.login }
                         placeholder="Username"
-                        onChange={handleChangeField}
+                        onChange={ handleChangeField }
                         className="form_input"
                         required
                     />
                     <FormInput
                         type="password"
                         name="password"
-                        value={dataForm.password}
+                        value={ dataForm.password }
                         placeholder="Password"
-                        onChange={handleChangeField}
+                        onChange={ handleChangeField }
                         className="form_input"
                         required
                     />
-                    <FormSubmit className="form_submit" disabled={loading}>Войти</FormSubmit>
+                    <FormSubmit className="form_submit" disabled={ loading }>Войти</FormSubmit>
                 </form>
             </div>
         </div>
