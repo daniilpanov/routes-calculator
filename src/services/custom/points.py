@@ -8,12 +8,13 @@ from src.database import database
 from src.mapper_decorator import apply_mapper
 from .mappers.points import map_points
 from .models import CompanyModel, PointModel, RailRouteModel, SeaRouteModel
-from .models.point import LangType, PointAliasesModel
+from .models.point import LangType, PointAliasModel
 
 
 def _build_stmt(date, route_class, id_field):
-    RuAlias = aliased(PointAliasesModel)
-    EnAlias = aliased(PointAliasesModel)
+    RuAlias = aliased(PointAliasModel)
+    EnAlias = aliased(PointAliasModel)
+
     return (  # noqa: ECE001
         select(
             PointModel,

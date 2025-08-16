@@ -14,8 +14,8 @@ class PointModel(Base):
     RU_country: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
     # Connect with aliases
-    aliases: Mapped[list["PointAliasesModel"]] = relationship(
-        "PointAliasesModel",
+    aliases: Mapped[list["PointAliasModel"]] = relationship(
+        "PointAliasModel",
         back_populates="point",
         cascade="all, delete-orphan",
         lazy="selectin",
@@ -27,7 +27,7 @@ class LangType(enum.Enum):
     EN = "EN"
 
 
-class PointAliasesModel(Base):
+class PointAliasModel(Base):
     __tablename__ = "aliases"
 
     id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003

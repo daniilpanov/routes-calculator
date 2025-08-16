@@ -4,7 +4,7 @@ import pandas as pd
 from dotenv import load_dotenv
 from sqlalchemy import select
 
-from src.services.custom.models.point import PointAliasesModel
+from src.services.custom.models.point import PointAliasModel
 
 load_dotenv(".env.local") or load_dotenv("../.env.local")
 
@@ -99,7 +99,7 @@ def create_independent_models(services, points, containers):  # WARNING: not che
         if key not in point_models:
             new_point = PointModel()
 
-            city_alias = PointAliasesModel(
+            city_alias = PointAliasModel(
                 name=point["City"],
                 lang="EN",
                 is_main=True,
