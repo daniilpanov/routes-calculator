@@ -7,6 +7,7 @@ import EmptyLayout from "@/layouts/EmptyLayout";
 import RequireAuth from "@/providers/RequireAuth";
 import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
+import RoutesManagement from "@/pages/RoutesManagement";
 
 
 export const routesConfig = [
@@ -21,6 +22,7 @@ export const routesConfig = [
         children: [
             { path: ROUTES.ROOT, element: <Dashboard /> },
             { path: ROUTES.DASHBOARD, element: <Dashboard /> },
+            { path: ROUTES.ROUTES_MANAGEMENT, element: <RoutesManagement /> },
         ],
     },
 ];
