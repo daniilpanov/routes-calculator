@@ -93,7 +93,8 @@ services:
       - ".env"
     restart: unless-stopped
     volumes:
-      - "./config/nginx/conf/:/etc/nginx/:ro"
+      - "./config/nginx/conf/nginx-dev.conf.template:/etc/nginx/templates/default.conf.template:ro"
+      - "./config/nginx/conf/mime.types:/etc/nginx/conf.d/mime.types:ro"
       - "./apps/frontend/:/www/frontend/:ro"
     networks:
       local:
