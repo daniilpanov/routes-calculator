@@ -1,0 +1,35 @@
+.section_div {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-around;
+  font-family: $base_front_family;
+  border: #0a53be solid 1px;
+  width: auto;
+}
+.modal_div {
+  margin-top: 20px;
+}
+.name_div {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  padding: 10px;
+  border: rgba(225, 0, 0, 0.83) solid 1px;
+  width: auto;
+  height: auto;
+}
+.switch_div{
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+.date_div{
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+}
