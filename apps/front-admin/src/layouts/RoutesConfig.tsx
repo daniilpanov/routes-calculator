@@ -18,7 +18,6 @@ export const routesConfig = [
             { path: ROUTES.DATA_IMPORT, element: <Data_import /> },
             { path: ROUTES.MAIN_SITE },
             { path: ROUTES.ROOT, element: <Dashboard /> },
-            { path: "*", element: <Navigate to={ ROUTES.DASHBOARD } replace /> },  // TODO: change to the 404 error page.
         ],
     },
 ];
