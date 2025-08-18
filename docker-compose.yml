@@ -35,6 +35,29 @@ services:
       - "0.0.0.0"
       - "--port"
       - "8081"
+  adminfrontinstaller:
+    build:
+      dockerfile: "Dockerfile"
+      target: "reactapp"
+    volumes:
+      - "./apps/front-admin/:/app:rw"
+    networks:
+      local:
+    command: ["ci"]
+  adminfrontbuilder:
+    depends_on:
+      adminfrontinstaller:
+        condition: service_completed_successfully
+    build:
+      dockerfile: "Dockerfile"
+      target: "reactapp"
+    environment:
+      - VITE_PUBLIC_URL=/admin
+    volumes:
+      - "./apps/front-admin/:/app:rw"
+    networks:
+      local:
+    command: ["run", "build"]
   database:
     build:
       dockerfile: "Dockerfile"
@@ -91,6 +114,7 @@ services:
       - "./config/nginx/conf/nginx-prod.conf.template:/etc/nginx/templates/default.conf.template:ro"
       - "./config/nginx/conf/mime.types:/etc/nginx/conf.d/mime.types:ro"
       - "./apps/frontend/:/www/frontend/:ro"
+      - "./apps/front-admin/dist/:/www/admin/:ro"
     networks:
       local:
     ports:

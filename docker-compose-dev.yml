@@ -25,7 +25,7 @@ services:
     env_file:
       - ".env"
     volumes:
-       - "./apps/auth/:/app/auth/:r"
+      - "./apps/auth/:/app/auth/:r"
     expose:
       - 8081
     networks:
@@ -37,6 +37,36 @@ services:
       - "--port"
       - "8081"
       - "--reload"
+  adminfrontinstaller:
+    build:
+      dockerfile: "Dockerfile"
+      target: "reactapp"
+    volumes:
+      - "./apps/front-admin/:/app:rw"
+    networks:
+      local:
+    command: ["ci"]
+  adminfront:
+    depends_on:
+      adminfrontinstaller:
+        condition: service_completed_successfully
+    build:
+      dockerfile: "Dockerfile"
+      target: "reactapp"
+    environment:
+      - DANGEROUSLY_DISABLE_HOST_CHECK=true
+      - PORT=${ADMIN_FRONT_PORT}
+      - VITE_PUBLIC_URL=/admin
+      - REACT_ROUTING_MAIN_SITE=/
+    volumes:
+      - "./apps/front-admin/:/app:r"
+    expose:
+      - ${ADMIN_FRONT_PORT}
+    ports:
+      - "${ADMIN_FRONT_PORT}:${ADMIN_FRONT_PORT}"
+    networks:
+      local:
+    command: ["start"]
   database:
     build:
       dockerfile: "Dockerfile"
