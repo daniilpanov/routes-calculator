@@ -7,8 +7,13 @@ WORKDIR "/app"
 ENTRYPOINT ["python3", "-m", "uvicorn"]
 
 
-FROM mariadb:latest AS database
+FROM node:alpine AS reactapp
 
+WORKDIR "/app"
+ENTRYPOINT ["npm"]
+
+
+FROM mariadb:latest AS database
 
 FROM adminer:latest AS dbadmin
 

@@ -37,6 +37,38 @@ services:
       - "--port"
       - "8081"
       - "--reload"
+  adminfrontinstaller:
+    build:
+      dockerfile: "Dockerfile"
+      target: "reactapp"
+    environment:
+      - PUBLIC_URL=/admin
+    volumes:
+      - "./apps/front-admin/:/app:rw"
+    networks:
+      local:
+    command: ["i"]
+  adminfront:
+    depends_on:
+      adminfrontinstaller:
+        condition: service_completed_successfully
+    build:
+      dockerfile: "Dockerfile"
+      target: "reactapp"
+    environment:
+      - DANGEROUSLY_DISABLE_HOST_CHECK=true
+      - PORT=${ADMIN_FRONT_PORT}
+      - PUBLIC_URL=/admin
+      - REACT_ROUTING_MAIN_SITE=/
+    volumes:
+      - "./apps/front-admin/:/app:r"
+    expose:
+      - ${ADMIN_FRONT_PORT}
+    ports:
+      - "${ADMIN_FRONT_PORT}:${ADMIN_FRONT_PORT}"
+    networks:
+      local:
+    command: ["start"]
   database:
     build:
       dockerfile: "Dockerfile"
@@ -79,11 +111,22 @@ services:
     networks:
       local:
   reverseproxy:
+    depends_on:
+      calculator:
+        condition: service_started
+      auth:
+        condition: service_started
+      adminfront:
+        condition: service_started
     build:
       dockerfile: "Dockerfile"
       target: "reverseproxy"
+    env_file:
+      - ".env"
+    restart: unless-stopped
     volumes:
-      - "./config/nginx/conf/:/etc/nginx/:ro"
+      - "./config/nginx/conf/nginx-dev.conf.template:/etc/nginx/templates/default.conf.template:ro"
+      - "./config/nginx/conf/mime.types:/etc/nginx/conf.d/mime.types:ro"
       - "./apps/frontend/:/www/frontend/:ro"
     networks:
       local:
