@@ -8,7 +8,31 @@ on:
 jobs:
   pre-commit:
     runs-on: ubuntu-latest
+    name: "Check Python part"
     steps:
     - uses: actions/checkout@v3
+
     - uses: actions/setup-python@v3
+      with:
+        python-version: '3.12'
+
     - uses: pre-commit/action@v3.0.1
+
+  eslint:
+    runs-on: ubuntu-latest
+    name: "Check Javascript part"
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+
+    - name: Install dependencies
+      run: |
+        cd apps/front-admin
+        npm install
+
+    - name: Run ESLint
+      run: |
+        cd apps/front-admin
+        npm run lint
