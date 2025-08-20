@@ -2,6 +2,7 @@ import datetime
 from functools import partial
 
 from sqlalchemy import select
+from sqlalchemy.orm import aliased
 
 from src.database import database
 from src.mapper_decorator import apply_mapper
@@ -10,10 +11,12 @@ from .models import CompanyModel, PointModel, RailRouteModel, SeaRouteModel
 
 
 def _build_stmt(date, route_class, id_field):
+    pointCountry = aliased(PointModel)
     return (  # noqa: ECE001
         select(
             PointModel,
             CompanyModel.name.label("company_name"),
+            pointCountry.name.label("country"),
         )
         .distinct()
         .join(
@@ -23,6 +26,11 @@ def _build_stmt(date, route_class, id_field):
             & (route_class.effective_to >= date),
         )
         .join(CompanyModel)
+        .join(
+            pointCountry,
+            (PointModel.parent_id == pointCountry.id)
+            & (pointCountry.parent_id.is_(None)),
+        )
     )
 
 
