@@ -1,17 +1,21 @@
-from sqlalchemy import String, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column
+from typing import Optional
+
+from sqlalchemy import ForeignKey, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.database import Base
 
 
 class PointModel(Base):
-    uid = ("city", "country")
-
     __tablename__ = "points"
-    __table_args__ = (UniqueConstraint(*uid),)
 
     id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
-    city: Mapped[str] = mapped_column(String(100))
-    country: Mapped[str] = mapped_column(String(50))
-    RU_city: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    RU_country: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    name: Mapped[str] = mapped_column(String(25))
+    parent_id: Mapped[int | None] = mapped_column(
+        ForeignKey("points.id"), nullable=True
+    )
+
+    parent: Mapped[Optional["PointModel"]] = relationship(
+        "PointModel",
+        remote_side=[id],
+    )
