@@ -4,15 +4,23 @@ from .containers import _map_container
 def _map_segment(
     route, price, currency, _type, services, begin_cond=None, finish_cond=None
 ):
+    def get_country(point):
+        while point.parent_id:
+            point = point.parent
+        return point
+
+    start_point_country = get_country(route.start_point)
+    end_point_country = get_country(route.end_point)
+
     item = {
         "company": route.company.name,
         "type": _type,
         "effectiveFrom": route.effective_from,
         "effectiveTo": route.effective_to,
-        "startPointCountry": route.start_point.RU_country,
-        "startPointName": route.start_point.RU_city,
-        "endPointCountry": route.end_point.RU_country,
-        "endPointName": route.end_point.RU_city,
+        "startPointCountry": start_point_country.name,
+        "startPointName": route.start_point.name,
+        "endPointCountry": end_point_country.name,
+        "endPointName": route.end_point.name,
         "container": _map_container(route.container),
         "price": getattr(route, price),
         "currency": currency,

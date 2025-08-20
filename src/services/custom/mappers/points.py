@@ -2,8 +2,8 @@ def _map_point(point):
     return {
         "id": point.id,
         "company": point.company_name,
-        "country": point.RU_country,
-        "name": point.RU_city,
+        "country": point.country,
+        "name": point.name,
     }
 
 
