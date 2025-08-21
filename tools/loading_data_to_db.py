@@ -1,16 +1,15 @@
 import asyncio
 
 import pandas as pd
+from backend.services.custom.models.point import PointAliasModel
 from dotenv import load_dotenv
 from sqlalchemy import select
-
-from src.services.custom.models.point import PointAliasModel
 
 load_dotenv(".env.local") or load_dotenv("../.env.local")
 
 
-from src.database import database
-from src.services.custom.models import (
+from backend.database import database
+from backend.services.custom.models import (
     CompanyModel,
     ContainerModel,
     PointModel,
