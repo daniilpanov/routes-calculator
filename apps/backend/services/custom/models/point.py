@@ -1,8 +1,6 @@
-from backend.database import Base
-from sqlalchemy import String, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column
 import enum
 
+from backend.database import Base
 from sqlalchemy import Boolean, Enum, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
