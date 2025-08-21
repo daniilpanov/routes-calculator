@@ -18,6 +18,7 @@ packages = [
 poetry-plugin-export = ">=1.8"
 
 [tool.poetry.dependencies]
+bcrypt = "*"
 pandas = "*"
 python = "^3.12"
 aiomysql = "*"
@@ -28,6 +29,7 @@ python-dotenv = "*"
 pycbrf = "*"
 fastapi = "*"
 jinja2 = "*"
+fastapi_another_jwt_auth = "*"
 uvicorn = { extras = ["standard"], version = "*" }
 
 [tool.poetry.group.dev.dependencies]
