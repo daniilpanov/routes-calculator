@@ -1,14 +1,15 @@
 import asyncio
 
 import pandas as pd
+from backend.services.custom.models.point import PointAliasModel
 from dotenv import load_dotenv
 from sqlalchemy import select
 
 load_dotenv(".env.local") or load_dotenv("../.env.local")
 
 
-from src.database import database
-from src.services.custom.models import (
+from backend.database import database
+from backend.services.custom.models import (
     CompanyModel,
     ContainerModel,
     PointModel,
@@ -84,7 +85,7 @@ def group_containers_from_db(containers):
     return container_models, container_typed_models
 
 
-def create_independent_models(services, points, containers):
+def create_independent_models(services, points, containers):  # WARNING: not checked
     service_models = {}
     point_models = {}
 
@@ -92,9 +93,20 @@ def create_independent_models(services, points, containers):
         service_models[service] = CompanyModel(name=service)
 
     for _, point in points.iterrows():
-        point_models[(point["Country"], point["City"])] = PointModel(
-            country=point["Country"], city=point["City"]
-        )
+        key = (point["Country"], point["City"])
+
+        if key not in point_models:
+            new_point = PointModel()
+
+            city_alias = PointAliasModel(
+                name=point["City"],
+                lang="EN",
+                is_main=True,
+                point=new_point
+            )
+
+            new_point.aliases = [city_alias]
+            point_models[key] = new_point
 
     container_models, container_typed_models = group_containers(containers)
 

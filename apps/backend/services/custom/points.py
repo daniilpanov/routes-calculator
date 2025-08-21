@@ -4,16 +4,23 @@ from functools import partial
 from backend.database import database
 from backend.mapper_decorator import apply_mapper
 from sqlalchemy import select
+from sqlalchemy.orm import aliased
 
 from .mappers.points import map_points
 from .models import CompanyModel, PointModel, RailRouteModel, SeaRouteModel
+from .models.point import LangType, PointAliasModel
 
 
 def _build_stmt(date, route_class, id_field):
+    RuAlias = aliased(PointAliasModel)
+    EnAlias = aliased(PointAliasModel)
+
     return (  # noqa: ECE001
         select(
             PointModel,
             CompanyModel.name.label("company_name"),
+            EnAlias.alias_name.label("city"),
+            RuAlias.alias_name.label("RU_city"),
         )
         .distinct()
         .join(
@@ -23,6 +30,18 @@ def _build_stmt(date, route_class, id_field):
             & (route_class.effective_to >= date),
         )
         .join(CompanyModel)
+        .join(
+            EnAlias,
+            (EnAlias.point_id == PointModel.id)
+            & (EnAlias.lang == LangType.EN)
+            & (EnAlias.is_main == 1),
+        )
+        .join(
+            RuAlias,
+            (RuAlias.point_id == PointModel.id)
+            & (RuAlias.lang == LangType.RU)
+            & (RuAlias.is_main == 1),
+        )
     )
 
 

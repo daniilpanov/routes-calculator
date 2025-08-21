@@ -72,14 +72,6 @@ repos:
         additional_dependencies: [
           toml,
         ]
-  # black
-  - repo: https://github.com/psf/black
-    rev: 24.3.0
-    hooks:
-      - id: black
-        args: [
-          --config=./pyproject.toml,
-        ]
   # flake8
   - repo: https://github.com/pycqa/flake8
     rev: 7.0.0
