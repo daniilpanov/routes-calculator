@@ -25,7 +25,7 @@ services:
     env_file:
       - ".env"
     volumes:
-       - "./apps/auth/:/app/auth/:r"
+      - "./apps/auth/:/app/auth/:r"
     expose:
       - 8081
     networks:
