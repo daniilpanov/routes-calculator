@@ -12,5 +12,5 @@ export default function PrivateRoute() {
         }
     }, []);
 
-    return currentUser ? <Outlet /> : <Navigate to="/login" replace />;
+    return currentUser ? <Outlet /> : <Navigate to="/admin/login" replace />;
 }
