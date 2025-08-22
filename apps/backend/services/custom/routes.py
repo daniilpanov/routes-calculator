@@ -4,10 +4,10 @@ import datetime
 from backend.database import database
 from backend.mapper_decorator import apply_mapper
 from sqlalchemy import select
-from sqlalchemy.orm import aliased, joinedload
+from sqlalchemy.orm import aliased, joinedload, load_only
 
 from .mappers.routes import map_routes
-from .models import RailRouteModel, SeaRouteModel
+from .models import PointModel, RailRouteModel, SeaRouteModel
 
 
 async def _execute_query(q):
@@ -37,8 +37,14 @@ async def find_all_paths(
             & rail.container_id.in_(container_ids)
         )
         .options(
-            joinedload(rail.start_point),
-            joinedload(rail.end_point),
+            joinedload(rail.start_point).options(
+                load_only(PointModel.id, PointModel.parent_id),
+                joinedload(PointModel.parent),
+            ),
+            joinedload(rail.end_point).options(
+                load_only(PointModel.id, PointModel.parent_id),
+                joinedload(PointModel.parent),
+            ),
             joinedload(rail.company),
             joinedload(rail.container),
         )
@@ -53,8 +59,14 @@ async def find_all_paths(
             & sea.container_id.in_(container_ids)
         )
         .options(
-            joinedload(sea.start_point),
-            joinedload(sea.end_point),
+            joinedload(sea.start_point).options(
+                load_only(PointModel.id, PointModel.parent_id),
+                joinedload(PointModel.parent),
+            ),
+            joinedload(sea.end_point).options(
+                load_only(PointModel.id, PointModel.parent_id),
+                joinedload(PointModel.parent),
+            ),
             joinedload(sea.company),
             joinedload(sea.container),
         )
@@ -76,12 +88,24 @@ async def find_all_paths(
             & (sea.container_id == rail.container_id),
         )
         .options(
-            joinedload(sea.start_point),
-            joinedload(sea.end_point),
+            joinedload(sea.start_point).options(
+                load_only(PointModel.id, PointModel.parent_id),
+                joinedload(PointModel.parent),
+            ),
+            joinedload(sea.end_point).options(
+                load_only(PointModel.id, PointModel.parent_id),
+                joinedload(PointModel.parent),
+            ),
             joinedload(sea.company),
             joinedload(sea.container),
-            joinedload(rail.start_point),
-            joinedload(rail.end_point),
+            joinedload(rail.start_point).options(
+                load_only(PointModel.id, PointModel.parent_id),
+                joinedload(PointModel.parent),
+            ),
+            joinedload(rail.end_point).options(
+                load_only(PointModel.id, PointModel.parent_id),
+                joinedload(PointModel.parent),
+            ),
             joinedload(rail.company),
             joinedload(rail.container),
         )
@@ -103,12 +127,24 @@ async def find_all_paths(
             & (rail.container_id == sea.container_id),
         )
         .options(
-            joinedload(rail.start_point),
-            joinedload(rail.end_point),
+            joinedload(rail.start_point).options(
+                load_only(PointModel.id, PointModel.parent_id),
+                joinedload(PointModel.parent),
+            ),
+            joinedload(rail.end_point).options(
+                load_only(PointModel.id, PointModel.parent_id),
+                joinedload(PointModel.parent),
+            ),
             joinedload(rail.company),
             joinedload(rail.container),
-            joinedload(sea.start_point),
-            joinedload(sea.end_point),
+            joinedload(sea.start_point).options(
+                load_only(PointModel.id, PointModel.parent_id),
+                joinedload(PointModel.parent),
+            ),
+            joinedload(sea.end_point).options(
+                load_only(PointModel.id, PointModel.parent_id),
+                joinedload(PointModel.parent),
+            ),
             joinedload(sea.company),
             joinedload(sea.container),
         )
@@ -137,16 +173,34 @@ async def find_all_paths(
             & (sea.container_id == rail2.container_id),
         )
         .options(
-            joinedload(rail.start_point),
-            joinedload(rail.end_point),
+            joinedload(rail.start_point).options(
+                load_only(PointModel.id, PointModel.parent_id),
+                joinedload(PointModel.parent),
+            ),
+            joinedload(rail.end_point).options(
+                load_only(PointModel.id, PointModel.parent_id),
+                joinedload(PointModel.parent),
+            ),
             joinedload(rail.company),
             joinedload(rail.container),
-            joinedload(sea.start_point),
-            joinedload(sea.end_point),
+            joinedload(sea.start_point).options(
+                load_only(PointModel.id, PointModel.parent_id),
+                joinedload(PointModel.parent),
+            ),
+            joinedload(sea.end_point).options(
+                load_only(PointModel.id, PointModel.parent_id),
+                joinedload(PointModel.parent),
+            ),
             joinedload(sea.company),
             joinedload(sea.container),
-            joinedload(rail2.start_point),
-            joinedload(rail2.end_point),
+            joinedload(rail2.start_point).options(
+                load_only(PointModel.id, PointModel.parent_id),
+                joinedload(PointModel.parent),
+            ),
+            joinedload(rail2.end_point).options(
+                load_only(PointModel.id, PointModel.parent_id),
+                joinedload(PointModel.parent),
+            ),
             joinedload(rail2.company),
             joinedload(rail2.container),
         )
