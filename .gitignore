@@ -6,3 +6,6 @@ venv
 !.env.example
 .python-version
 poetry.lock
+/config/database/*
+/database-backups/*
+/database-dev-version/*

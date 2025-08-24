@@ -6,4 +6,5 @@ export const ROUTES = {
     POINTS_MANAGEMENT: `${process.env.PUBLIC_URL || ""}/points-management`,
     DATA_IMPORT: `${process.env.PUBLIC_URL || ""}/data-import`,
     MAIN_SITE: process.env.REACT_ROUTING_MAIN_SITE || "/",
+    ADMIN: process.env.REACT_ROUTING_MAIN_SITE || "/admin",
 };

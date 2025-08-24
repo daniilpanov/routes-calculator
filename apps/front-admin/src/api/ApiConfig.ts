@@ -6,4 +6,12 @@ export const API_ENDPOINTS = {
         LOGOUT: "api/user/logout",
         REFRESH: "api/user/refresh",
     },
+    ROUTES: {
+        GET: "api/routes",
+        CREATE: "api/routes/add",
+        DELETE: "api/routes/delete",
+    },
+    POINTS: {
+        SEARCH: "api/points/find_name",
+    },
 } as const;

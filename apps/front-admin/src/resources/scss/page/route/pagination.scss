@@ -1,0 +1,44 @@
+@import "../../variables";
+.pagination_controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+
+  .control_btn {
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    background: white;
+    cursor: pointer;
+    border-radius: 4px;
+    min-width: 40px;
+
+    &:hover:not(:disabled) {
+      color: #000700;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    &.active {
+      background: rgba(26, 60, 83, 0.24);
+      color: rgba(0, 0, 0, 0.7);
+      border-color: rgba(0, 0, 0, 0.1);
+    }
+
+    &.ellipsis {
+      cursor: default;
+      background: transparent;
+      border: none;
+      min-width: auto;
+
+      &:hover {
+        background: rgba(0, 0, 0, 0.08);
+      }
+    }
+  }
+}
