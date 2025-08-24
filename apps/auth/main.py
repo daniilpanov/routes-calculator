@@ -1,4 +1,6 @@
-from fastapi import Depends, FastAPI, HTTPException
+from contextlib import suppress
+
+from fastapi import Depends, FastAPI, HTTPException, Response
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
@@ -35,14 +37,18 @@ def login(user: User, Authorize: AuthJWT = Depends()):
     """
 
     admin_pass_bytes = settings.admin_password.encode("utf-8")
-    pass_salt = bcrypt.gensalt()
-    admin_password_hash = bcrypt.hashpw(admin_pass_bytes, pass_salt)
-
     user_pass_bytes = user.password.encode("utf-8")
-    user_password_hash = bcrypt.hashpw(user_pass_bytes, pass_salt)
 
-    if user.login != settings.admin_login or user_password_hash != admin_password_hash:
-        raise HTTPException(status_code=401, detail="Incorrect login or password")
+    admin_password_hash = bcrypt.hashpw(admin_pass_bytes, bcrypt.gensalt())
+
+    is_valid_login = user.login == settings.admin_login
+    is_valid_password = bcrypt.checkpw(user_pass_bytes, admin_password_hash)
+
+    if not is_valid_login or not is_valid_password:
+        raise HTTPException(
+            status_code=401,
+            detail="Incorrect login or password"
+        )
 
     access_token = Authorize.create_access_token(subject=user.login)
     refresh_token = Authorize.create_refresh_token(subject=user.login)
@@ -62,23 +68,17 @@ def refresh(Authorize: AuthJWT = Depends()):
     current_user = Authorize.get_jwt_subject()
     new_access_token = Authorize.create_access_token(subject=current_user)
 
-    # Set the JWT and CSRF double submit cookies in the response
     Authorize.set_access_cookies(new_access_token)
 
     return {"status": "OK"}
 
 
 @app.delete("/logout")
-def logout(Authorize: AuthJWT = Depends()):
-    """
-    Because the JWT are stored in an httponly cookie now, we cannot
-    log the user out by simply deleting the cookie in the frontend.
-    We need the backend to send us a response to delete the cookies.
-    """
+def logout(Authorize: AuthJWT = Depends(), response: Response = None):
+    with suppress(Exception):
+        Authorize.jwt_required()
 
-    Authorize.jwt_required()
-    Authorize.unset_jwt_cookies()
-
+    Authorize.unset_jwt_cookies(response=response)
     return {"status": "OK"}
 
 
