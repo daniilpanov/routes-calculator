@@ -12,6 +12,23 @@ server {
     }
 
     location /api/ {
+        # CORS headers
+        add_header 'Access-Control-Allow-Origin' 'http://localhost:3000' always;
+        add_header 'Access-Control-Allow-Credentials' 'true' always;
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
+        add_header 'Access-Control-Allow-Headers' 'Content-Type, Authorization' always;
+
+        if ($request_method = OPTIONS) {
+            add_header 'Access-Control-Allow-Origin' 'http://localhost:3000' always;
+            add_header 'Access-Control-Allow-Credentials' 'true' always;
+            add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
+            add_header 'Access-Control-Allow-Headers' 'Content-Type, Authorization' always;
+            add_header 'Access-Control-Max-Age' 1728000;
+            add_header 'Content-Type' 'text/plain charset=UTF-8';
+            add_header 'Content-Length' 0;
+            return 204;
+        }
+
         index /;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -20,6 +37,23 @@ server {
     }
 
     location /api/user/ {
+        # CORS headers
+        add_header 'Access-Control-Allow-Origin' 'http://localhost:3000' always;
+        add_header 'Access-Control-Allow-Credentials' 'true' always;
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
+        add_header 'Access-Control-Allow-Headers' 'Content-Type, Authorization' always;
+
+        if ($request_method = OPTIONS) {
+            add_header 'Access-Control-Allow-Origin' 'http://localhost:3000' always;
+            add_header 'Access-Control-Allow-Credentials' 'true' always;
+            add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
+            add_header 'Access-Control-Allow-Headers' 'Content-Type, Authorization' always;
+            add_header 'Access-Control-Max-Age' 1728000;
+            add_header 'Content-Type' 'text/plain charset=UTF-8';
+            add_header 'Content-Length' 0;
+            return 204;
+        }
+
         index /;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
