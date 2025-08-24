@@ -3,7 +3,7 @@ import { ROUTES } from "../services/RoutesConst";
 import "../resources/scss/header_style.scss";
 import logo from "../resources/images/logo1.png";
 import React, { useEffect, useState } from "react";
-import { authService } from "../services/Auth";
+import { authService } from "../api/Auth";
 import { useNavigate } from "react-router-dom";
 
 

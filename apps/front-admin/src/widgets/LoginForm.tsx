@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import FormInput from "../components/form/FormInput";
 import FormSubmit from "../components/form/FormSubmit";
 import "../resources/scss/login_style.scss";
-import { authService } from "../services/Auth";
+import { authService } from "../api/Auth";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../services/RoutesConst";
 

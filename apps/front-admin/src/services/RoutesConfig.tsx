@@ -30,6 +30,7 @@ export const routesConfig = [
                     { path: ROUTES.POINTS_MANAGEMENT, element: <PointsManagement /> },
                     { path: ROUTES.DATA_IMPORT, element: <DataImport /> },
                     { path: ROUTES.ROOT, element: <Navigate to={ ROUTES.DASHBOARD } replace /> },
+                    { path: ROUTES.ADMIN, element: <Navigate to={ ROUTES.DASHBOARD } replace /> },
                 ],
             },
         ],

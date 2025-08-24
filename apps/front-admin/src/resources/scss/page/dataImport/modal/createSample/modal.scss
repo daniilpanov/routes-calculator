@@ -1,0 +1,33 @@
+@import "../../../../variables";
+.point-modal-wrapper {
+  background-color: rgba(0, 0, 0, 0.9);
+
+  .modal-content {
+    font-family: $base_front_family;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    width: 30%;
+    height: 55%;
+    overflow-y: auto;
+    position: relative;
+    border: #6f42c1 1px solid;
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+  }
+}

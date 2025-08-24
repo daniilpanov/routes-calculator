@@ -1,14 +1,6 @@
 import axios from "axios";
 import { BASE_API_URL, API_ENDPOINTS } from "./ApiConfig";
-
-interface LoginData {
-    login: string;
-    password: string;
-}
-
-interface LoginResponse {
-    status: string;
-}
+import { LoginData, LoginResponse } from "../interfaces/Auth";
 
 export const authService = {
     async login(credentials: LoginData): Promise<LoginResponse> {
