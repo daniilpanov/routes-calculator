@@ -6,26 +6,39 @@ interface LoginData {
     password: string;
 }
 
-/*interface LoginResponse {
-  status: "OK"
-}*/
+interface LoginResponse {
+    status: string;
+}
 
 export const authService = {
-    async login(credentials: LoginData) {
+    async login(credentials: LoginData): Promise<LoginResponse> {
         try {
-            const response = await axios.post(
-                BASE_API_URL + API_ENDPOINTS.AUTH.LOGIN
-                ,
+            const response = await axios.post<LoginResponse>(
+                `${BASE_API_URL}${API_ENDPOINTS.AUTH.LOGIN}`,
                 credentials,
                 {
                     headers: {
                         "Content-Type": "application/json",
                     },
+                    withCredentials: true,
                 },
             );
             return response.data;
         } catch (error) {
-            throw new Error("Login failed");
+            throw new Error("Unexpected error during login");
+        }
+    },
+    async logout(): Promise<LoginResponse> {
+        try {
+            const response = await axios.delete<LoginResponse>(
+                `${BASE_API_URL}${API_ENDPOINTS.AUTH.LOGOUT}`,
+                {
+                    withCredentials: true,
+                },
+            );
+            return response.data;
+        } catch (error) {
+            throw new Error("Unexpected error during logout");
         }
     },
 };

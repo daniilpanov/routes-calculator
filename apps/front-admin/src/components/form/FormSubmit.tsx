@@ -4,12 +4,13 @@ interface FormSubmitProps {
     children: React.ReactNode;
     type?: "button" | "submit" | "reset";
     className?: string;
-    disabled?: boolean;
+    disabled?: boolean
+    onclick?: () => void;
 }
 
-export default function FormSubmit({ children, type = "submit", className, disabled }: FormSubmitProps) {
+export default function FormSubmit({ children, type = "submit", className, disabled, onclick }: FormSubmitProps) {
     return (
-        <button type={ type } className={ className } disabled={ disabled }>
+        <button type={ type } className={ className } disabled={ disabled } onClick={ onclick }>
             {children}
         </button>
     );

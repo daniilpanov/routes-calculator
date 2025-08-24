@@ -4,6 +4,7 @@ import FormSubmit from "../components/form/FormSubmit";
 import "../resources/scss/login_style.scss";
 import { authService } from "../services/Auth";
 import { useNavigate } from "react-router-dom";
+import { ROUTES } from "../services/RoutesConst";
 
 interface LoginFormData {
     login: string;
@@ -34,10 +35,13 @@ export function LoginForm() {
         setError(null);
         setLoading(true);
         try {
-            const response = await authService.login(dataForm);
-            //localStorage.setItem('user', JSON.stringify(response.username));
+            const response = await authService.login(dataForm); //todo вернуть обратно, только для локальной разработки
+            //const response = { "status": "OK" };
+            if (response.status === "OK") {
+                localStorage.setItem("username", dataForm.login);
+            }
 
-            navigate("/dashboard");
+            navigate(ROUTES.DASHBOARD);
         } catch (err) {
             setError("Неверное имя пользователя или пароль");
             console.error("Login error:", err);
@@ -55,7 +59,7 @@ export function LoginForm() {
                         type="text"
                         name="login"
                         value={ dataForm.login }
-                        placeholder="Username"
+                        placeholder="Пользователь"
                         onChange={ handleChangeField }
                         className="form_input"
                         required
@@ -64,7 +68,7 @@ export function LoginForm() {
                         type="password"
                         name="password"
                         value={ dataForm.password }
-                        placeholder="Password"
+                        placeholder="Пароль"
                         onChange={ handleChangeField }
                         className="form_input"
                         required
