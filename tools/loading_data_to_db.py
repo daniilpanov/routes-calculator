@@ -7,8 +7,8 @@ from sqlalchemy import select
 load_dotenv(".env.local") or load_dotenv("../.env.local")
 
 
-from src.database import database
-from src.services.custom.models import (
+from apps.backend.database import database
+from apps.backend.services.custom.models import (
     CompanyModel,
     ContainerModel,
     PointModel,
