@@ -1,0 +1,95 @@
+server {
+    location / {
+        if ($http_referer ~* "/api/user/") {
+            return 307 $scheme://$http_host/api/user/$request_uri;
+        }
+        if ($http_referer ~* "/api/") {
+            return 307 $scheme://$http_host/api/$request_uri;
+        }
+
+        root /www/frontend;
+        index index.html;
+    }
+
+    # Специфичный location для /admin/api/user/ — ставим первым
+    location /admin/api/user/ {
+        # CORS headers
+        add_header 'Access-Control-Allow-Origin' 'http://localhost:3000' always;
+        add_header 'Access-Control-Allow-Credentials' 'true' always;
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
+        add_header 'Access-Control-Allow-Headers' 'Content-Type, Authorization' always;
+
+        # Обработка preflight
+        if ($request_method = OPTIONS) {
+            add_header 'Access-Control-Allow-Origin' 'http://localhost:3000' always;
+            add_header 'Access-Control-Allow-Credentials' 'true' always;
+            add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
+            add_header 'Access-Control-Allow-Headers' 'Content-Type, Authorization' always;
+            add_header 'Access-Control-Max-Age' 1728000;
+            add_header 'Content-Type' 'text/plain charset=UTF-8';
+            add_header 'Content-Length' 0;
+            return 204;
+        }
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_pass http://auth:8081/;
+    }
+
+    location /api/user/ {
+        add_header 'Access-Control-Allow-Origin' 'http://localhost:3000' always;
+        add_header 'Access-Control-Allow-Credentials' 'true' always;
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
+        add_header 'Access-Control-Allow-Headers' 'Content-Type, Authorization' always;
+
+        if ($request_method = OPTIONS) {
+            add_header 'Access-Control-Allow-Origin' 'http://localhost:3000' always;
+            add_header 'Access-Control-Allow-Credentials' 'true' always;
+            add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
+            add_header 'Access-Control-Allow-Headers' 'Content-Type, Authorization' always;
+            add_header 'Access-Control-Max-Age' 1728000;
+            add_header 'Content-Type' 'text/plain charset=UTF-8';
+            add_header 'Content-Length' 0;
+            return 204;
+        }
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_pass http://auth:8081/;
+    }
+
+    location /api/ {
+        add_header 'Access-Control-Allow-Origin' 'http://localhost:3000' always;
+        add_header 'Access-Control-Allow-Credentials' 'true' always;
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
+        add_header 'Access-Control-Allow-Headers' 'Content-Type, Authorization' always;
+
+        if ($request_method = OPTIONS) {
+            add_header 'Access-Control-Allow-Origin' 'http://localhost:3000' always;
+            add_header 'Access-Control-Allow-Credentials' 'true' always;
+            add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
+            add_header 'Access-Control-Allow-Headers' 'Content-Type, Authorization' always;
+            add_header 'Access-Control-Max-Age' 1728000;
+            add_header 'Content-Type' 'text/plain charset=UTF-8';
+            add_header 'Content-Length' 0;
+            return 204;
+        }
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_pass http://calculator:8080/;
+    }
+
+    location /admin {
+        add_header 'Access-Control-Allow-Origin' 'http://localhost:3000' always;
+        add_header 'Access-Control-Allow-Credentials' 'true' always;
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
+        add_header 'Access-Control-Allow-Headers' 'Content-Type, Authorization' always;
+
+        alias /www/admin/;
+        try_files $uri $uri/ /index.html /404.html;
+    }
+}
