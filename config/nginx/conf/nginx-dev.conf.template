@@ -1,7 +1,7 @@
 server {
     location / {
-        if ($http_referer ~* "/api/user/") {
-            return 307 $scheme://$http_host/api/user/$request_uri;
+        if ($http_referer ~* "/admin/api/user/") {
+            return 307 $scheme://$http_host/admin/api/user/$request_uri;
         }
         if ($http_referer ~* "/api/") {
             return 307 $scheme://$http_host/api/$request_uri;
@@ -36,7 +36,7 @@ server {
         proxy_pass http://calculator:8080/;
     }
 
-    location /api/user/ {
+    location /admin/api/user/ {
         # CORS headers
         add_header 'Access-Control-Allow-Origin' 'http://localhost:3000' always;
         add_header 'Access-Control-Allow-Credentials' 'true' always;
