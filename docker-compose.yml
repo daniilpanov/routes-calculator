@@ -24,7 +24,7 @@ services:
     env_file:
       - ".env"
     volumes:
-      - "./apps/aurh/:/app/auth/:r"
+      - "./apps/auth/:/app/auth/:r"
     expose:
       - 8081
     networks:
@@ -76,9 +76,17 @@ services:
     networks:
       local:
   reverseproxy:
+    depends_on:
+      calculator:
+        condition: service_started
+      auth:
+        condition: service_started
+      adminfrontbuilder:
+        condition: service_completed_successfully
     build:
       dockerfile: "Dockerfile"
       target: "reverseproxy"
+    restart: unless-stopped
     volumes:
       - "./config/nginx/conf/:/etc/nginx/:ro"
       - "./apps/frontend/:/www/frontend/:ro"

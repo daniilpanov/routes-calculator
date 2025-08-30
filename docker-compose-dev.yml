@@ -79,9 +79,19 @@ services:
     networks:
       local:
   reverseproxy:
+    depends_on:
+      calculator:
+        condition: service_started
+      auth:
+        condition: service_started
+      adminfront:
+        condition: service_started
     build:
       dockerfile: "Dockerfile"
       target: "reverseproxy"
+    env_file:
+      - ".env"
+    restart: unless-stopped
     volumes:
       - "./config/nginx/conf/:/etc/nginx/:ro"
       - "./apps/frontend/:/www/frontend/:ro"
