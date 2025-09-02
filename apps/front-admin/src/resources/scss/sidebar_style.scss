@@ -1,0 +1,83 @@
+@use "@/resources/scss/variables";
+
+#navToggler {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  right: auto;
+  display: none;
+}
+
+.sidebar {
+  position: relative;
+  max-width: 15dvw;
+  min-height: 100dvh;
+  background: variables.$base_background;
+}
+
+.logo-wrapper {
+  width: auto;
+  height: auto;
+  background: variables.$base_background;
+}
+
+.logo {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+
+@media (max-width: 1000px) {
+  .sidebar {
+    max-width: 25dvw;
+  }
+}
+
+@media (max-width: 716px) {
+  #navToggler {
+    display: block;
+  }
+
+  .sidebar {
+    position: fixed;
+    max-width: 100dvw;
+    width: 100dvw;
+    left: -100dvw;
+    transition: left .5s ease-in-out;
+    z-index: 999;
+  }
+
+  .sidebar.show {
+    left: 0;
+  }
+
+  .sidebar.show #navToggler {
+    left: auto;
+    right: 10px;
+  }
+
+  .logo-wrapper {
+    display: none;
+  }
+}
+
+.nav-btn {
+  display: block;
+  background-color: transparent;
+  cursor: pointer;
+  color: white;
+  text-decoration: none;
+  padding: 1.5rem 1rem;
+  font-family: variables.$base_front_family;;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+    color: white;
+  }
+
+  &.active {
+    background-color: rgb(255, 255, 255, 0.9);
+    color: variables.$base_background;
+  }
+}
