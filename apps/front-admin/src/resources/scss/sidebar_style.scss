@@ -1,0 +1,93 @@
+@use "@/resources/scss/variables";
+
+#navToggler {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  right: auto;
+  display: none;
+
+  @media (max-width: variables.$mobile_max_width) {
+    display: block;
+  }
+}
+
+.sidebar {
+  position: relative;
+  max-width: 15dvw;
+  height: 100dvh;
+  background: variables.$base_background;
+  border-right: 1px solid variables.$base_background;
+  overflow-y: auto;
+
+  @media (max-width: 1000px) {
+    max-width: 25dvw;
+  }
+
+  @media (max-width: variables.$mobile_max_width) {
+    position: fixed;
+    max-width: 100dvw;
+    width: 100dvw;
+    left: -100dvw;
+    transition: left .5s ease-in-out;
+    z-index: 999;
+
+    &.show {
+      left: 0;
+    }
+
+    &.show #navToggler {
+      left: auto;
+      right: 10px;
+    }
+  }
+}
+
+.logo-wrapper {
+  width: auto;
+  height: auto;
+  background: white;
+
+  @media (max-width: variables.$mobile_max_width) {
+    display: none;
+  }
+}
+
+.logo {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+.nav-btn {
+  all: unset;
+  display: block;
+  background-color: transparent;
+  cursor: pointer;
+  color: white;
+  text-decoration: none;
+  padding: 1.5rem 1rem;
+  font-family: variables.$base_front_family;;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+    color: white;
+  }
+
+  &.active {
+    background-color: rgb(255, 255, 255, 0.9);
+    color: variables.$base_background;
+  }
+}
+
+.authentication-block {
+  width: 100%;
+
+  & > * {
+    width: 50%;
+  }
+
+  & button {
+    width: calc(100% - 2rem);
+  }
+}
