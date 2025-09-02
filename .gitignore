@@ -6,4 +6,3 @@ venv
 !.env.example
 .python-version
 poetry.lock
-database-dev-versions/*.sql
