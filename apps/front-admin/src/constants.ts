@@ -7,3 +7,5 @@ export const ROUTES = {
     DATA_IMPORT: `${import.meta.env.VITE_PUBLIC_URL || ""}/data-import`,
     MAIN_SITE: import.meta.env.VITE_REACT_ROUTING_MAIN_SITE || "/",
 };
+
+export const LOGIN_CHECK_INTERVAL = 60 * 1000;

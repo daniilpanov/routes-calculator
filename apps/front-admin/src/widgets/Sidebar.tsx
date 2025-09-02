@@ -6,12 +6,27 @@ import "rsuite/Col/styles/index.css";
 import "rsuite/Row/styles/index.css";
 import "@/resources/scss/sidebar_style.scss";
 import { ROUTES } from "@/constants";
-import { useState } from "react";
+import { logout, getUserName, isAuth } from "@/services/Auth";
+import { useEffect, useState, FormEvent } from "react";
 import { NavLink } from "react-router-dom";
+import { Button, Col, Row } from "rsuite";
 
 
 export function Sidebar() {
+    const [ currentUser, setCurrentUser ] = useState(getUserName);
     const [ show, setShow ] = useState(false);
+
+    useEffect(() => {
+        if (isAuth())
+            setCurrentUser(getUserName());
+    }, []);
+
+    const handleSubmit = async (e: FormEvent) => {
+        e.preventDefault();
+        await logout();
+        setCurrentUser(null);
+    };
+
 
     return (
         <div className={ show ? "sidebar show" : "sidebar" }>
@@ -21,7 +36,7 @@ export function Sidebar() {
 
             <div className="logo-wrapper"><img src={ logo } alt="Логотип" className="logo" /></div>
 
-            <div className="space"></div>
+            <div className="mobile-space"></div>
 
             <div className="nav-block">
                 <NavLink to={ ROUTES.DASHBOARD } className="nav-btn">Панель инструментов</NavLink>
@@ -31,6 +46,11 @@ export function Sidebar() {
             </div>
 
             <div>
+                <Row className="authentication-block">
+                    <Col><div className="nav-btn">{ currentUser }</div></Col>
+                    <Col><button onClick={ handleSubmit } className="nav-btn">Выйти</button></Col>
+                </Row>
+
                 <div className="back_to_site-block">
                     <NavLink to={ ROUTES.MAIN_SITE } className="nav-btn">Вернуться на сайт</NavLink>
                 </div>
