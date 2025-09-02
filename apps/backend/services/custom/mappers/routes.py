@@ -1,18 +1,35 @@
+from ..models.point import LangType
 from .containers import _map_container
 
 
 def _map_segment(
     route, price, currency, _type, services, begin_cond=None, finish_cond=None
 ):
+    def get_country(point):
+        while point.parent_id:
+            point = point.parent
+        return point
+
+    def get_alias_name(point):
+        for a in point.aliases:
+            if a.lang == LangType.RU and a.is_main == 1:
+                return a.alias_name
+        return None
+
+    start_point_country = get_alias_name(get_country(route.start_point))
+    end_point_country = get_alias_name(get_country(route.end_point))
+    start_point_city = get_alias_name(route.start_point)
+    end_point_city = get_alias_name(route.end_point)
+
     item = {
         "company": route.company.name,
         "type": _type,
         "effectiveFrom": route.effective_from,
         "effectiveTo": route.effective_to,
-        "startPointCountry": route.start_point.RU_country,
-        "startPointName": route.start_point.RU_city,
-        "endPointCountry": route.end_point.RU_country,
-        "endPointName": route.end_point.RU_city,
+        "startPointCountry": start_point_country,
+        "startPointName": start_point_city,
+        "endPointCountry": end_point_country,
+        "endPointName": end_point_city,
         "container": _map_container(route.container),
         "price": getattr(route, price),
         "currency": currency,
