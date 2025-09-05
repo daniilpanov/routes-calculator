@@ -82,11 +82,11 @@ def logout(Authorize: AuthJWT = Depends()):
     return {"status": "OK"}
 
 
-@app.get("/hello")
+@app.get("/me")
 def hello(Authorize: AuthJWT = Depends()):
-    """Test endpoint to check validation."""
+    """Get user info."""
 
     Authorize.jwt_required()
     current_user = Authorize.get_jwt_subject()
 
-    return {"message": f"Hi, {current_user}"}
+    return {"username": current_user}
