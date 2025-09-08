@@ -4,6 +4,9 @@ import "../resources/scss/components/modal_style.scss";
 import React, { useEffect, useState } from "react";
 import { CreatePointModal } from "./CreatePointModal";
 import { routesService } from "../api/Routes";
+import { companiesService } from "../api/Companies";
+import { containersService } from "../api/Containers";
+import { pointsService } from "../api/Points";
 import { Dropdown } from "../components/Dropdown";
 import { SearchableDropdown } from "../components/SearchableDropdown";
 
@@ -12,9 +15,13 @@ import trashcan from "../resources/images/trashcan.png";
 import accessMarks from "../resources/images/accessMarks.png";
 import cross from "../resources/images/cross.png";
 import magnifier from "../resources/images/magnifier.png";
-import { PriceItem, Route } from "../interfaces/Routes";
-import { formatDate } from "../utils/Date";
-import { Point } from "../components/SearchableDropdown";
+import changeMarker from "../resources/images/changeMarker.png";
+
+import { formatDate, formatDateForServerFromInput, formatDateISO, parseWeirdDate } from "../utils/Date";
+import { Route, RouteEditRequest } from "../interfaces/Routes";
+import { Company } from "../interfaces/Companies";
+import { Container } from "../interfaces/Containers";
+import { Point } from "../interfaces/Points";
 
 const PAGE_SIZE = 25;
 
@@ -24,13 +31,20 @@ export function RoutesTable() {
     const [ error, setError ] = useState<string | null>(null);
     const [ addingRoutes, setAddingRoutes ] = useState<Omit<Route, "id">[]>([]);
     const [ isModalOpen, setIsModalOpen ] = useState(false);
+    const [ selectedRouteIds, setSelectedRouteIds ] = useState<number[]>([]);
 
     const [ page, setPage ] = useState(1);
     const [ totalPages, setTotalPages ] = useState(1);
 
-    const [ optionsDropdown ] = useState<{ [key: string]: string[] }>({
-        company: [ "HUB", "FESCO", "TLC" ],
-        container: [ "20'DC ≥24t", "20'DC ≥28t", "40'HC ≥28t" ],
+    const [ companies, setCompanies ] = useState<Company[]>([]);
+    const [ containers, setContainers ] = useState<Container[]>([]);
+    const [ points, setPoints ] = useState<Point[]>([]);
+    const [ editingRouteId, setEditingRouteId ] = useState<number | null>(null);
+    const [ editedRoute, setEditedRoute ] = useState<Omit<Route, "id"> | null>(null);
+
+    const [ activeFilters, setActiveFilters ] = useState<{ field: string; value: any }[]>([]);
+
+    const [ optionsDropdown ] = useState({
         routeType: [ "ЖД", "Морской" ],
         currency: [ "RUB", "USD", "EUR" ],
         filter: [ "Компания", "Тип маршрута", "Контейнер", "Диапазон дат", "Точка отправления", "Точка прибытия" ],
@@ -53,43 +67,96 @@ export function RoutesTable() {
         route_type: "sea",
     };
 
-    const [ activeFilters, setActiveFilters ] = useState<
-        { field: string; value: FilterValue }[]
-    >([]);
+    const routeTypeMapping = { "ЖД": "rail", "Морской": "sea" };
+    const reverseRouteTypeMapping = { "rail": "ЖД", "sea": "Морской" };
 
-    // Убрал activeFilters из зависимостей - фильтрация теперь только по кнопке
+    const handleEditRoute = (route: Route) => {
+        setEditingRouteId(route.id);
+        setEditedRoute({
+            company: { ...route.company },
+            container: { ...route.container },
+            start_point: { ...route.start_point },
+            end_point: { ...route.end_point },
+            effective_from: formatDate(route.effective_from),
+            effective_to: formatDate(route.effective_to),
+            price: route.price.map(p => ({ ...p })),
+            route_type: route.route_type,
+        });
+    };
+
+    const handleSaveEditedRoute = async (routeId: number) => {
+        if (!editedRoute) return;
+
+        try {
+            const pricePayload = editedRoute.route_type === "rail"
+                ? {
+                    price: editedRoute.price.find(p => p.type === "price")?.value || 0,
+                    drop: editedRoute.price.find(p => p.type === "drop")?.value || 0,
+                    guard: editedRoute.price.find(p => p.type === "guard")?.value || 0,
+                }
+                : {
+                    fifo: editedRoute.price.find(p => p.type === "fifo")?.value || 0,
+                    filo: editedRoute.price.find(p => p.type === "filo")?.value || 0,
+                };
+            const originalRoute = routes.find(el => el.id === routeId);
+            if (!originalRoute) throw new Error("Маршрут не найден");
+
+            const effective_from = formatDateForServerFromInput(editedRoute.effective_from);
+            const effective_to = formatDateForServerFromInput(editedRoute.effective_to);
+            const payload: RouteEditRequest = {
+                route_id: routeId,
+                edit_params: {
+                    company_id: editedRoute.company.id,
+                    container_id: editedRoute.container.id,
+                    start_point_id: editedRoute.start_point.id,
+                    end_point_id: editedRoute.end_point.id,
+                    route_type: editedRoute.route_type,
+                    effective_from: effective_from,
+                    effective_to: effective_to,
+                    price: pricePayload,
+                },
+            };
+
+
+            const response = await routesService.editRoute(payload);
+
+            if (response.status === "OK") {
+                setRoutes(prev =>
+                    prev.map(r => r.id === routeId ? { ...r, ...response.edit_params } : r),
+                );
+                setEditingRouteId(null);
+                setEditedRoute(null);
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Ошибка при редактировании маршрута");
+        } finally {
+            fetchRoutes();
+        }
+    };
+
+
+    const handleCancelEdit = () => {
+        setEditingRouteId(null);
+        setEditedRoute(null);
+    };
+
+
     useEffect(() => {
         fetchRoutes();
+        fetchCompanies();
+        fetchContainers();
+        fetchPoints();
     }, [ page ]);
 
     const fetchRoutes = async () => {
         try {
             setLoading(true);
-            const response = await routesService.getRoutes(
-                page,
-                PAGE_SIZE,
-                buildFilterFields(),
-            );
+            const response = await routesService.getRoutes(page, PAGE_SIZE, buildFilterFields());
             if (response.status === "OK") {
-                const normalizedRoutes = response.routes.map((route: any) => {
-                    const prices = Array.isArray(route.prices) ? route.prices : [];
-
-                    if (route.route_type === "rail") {
-                        const required = [ "price", "guard", "drop" ];
-                        required.forEach(type => {
-                            if (!prices.some((p: any) => p.type === type)) {
-                                prices.push({ type, value: 0, currency: type === "price" ? "RUB" : "USD" });
-                            }
-                        });
-                    }
-
-                    return { ...route, prices };
-                });
-                setRoutes(normalizedRoutes);
+                setRoutes(response.routes);
                 setTotalPages(Math.ceil(response.count / PAGE_SIZE));
-            } else {
-                setError("Не удалось загрузить маршруты");
-            }
+            } else setError("Не удалось загрузить маршруты");
         } catch (err) {
             setError("Ошибка при загрузке маршрутов");
             console.error(err);
@@ -98,151 +165,195 @@ export function RoutesTable() {
         }
     };
 
+    const fetchCompanies = async () => {
+        try {
+            const res = await companiesService.getCompanies();
+            if (res.status === "OK") setCompanies(res.companies);
+        } catch (err) { console.error(err); }
+    };
+
+    const fetchContainers = async () => {
+        try {
+            const res = await containersService.getContainers();
+            setContainers(res.containers);
+        } catch (err) { console.error(err); }
+    };
+
+    const fetchPoints = async () => {
+        try {
+            const res = await pointsService.getPoints();
+            setPoints(res.points);
+        } catch (err) { console.error(err); }
+    };
+
     const handleAddRoute = () => setAddingRoutes(prev => [ ...prev, { ...emptyRoute } ]);
 
     const handleSaveNewRoute = async (index: number) => {
         const newRoute = addingRoutes[index];
-
-        if (
-            !newRoute.company.name ||
-            !newRoute.container.name ||
-            !newRoute.start_point.RU_city ||
-            !newRoute.end_point.RU_city ||
-            !newRoute.effective_from ||
-            !newRoute.effective_to
-        ) {
+        if (!newRoute.company.id || !newRoute.container.id || !newRoute.start_point.id || !newRoute.end_point.id || !newRoute.effective_from || !newRoute.effective_to) {
             alert("Все поля обязательны для заполнения");
             return;
         }
-
-        const formatForServer = (date: string) => {
-            const [ year, month, day ] = date.split("-"); // HTML date-input даёт YYYY-MM-DD
-            return `${day}.${month}.${year}`;
-        };
-
         const requestData = {
-            company: newRoute.company.name,
-            container: newRoute.container.name,
-            start_point_name: `${newRoute.start_point.RU_country}, ${newRoute.start_point.RU_city}`,
-            end_point_name: `${newRoute.end_point.RU_country}, ${newRoute.end_point.RU_city}`,
-            effective_from: formatForServer(newRoute.effective_from),
-            effective_to: formatForServer(newRoute.effective_to),
+            route_type: newRoute.route_type,
+            company_id: newRoute.company.id,
+            container_id: newRoute.container.id,
+            start_point_id: newRoute.start_point.id,
+            end_point_id: newRoute.end_point.id,
+            effective_from: formatDate(newRoute.effective_from),
+            effective_to: formatDate(newRoute.effective_to),
             price: newRoute.price.reduce((acc, p) => {
                 if (p.value) acc[p.type] = p.value;
                 return acc;
-            }, {} as { [key: string]: number }),
+            }, {} as Record<string, number>),
         };
-
         try {
             const response = await routesService.createRoute(requestData);
             if (response.status === "OK") {
                 setRoutes(prev => [ ...prev, response.new_route ]);
                 alert("Маршрут успешно добавлен");
+                setAddingRoutes(prev => prev.filter((_, i) => i !== index));
             } else {
                 alert("Ошибка при создании маршрута");
             }
         } catch (err) {
             console.error(err);
-            alert("Ошибка сети при создании маршрута");
-        } finally {
-            setAddingRoutes(prev => prev.filter((_, i) => i !== index));
+            alert("Ошибка запроса при создании маршрута");
         }
     };
 
 
     const handleCancelNewRoute = (index: number) => setAddingRoutes(prev => prev.filter((_, i) => i !== index));
-
     const handleChangeNewRouteField = <K extends keyof Omit<Route, "id">>(index: number, field: K, value: any) => {
-        setAddingRoutes(prev => prev.map((route, i) => (i === index ? { ...route, [field]: value } : route)));
+        setAddingRoutes(prev =>
+            prev.map((route, i) => {
+                if (i !== index) return route;
+
+                if (field === "route_type") {
+                    const newPrice = value === "rail"
+                        ? [
+                            { type: "price", value: 0, currency: "RUB" },
+                            { type: "guard", value: 0, currency: "USD" },
+                            { type: "drop", value: 0, currency: "USD" },
+                        ]
+                        : [
+                            { type: "fifo", value: 0, currency: "USD" },
+                            { type: "filo", value: 0, currency: "USD" },
+                        ];
+                    return { ...route, route_type: value, price: newPrice };
+                }
+
+                return { ...route, [field]: value };
+            }),
+        );
     };
 
+
     const handleChangePriceValue = (index: number, type: string, value: number) => {
-        setAddingRoutes(prev => prev.map((route, i) => {
-            if (i !== index) return route;
-            return {
-                ...route,
-                price: route.price.map(p => (p.type === type ? { ...p, value } : p)),
-            };
-        }));
+        setAddingRoutes(prev => prev.map((route, i) => i === index ? { ...route, price: route.price.map(p => (p.type === type ? { ...p, value } : p)) } : route));
     };
 
     const handleChangePriceCurrency = (index: number, type: string, currency: string) => {
-        setAddingRoutes(prev => prev.map((route, i) => {
-            if (i !== index) return route;
-            return {
-                ...route,
-                price: route.price.map(p => (p.type === type ? { ...p, currency } : p)),
-            };
-        }));
+        setAddingRoutes(prev => prev.map((route, i) => i === index ? { ...route, price: route.price.map(p => (p.type === type ? { ...p, currency } : p)) } : route));
     };
 
-    const handleRoutesDelete = async (id: number) => {
-        if (!window.confirm("Удалить маршрут?")) return;
-        const response = await routesService.deleteRoute(id).catch(() => fetchRoutes());
-        if (response?.status === "OK") {
-            setRoutes(prev => prev.filter(route => route.id !== id));
-            alert("Маршрут успешно удален");
-        } else {
-            alert("Неизвестная ошибка, удаление отменено.");
+    const formatDateForInput = (date: string) => {
+        if (!date) return "";
+        const parts = date.includes(".") ? date.split(".") : date.split("-");
+        if (parts.length === 3) {
+            if (date.includes(".")) return `${parts[2]}-${parts[1]}-${parts[0]}`;
+            else return date;
         }
+        return date;
     };
 
     const handleCopyRoute = (routeToCopy: Route) => {
         const { id, ...withoutId } = routeToCopy;
-        const copiedRoute = {
+
+        const copiedRoute: Omit<Route, "id"> = {
             ...withoutId,
             company: { ...withoutId.company },
             container: { ...withoutId.container },
             start_point: { ...withoutId.start_point },
             end_point: { ...withoutId.end_point },
             price: withoutId.price.map(p => ({ ...p })),
+            effective_from: withoutId.effective_from ? formatDateForInput(withoutId.effective_from) : "",
+            effective_to: withoutId.effective_to ? formatDateForInput(withoutId.effective_to) : "",
         };
+        console.log(formatDateISO(formatDate(copiedRoute.effective_to)));
+
+
         setAddingRoutes(prev => [ ...prev, copiedRoute ]);
     };
+
+
+
+    const formatDateForServer = (date: string) => {
+        const [ year, month, day ] = date.split("-");
+        return `${day}.${month}.${year}`;
+    };
+
+    const buildFilterFields = () => {
+        const filter: Record<string, any> = {};
+
+        activeFilters.forEach(f => {
+            if (!f.value) return;
+            switch (f.field) {
+            case "Компания":
+                if (typeof f.value === "string") {
+                    const company = companies.find(c => c.name === f.value);
+                    if (company) filter.company_id = company.id;
+                }
+                break;
+            case "Контейнер":
+                if (typeof f.value === "string") {
+                    const container = containers.find(c => c.name === f.value);
+                    if (container) filter.container_id = container.id;
+                }
+                break;
+            case "Тип маршрута":
+                if (typeof f.value === "string") filter.route_type = f.value;
+                break;
+            case "Точка отправления":
+                if (typeof f.value === "object" && f.value.id) filter.start_point_id = f.value.id;
+                break;
+            case "Точка прибытия":
+                if (typeof f.value === "object" && f.value.id) filter.end_point_id = f.value.id;
+                break;
+            case "Диапазон дат":
+                if (typeof f.value === "string") {
+                    const [ from, to ] = f.value.split("|");
+                    if (from) filter.effective_from = formatDateForServer(from);
+                    if (to) filter.effective_to = formatDateForServer(to);
+                }
+                break;
+            default:
+                break;
+            }
+        });
+
+        return filter;
+    };
+
 
     const getPaginationPages = () => {
         const pages: (number | string)[] = [];
         const maxVisiblePages = 5;
-
-        if (totalPages <= maxVisiblePages) {
-            for (let i = 1; i <= totalPages; i++) pages.push(i);
-        } else {
+        if (totalPages <= maxVisiblePages) for (let i = 1; i <= totalPages; i++) pages.push(i);
+        else {
             pages.push(1);
             let startPage = Math.max(2, page - 1);
             let endPage = Math.min(totalPages - 1, page + 1);
-
             if (page <= 3) endPage = 4;
             else if (page >= totalPages - 2) startPage = totalPages - 3;
-
             if (startPage > 2) pages.push("...");
             for (let i = startPage; i <= endPage; i++) pages.push(i);
             if (endPage < totalPages - 1) pages.push("...");
             pages.push(totalPages);
         }
-
         return pages;
     };
-
-    const renderPrice = (prices: PriceItem[], type: string, label: string) => {
-        const price = prices.find(p => p.type === type);
-        if (!price || price.value === null) return null;
-        return <div>{label}: {price.value} {price.currency}</div>;
-    };
-
-    type FilterValue = string | Point;
-    const handleApplyFilters = () => {
-        setPage(1);
-        fetchRoutes(); // Теперь явно вызываем fetchRoutes при нажатии на лупу
-    };
-
-    const filterFieldMap: Record<string, string> = {
-        "Компания": "company",
-        "Тип маршрута": "route_type",
-        "Контейнер": "container",
-        "Точка отправления": "start_point",
-        "Точка прибытия": "end_point",
-        "Диапазон дат": "effective_range",
-    };
+    if (loading) return <div className="page_div">Загрузка...</div>;
 
     const availableFilterFields = optionsDropdown.filter.filter(
         f => !activeFilters.some(af => af.field === f),
@@ -253,32 +364,28 @@ export function RoutesTable() {
             setActiveFilters([ ...activeFilters, { field: availableFilterFields[0], value: "" } ]);
         }
     };
-    const buildFilterFields = () => {
-        const obj: Record<string, string | number> = {};
+    const handleRoutesDelete = async (route: Route) => {
+        if (!window.confirm("Удалить маршрут?")) return;
 
-        activeFilters.forEach(f => {
-            const key = filterFieldMap[f.field];
-            if (!key) return;
+        try {
+            const payload = {
+                rail: route.route_type === "rail" ? [ route.id ] : [],
+                sea: route.route_type === "sea" ? [ route.id ] : [],
+            };
 
-            if (f.field === "Диапазон дат" && typeof f.value === "string") {
-                const [ from, to ] = f.value.split("|");
-                if (from) obj["effective_from"] = formatDateForServer(from);
-                if (to) obj["effective_to"] = formatDateForServer(to);
-            } else if (typeof f.value === "object") {
-                obj[key] = `${f.value.RU_country}, ${f.value.RU_city}`;
+            const response = await routesService.deleteRoute(payload);
+
+            if (response.status === "OK") {
+                setRoutes(prev => prev.filter(r => r.id !== route.id));
             } else {
-                obj[key] = f.value;
+                alert("Неизвестная ошибка, удаление отменено.");
             }
-        });
-
-        return obj;
+        } catch (err) {
+            console.error(err);
+            alert("Ошибка сети при удалении маршрута");
+            fetchRoutes();
+        }
     };
-
-    const formatDateForServer = (date: string) => {
-        const [ year, month, day ] = date.split("-");
-        return `${day}.${month}.${year}`;
-    };
-
 
     const handleRemoveFilter = (index: number) => {
         setActiveFilters(prev => prev.filter((_, i) => i !== index));
@@ -291,18 +398,78 @@ export function RoutesTable() {
             copy[index].value = "";
             return copy;
         });
+
+    };
+    const handlePriceFocus = (index: number, type: string) => {
+        setAddingRoutes(prev =>
+            prev.map((route, i) =>
+                i === index
+                    ? {
+                        ...route,
+                        price: route.price.map(p =>
+                            p.type === type && p.value === 0 ? { ...p, value: null } : p,
+                        ),
+                    }
+                    : route,
+            ),
+        );
+    };
+    const handleSelectRoute = (routeId: number, checked: boolean) => {
+        setSelectedRouteIds(prev => {
+            if (checked) return [ ...prev, routeId ];
+            return prev.filter(id => id !== routeId);
+        });
     };
 
-    const handleChangeFilterValue = (index: number, value: FilterValue) => {
+    const handleDeleteSelectedRoutes = async () => {
+        if (!window.confirm("Удалить выбранные маршруты?")) return;
+
+        try {
+            const payload: { rail: number[]; sea: number[] } = { rail: [], sea: [] };
+
+            selectedRouteIds.forEach(id => {
+                const route = routes.find(r => r.id === id);
+                if (route) payload[route.route_type].push(route.id);
+            });
+
+            const response = await routesService.deleteRoute(payload);
+
+            if (response.status === "OK") {
+                setRoutes(prev => prev.filter(r => !selectedRouteIds.includes(r.id)));
+                setSelectedRouteIds([]);
+            } else {
+                alert("Не удалось удалить все маршруты");
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Ошибка сети при удалении маршрутов");
+            fetchRoutes();
+        }
+    };
+
+    const handlePriceBlur = (index: number, type: string) => {
+        setAddingRoutes(prev =>
+            prev.map((route, i) =>
+                i === index
+                    ? {
+                        ...route,
+                        price: route.price.map(p =>
+                            p.type === type && (p.value === null || p.value === undefined) ? { ...p, value: 0 } : p,
+                        ),
+                    }
+                    : route,
+            ),
+        );
+    };
+
+    const handleChangeFilterValue = (index: number, value: any) => {
         setActiveFilters(prev => {
             const copy = [ ...prev ];
             copy[index].value = value;
             return copy;
         });
     };
-
-
-    if (loading) return <div className="page_div">Загрузка...</div>;
+    const handleApplyFilters = () => { setPage(1); fetchRoutes(); };
 
     return (
         <div className="page_div">
@@ -311,9 +478,15 @@ export function RoutesTable() {
             <div className="control_panel_div">
                 <button className="control_btn" onClick={ () => setIsModalOpen(true) }>Создать точку</button>
                 <button onClick={ handleAddRoute } className="control_btn">Создать маршрут</button>
+                <button
+                    className="control_btn"
+                    onClick={ handleDeleteSelectedRoutes }
+                    disabled={ selectedRouteIds.length === 0 }
+                >
+                    Удалить выбранные
+                </button>
             </div>
 
-            {error && <div className="error_message">{error}</div>}
             <div className="filter_div">
                 {activeFilters.map((filter, index) => {
                     const remainingFields = optionsDropdown.filter.filter(
@@ -332,9 +505,9 @@ export function RoutesTable() {
 
                                 {filter.field === "Тип маршрута" && (
                                     <Dropdown
-                                        options={ optionsDropdown.routeType }
-                                        selected={ typeof filter.value === "string" ? filter.value : "" }
-                                        onSelect={ val => handleChangeFilterValue(index, val) }
+                                        options={ [ "ЖД", "Морской" ] }
+                                        selected={ typeof filter.value === "string" ? reverseRouteTypeMapping[filter.value as keyof typeof reverseRouteTypeMapping] || "" : "" }
+                                        onSelect={ val => handleChangeFilterValue(index, routeTypeMapping[val as keyof typeof routeTypeMapping]) }
                                         className="filter-dropdown-wrapper"
                                         placeholder="Выберите тип"
                                     />
@@ -342,7 +515,7 @@ export function RoutesTable() {
 
                                 {filter.field === "Компания" && (
                                     <Dropdown
-                                        options={ optionsDropdown.company }
+                                        options={ companies.map(c => c.name) }
                                         selected={ typeof filter.value === "string" ? filter.value : "" }
                                         onSelect={ val => handleChangeFilterValue(index, val) }
                                         className="filter-dropdown-wrapper"
@@ -352,7 +525,7 @@ export function RoutesTable() {
 
                                 {filter.field === "Контейнер" && (
                                     <Dropdown
-                                        options={ optionsDropdown.container }
+                                        options={ containers.map(c => c.name) }
                                         selected={ typeof filter.value === "string" ? filter.value : "" }
                                         onSelect={ val => handleChangeFilterValue(index, val) }
                                         className="filter-dropdown-wrapper"
@@ -365,27 +538,17 @@ export function RoutesTable() {
                                         <input
                                             type="date"
                                             value={ typeof filter.value === "string" ? filter.value.split("|")[0] || "" : "" }
-                                            onChange={ e =>
-                                                handleChangeFilterValue(
-                                                    index,
-                                                    `${e.target.value}|${typeof filter.value === "string" ? filter.value.split("|")[1] || "" : ""}`,
-                                                )
-                                            }
+                                            onChange={ e => handleChangeFilterValue(index, `${e.target.value}|${typeof filter.value === "string" ? filter.value.split("|")[1] || "" : ""}`) }
                                             className="date-input"
                                             placeholder="Дата начала"
                                         />
-                                        -
+                                        {"  -  "}
                                         <input
                                             type="date"
                                             value={ typeof filter.value === "string" ? filter.value.split("|")[1] || "" : "" }
-                                            onChange={ e =>
-                                                handleChangeFilterValue(
-                                                    index,
-                                                    `${typeof filter.value === "string" ? filter.value.split("|")[0] || "" : ""}|${e.target.value}`,
-                                                )
-                                            }
-                                            placeholder="Дата окончания"
+                                            onChange={ e => handleChangeFilterValue(index, `${typeof filter.value === "string" ? filter.value.split("|")[0] || "" : ""}|${e.target.value}`) }
                                             className="date-input"
+                                            placeholder="Дата окончания"
                                         />
                                     </div>
                                 )}
@@ -399,16 +562,14 @@ export function RoutesTable() {
                                     />
                                 )}
 
-                                <button
-                                    className="cancel_magnifier_btn"
-                                    onClick={ () => handleRemoveFilter(index) }
-                                >
+                                <button className="cancel_magnifier_btn" onClick={ () => handleRemoveFilter(index) }>
                                     <img src={ cross } className="cancel_magnifier_img" />
                                 </button>
                             </div>
                         </div>
                     );
                 })}
+
                 <div className="control_filter_div">
                     {availableFilterFields.length > 0 && (
                         <button className="filter_btn" onClick={ handleAddFilter }>
@@ -416,117 +577,238 @@ export function RoutesTable() {
                         </button>
                     )}
 
-                    <button
-                        className="magnifier_btn"
-                        onClick={ handleApplyFilters }
-                    >
+                    <button className="magnifier_btn" onClick={ handleApplyFilters }>
                         <img src={ magnifier } alt="Поиск" className="magnifier_img" />
                     </button>
                 </div>
-
             </div>
-
-
 
             <div className="table_div">
                 <table>
                     <thead>
                         <tr>
-                            <th></th>
-                            <th>Компания</th>
-                            <th>Тип маршрута</th>
-                            <th>Контейнер</th>
-                            <th>Диапазон дат</th>
-                            <th>Точка отправки</th>
-                            <th>Точка прибытия</th>
-                            <th>Цены</th>
-                            <th>Действия</th>
+                            <th className="cell_cb"></th>
+                            <th className="cell">Компания</th>
+                            <th className="cell">Тип<br />маршрута</th>
+                            <th className="cell">Контейнер</th>
+                            <th className="cell">Диапазон<br />дат</th>
+                            <th className="cell">Точка<br />отправки</th>
+                            <th className="cell">Точка<br />прибытия</th>
+                            <th className="cell">Цены</th>
+                            <th className="cell">Действия</th>
                         </tr>
                     </thead>
                     <tbody>
                         {routes.map(route => {
-                            const isSea = route.route_type === "sea";
-                            const priceItems = route.price || [];
-
                             return (
                                 <tr key={ route.id }>
-                                    <td><input type="checkbox" /></td>
-                                    <td>{route.company.name}</td>
-                                    <td>{isSea ? "Морской" : "ЖД"}</td>
-                                    <td>{route.container.name}</td>
-                                    <td>{formatDate(route.effective_from)} - {formatDate(route.effective_to)}</td>
-                                    <td>{route.start_point.RU_country}, {route.start_point.RU_city}</td>
-                                    <td>{route.end_point.RU_country}, {route.end_point.RU_city}</td>
-                                    <td className="price-cell">
-                                        {isSea ? (
-                                            <div className="sea-prices">
-                                                {renderPrice(priceItems, "fifo", "FIFO")}
-                                                {renderPrice(priceItems, "filo", "FILO")}
-                                            </div>
+                                    <td className="cell_cb">
+                                        <input
+                                            type="checkbox"
+                                            checked={ selectedRouteIds.includes(route.id) }
+                                            onChange={ e => handleSelectRoute(route.id, e.target.checked) }
+                                        />
+                                    </td>
+                                    <td className="cell">
+                                        {editingRouteId === route.id ? (
+                                            <Dropdown
+                                                options={ companies.map(c => c.name) }
+                                                selected={ editedRoute?.company.name || "" }
+                                                onSelect={ val => setEditedRoute(prev => prev ? { ...prev, company: companies.find(c => c.name === val)! } : prev) }
+                                            />
                                         ) : (
-                                            <div className="rail-prices">
-                                                {renderPrice(priceItems, "price", "Price")}
-                                                {renderPrice(priceItems, "guard", "Guard")}
-                                                {renderPrice(priceItems, "drop", "Drop")}
-                                            </div>
+                                            route.company.name
                                         )}
                                     </td>
-                                    <td>
+
+                                    <td className="cell">
+                                        {editingRouteId === route.id ? (
+                                            <Dropdown
+                                                options={ [ "ЖД", "Морской" ] }
+                                                selected={ editedRoute?.route_type === "sea" ? "Морской" : "ЖД" }
+                                                onSelect={ () => alert("Нельзя изменять тип маршрута") }
+                                            />
+                                        ) : (
+                                            route.route_type === "sea" ? "Морской" : "ЖД"
+                                        )}
+                                    </td>
+
+                                    <td className="cell">
+                                        {editingRouteId === route.id ? (
+                                            <Dropdown
+                                                options={ containers.map(c => c.name) }
+                                                selected={ editedRoute?.container.name || "" }
+                                                onSelect={ val => setEditedRoute(prev => prev ? { ...prev, container: containers.find(c => c.name === val)! } : prev) }
+                                            />
+                                        ) : (
+                                            route.container.name
+                                        )}
+                                    </td>
+
+                                    <td className="cell">
+                                        {editingRouteId === route.id ? (
+                                            <>
+                                                <input
+                                                    type="date"
+                                                    value={ formatDateISO(editedRoute?.effective_from || route.effective_from) }
+                                                    className="date-input"
+                                                    onChange={ e => setEditedRoute(prev => prev ? { ...prev, effective_from: e.target.value } : prev) }
+                                                />
+                                                <br />
+                                                -
+                                                <br />
+                                                <input
+                                                    type="date"
+                                                    className="date-input"
+                                                    value={ formatDateISO(editedRoute?.effective_to || route.effective_to)  }
+                                                    onChange={ e => setEditedRoute(prev => prev ? { ...prev, effective_to: e.target.value } : prev) }
+                                                />
+                                            </>
+                                        ) : (
+                                            <>
+                                                {formatDate(route.effective_from)}
+                                                <br />
+                                                -
+                                                <br />
+                                                {formatDate(route.effective_to)}
+                                            </>
+                                        )}
+                                    </td>
+
+                                    <td className="cell">
+                                        {editingRouteId === route.id ? (
+                                            <SearchableDropdown
+                                                value={ editedRoute?.start_point || null }
+                                                onSelect={ p => setEditedRoute(prev => prev ? { ...prev, start_point: p } : prev) }
+                                            />
+                                        ) : (
+                                            `${route.start_point.RU_country}, ${route.start_point.RU_city}`
+                                        )}
+                                    </td>
+
+                                    <td className="cell">
+                                        {editingRouteId === route.id ? (
+                                            <SearchableDropdown
+                                                value={ editedRoute?.end_point || null }
+                                                onSelect={ p => setEditedRoute(prev => prev ? { ...prev, end_point: p } : prev) }
+                                            />
+                                        ) : (
+                                            `${route.end_point.RU_country}, ${route.end_point.RU_city}`
+                                        )}
+                                    </td>
+
+                                    <td className="cell">
+                                        {editingRouteId === route.id ? (
+                                            <div className="price-edit-grid">
+                                                {(route.route_type === "sea" ? [ "fifo","filo" ] : [ "price","guard","drop" ]).map(type => (
+                                                    <div key={ type } className="price-row">
+                                                        <span className="price-label">{type.toUpperCase()}:</span>
+                                                        <input
+                                                            type="number"
+                                                            value={ editedRoute?.price.find(p => p.type === type)?.value ?? "" }
+                                                            className="table_input price-input"
+                                                            onChange={ e => setEditedRoute(prev => prev ? {
+                                                                ...prev,
+                                                                price: prev.price.map(p => p.type === type ? { ...p, value: Number(e.target.value) } : p),
+                                                            } : prev) }
+                                                        />
+                                                        <Dropdown
+                                                            options={ [ "RUB","USD","EUR" ] }
+                                                            selected={ editedRoute?.price.find(p => p.type === type)?.currency || "USD" }
+                                                            className="currency-dropdown"
+                                                            onSelect={ currency => setEditedRoute(prev => prev ? {
+                                                                ...prev,
+                                                                price: prev.price.map(p => p.type === type ? { ...p, currency } : p),
+                                                            } : prev) }
+                                                        />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <>
+                                                {(route.route_type === "sea" ? [ "fifo","filo" ] : [ "price","guard","drop" ]).map(type => {
+                                                    const p = route.price.find(p => p.type === type);
+                                                    if (!p || p.value === null) return null;
+                                                    return <div key={ type }>{type.toUpperCase()}: {p.value} {p.currency}</div>;
+                                                })}
+                                            </>
+                                        )}
+                                    </td>
+
+                                    <td className="cell">
                                         <div className="action_div">
-                                            <button className="actions_trashcan_btn" onClick={ () => handleRoutesDelete(route.id) }>
-                                                <img src={ trashcan } alt="удалить" className="actions_img" />
-                                            </button>
-                                            <button className="actions_copying_btn" onClick={ () => handleCopyRoute(route) }>
-                                                <img src={ copying } alt="копировать" className="actions_img" />
-                                            </button>
+                                            {editingRouteId === route.id ? (
+                                                <>
+                                                    <button className="actions_save_btn" onClick={ () => handleSaveEditedRoute(route.id) }>
+                                                        <img src={ accessMarks } alt="сохранить" className="actions_img" />
+                                                    </button>
+                                                    <button className="actions_cancel_btn" onClick={ handleCancelEdit }>
+                                                        <img src={ cross } alt="отменить" className="actions_img" />
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <button className="actions_edit_btn" onClick={ () => handleEditRoute(route) }>
+                                                        <img src={ changeMarker } alt="изменить" className="actions_img" />
+                                                    </button>
+                                                    <button className="actions_trashcan_btn" onClick={ () => handleRoutesDelete(route) }>
+                                                        <img src={ trashcan } alt="удалить" className="actions_img" />
+                                                    </button>
+                                                    <button className="actions_copying_btn" onClick={ () => handleCopyRoute(route) }>
+                                                        <img src={ copying } alt="копировать" className="actions_img" />
+                                                    </button>
+                                                </>
+                                            )}
                                         </div>
                                     </td>
+
                                 </tr>
                             );
                         })}
 
                         {addingRoutes.map((newRoute, index) => {
                             const isSea = newRoute.route_type === "sea";
-
                             return (
                                 <tr key={ `adding-${index}` }>
                                     <td></td>
                                     <td>
                                         <Dropdown
-                                            options={ optionsDropdown.company }
+                                            options={ companies.map(c => c.name) }
                                             selected={ newRoute.company.name }
-                                            className="add-route-dropdown-wrapper"
-                                            onSelect={ val => handleChangeNewRouteField(index, "company", { id: 0, name: val }) }
-                                            placeholder="Выберите компанию"
+                                            onSelect={ val => handleChangeNewRouteField(index, "company", companies.find(c => c.name === val)) }
                                         />
                                     </td>
                                     <td>
                                         <Dropdown
                                             options={ optionsDropdown.routeType }
                                             selected={ isSea ? "Морской" : "ЖД" }
-                                            className="add-route-dropdown-wrapper"
                                             onSelect={ val => handleChangeNewRouteField(index, "route_type", val === "ЖД" ? "rail" : "sea") }
-                                            placeholder="Выберите тип"
                                         />
                                     </td>
                                     <td>
                                         <Dropdown
-                                            options={ optionsDropdown.container }
+                                            options={ containers.map(c => c.name) }
                                             selected={ newRoute.container.name }
-                                            className="add-route-dropdown-wrapper"
-                                            onSelect={ val => handleChangeNewRouteField(index, "container", { ...newRoute.container, name: val }) }
-                                            placeholder="Выберите контейнер"
+                                            onSelect={ val => handleChangeNewRouteField(index, "container", containers.find(c => c.name === val)) }
                                         />
                                     </td>
                                     <td>
-                                        <input type="date" value={ newRoute.effective_from } className="date-input" onChange={ e => handleChangeNewRouteField(index, "effective_from", e.target.value) } placeholder="Дата начала" />
-                                        <input type="date" value={ newRoute.effective_to } className="date-input" onChange={ e => handleChangeNewRouteField(index, "effective_to", e.target.value) } placeholder="Дата окончания" />
+                                        <input
+                                            type="date"
+                                            value={ formatDateISO(formatDate(newRoute.effective_from)) }
+                                            className="date-input"
+                                            onChange={ e => handleChangeNewRouteField(index, "effective_from", e.target.value) } />
+                                        -<br />
+                                        <input type="date"
+                                            className="date-input"
+                                            value={ formatDateISO(formatDate(newRoute.effective_to)) }
+                                            onChange={ e => handleChangeNewRouteField(index, "effective_to", e.target.value) } />
                                     </td>
                                     <td>
-                                        <SearchableDropdown value={ newRoute.start_point } className="add-route-dropdown-wrapper" onSelect={ point => handleChangeNewRouteField(index, "start_point", point) } placeholder="Выберите точку отправления" />
+                                        <SearchableDropdown value={ newRoute.start_point } onSelect={ p => handleChangeNewRouteField(index, "start_point", p) } />
                                     </td>
                                     <td>
-                                        <SearchableDropdown value={ newRoute.end_point } className="add-route-dropdown-wrapper" onSelect={ point => handleChangeNewRouteField(index, "end_point", point) } placeholder="Выберите точку прибытия" />
+                                        <SearchableDropdown value={ newRoute.end_point } onSelect={ p => handleChangeNewRouteField(index, "end_point", p) } />
                                     </td>
                                     <td>
                                         {isSea ? (
@@ -534,7 +816,14 @@ export function RoutesTable() {
                                                 {[ "fifo", "filo" ].map(type => (
                                                     <div key={ type } className="price-row">
                                                         <span className="price-label">{type.toUpperCase()}:</span>
-                                                        <input type="number" value={ newRoute.price.find(p => p.type === type)?.value ?? 0 } className="table_input price-input" onChange={ e => handleChangePriceValue(index, type, Number(e.target.value)) } />
+                                                        <input
+                                                            type="number"
+                                                            value={ newRoute.price.find(p => p.type === type)?.value ?? "" }
+                                                            className="table_input price-input"
+                                                            onFocus={ () => handlePriceFocus(index, type) }
+                                                            onBlur={ () => handlePriceBlur(index, type) }
+                                                            onChange={ e => handleChangePriceValue(index, type, Number(e.target.value)) }
+                                                        />
                                                         <Dropdown options={ optionsDropdown.currency } selected={ newRoute.price.find(p => p.type === type)?.currency || "USD" } className="currency-dropdown" onSelect={ currency => handleChangePriceCurrency(index, type, currency) } placeholder="Валюта" />
                                                     </div>
                                                 ))}
@@ -544,7 +833,14 @@ export function RoutesTable() {
                                                 {[ "price", "guard", "drop" ].map(type => (
                                                     <div key={ type } className="price-row">
                                                         <span className="price-label">{type.charAt(0).toUpperCase() + type.slice(1)}:</span>
-                                                        <input type="number" value={ newRoute.price.find(p => p.type === type)?.value ?? 0 } className="table_input price-input" onChange={ e => handleChangePriceValue(index, type, Number(e.target.value)) } />
+                                                        <input
+                                                            type="number"
+                                                            value={ newRoute.price.find(p => p.type === type)?.value ?? "" }
+                                                            className="table_input price-input"
+                                                            onFocus={ () => handlePriceFocus(index, type) }
+                                                            onBlur={ () => handlePriceBlur(index, type) }
+                                                            onChange={ e => handleChangePriceValue(index, type, Number(e.target.value)) }
+                                                        />
                                                         <Dropdown options={ optionsDropdown.currency } selected={ newRoute.price.find(p => p.type === type)?.currency || (type === "price" ? "RUB" : "USD") } className="currency-dropdown" onSelect={ currency => handleChangePriceCurrency(index, type, currency) } placeholder="Валюта" />
                                                     </div>
                                                 ))}

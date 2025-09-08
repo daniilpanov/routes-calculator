@@ -1,12 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import "../resources/scss/components/dropdown_style.scss";
 import { pointsService } from "../api/Points";
+import { Point } from "../interfaces/Points";
 
-export interface Point {
-    id: number;
-    RU_city: string;
-    RU_country: string;
-}
 
 interface SearchableDropdownProps {
     placeholder?: string;
@@ -83,7 +79,7 @@ export const SearchableDropdown = ({
         setIsOpen(true);
 
         if (newValue === "") {
-            onSelect({ id: 0, RU_city: "", RU_country: "" });
+            onSelect({ id: 0, RU_city: "", RU_country: "", country: "", city: "" });
             setOptions([]);
         }
     };

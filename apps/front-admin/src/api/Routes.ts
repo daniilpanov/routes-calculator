@@ -1,25 +1,14 @@
-import axios from "axios";
+import { api } from "./api";
 import { API_ENDPOINTS } from "./ApiConfig";
-import { DeleteRouteResponse, GetRoutesResponse, Route } from "../interfaces/Routes";
-
-
-export interface CreateRouteRequest {
-    company: string;
-    container: string;
-    start_point_name: string;
-    end_point_name: string;
-    effective_from: string;
-    effective_to: string;
-    price: {
-        [key: string]: number;
-    };
-}
-
-export interface CreateRouteResponse {
-    status: string;
-    new_route: Route;
-}
-
+import {
+    CreateRouteResponse,
+    DeleteRouteResponse,
+    GetRoutesResponse,
+    RouteCreateRequest,
+    RouteDeleteRequest,
+    RouteEditRequest,
+    RouteEditResponse,
+} from "../interfaces/Routes";
 
 export const routesService = {
     async getRoutes(
@@ -27,49 +16,34 @@ export const routesService = {
         limit = 25,
         filter_fields: Record<string, string | number> = {},
     ): Promise<GetRoutesResponse> {
-        try {
-            const response = await axios.post<GetRoutesResponse>(
-                API_ENDPOINTS.ROUTES.GET,
-                { page, limit, filter_fields },
-                {
-                    headers: { "Content-Type": "application/json" },
-                    withCredentials: true,
-                },
-            );
-            return response.data;
-        } catch (error) {
-            throw new Error("Unexpected error during getRoutes");
-        }
+        const response = await api.post<GetRoutesResponse>(
+            API_ENDPOINTS.ROUTES.GET,
+            { page, limit, filter_fields },
+        );
+        return response.data;
     },
 
-
-    async deleteRoute(id: number): Promise<DeleteRouteResponse> {
-        try {
-            const response = await axios.delete<DeleteRouteResponse>(
-                `${API_ENDPOINTS.ROUTES.DELETE}?route_id=${id}`,
-                {
-                    headers: { "Content-Type": "application/json" },
-                    withCredentials: true,
-                },
-            );
-            return response.data;
-        } catch (error) {
-            throw new Error("Unexpected error during deleteRoute");
-        }
+    async deleteRoute(data: RouteDeleteRequest): Promise<DeleteRouteResponse> {
+        const response = await api.delete<DeleteRouteResponse>(
+            API_ENDPOINTS.ROUTES.DELETE,
+            { data },
+        );
+        return response.data;
     },
-    async createRoute(data: CreateRouteRequest): Promise<CreateRouteResponse> {
-        try {
-            const response = await axios.post<CreateRouteResponse>(
-                API_ENDPOINTS.ROUTES.CREATE,
-                data,
-                {
-                    headers: { "Content-Type": "application/json" },
-                    withCredentials: true,
-                },
-            );
-            return response.data;
-        } catch (error) {
-            throw new Error("Unexpected error during createRoute");
-        }
+
+    async createRoute(data: RouteCreateRequest): Promise<CreateRouteResponse> {
+        const response = await api.post<CreateRouteResponse>(
+            API_ENDPOINTS.ROUTES.CREATE,
+            data,
+        );
+        return response.data;
+    },
+
+    async editRoute(data: RouteEditRequest): Promise<RouteEditResponse> {
+        const response = await api.put<RouteEditResponse>(
+            API_ENDPOINTS.ROUTES.EDIT,
+            data,
+        );
+        return response.data;
     },
 };
