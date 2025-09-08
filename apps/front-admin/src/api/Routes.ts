@@ -1,15 +1,36 @@
 import axios from "axios";
 import { API_ENDPOINTS } from "./ApiConfig";
-import { DeleteRouteResponse, GetRoutesResponse } from "../interfaces/Routes";
+import { DeleteRouteResponse, GetRoutesResponse, Route } from "../interfaces/Routes";
 
+
+export interface CreateRouteRequest {
+    company: string;
+    container: string;
+    start_point_name: string;
+    end_point_name: string;
+    effective_from: string;
+    effective_to: string;
+    price: {
+        [key: string]: number;
+    };
+}
+
+export interface CreateRouteResponse {
+    status: string;
+    new_route: Route;
+}
 
 
 export const routesService = {
-    async getRoutes(page = 1, limit = 25): Promise<GetRoutesResponse> {
+    async getRoutes(
+        page = 1,
+        limit = 25,
+        filter_fields: Record<string, string | number> = {},
+    ): Promise<GetRoutesResponse> {
         try {
             const response = await axios.post<GetRoutesResponse>(
                 API_ENDPOINTS.ROUTES.GET,
-                { page, limit, filter_fields: {} },
+                { page, limit, filter_fields },
                 {
                     headers: { "Content-Type": "application/json" },
                     withCredentials: true,
@@ -20,6 +41,7 @@ export const routesService = {
             throw new Error("Unexpected error during getRoutes");
         }
     },
+
 
     async deleteRoute(id: number): Promise<DeleteRouteResponse> {
         try {
@@ -35,11 +57,11 @@ export const routesService = {
             throw new Error("Unexpected error during deleteRoute");
         }
     },
-    async createRoute(): Promise<any> {
+    async createRoute(data: CreateRouteRequest): Promise<CreateRouteResponse> {
         try {
-            const response = await axios.post<GetRoutesResponse>(
+            const response = await axios.post<CreateRouteResponse>(
                 API_ENDPOINTS.ROUTES.CREATE,
-                null,
+                data,
                 {
                     headers: { "Content-Type": "application/json" },
                     withCredentials: true,

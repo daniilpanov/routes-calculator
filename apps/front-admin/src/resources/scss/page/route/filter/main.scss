@@ -1,9 +1,82 @@
 .filter_div {
   display: flex;
-  align-items: center;
-  justify-content: left;
-  flex-direction: row;
-  border: #1a1d20 solid 1px;
+  align-items: flex-start;
+  justify-content: center;
+  flex-direction: column;
   width: 95%;
   height: 100%;
 }
+.magnifier_btn{
+
+  background: rgba(255, 255, 255, .9);
+  padding: 3px 0;
+  display: flex;
+  color: #444;
+  font-size: 15px;
+  font-weight: bold;
+  height: 40px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 5px;
+  text-decoration: none;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+.magnifier_img{
+  height: 37px;
+  width: 37px;
+  cursor: pointer;
+  &:hover {
+    background: rgba(0, 0, 0, 0.05);
+  }
+}
+.cancel_magnifier_btn{
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 5px;
+  background: rgba(168, 25, 25, 0.59);
+  padding: 0;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+}
+.cancel_magnifier_img{
+  height: 30px;
+  width: 30px;
+  cursor: pointer;
+}
+.control_filter_div{
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  margin: 5px 0;
+}
+.filter_item_div{
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: left;
+}
+.filter_btn {
+  background: rgba(255, 255, 255, .9);
+  padding: 0 15px;
+  display: flex;
+  color: #444;
+  font-size: 15px;
+  font-weight: bold;
+  height: 40px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 5px;
+  text-decoration: none;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.3s;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.05);
+  }
+}
+

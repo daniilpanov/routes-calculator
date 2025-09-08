@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import "../resources/scss/components/dropdown_style.scss";
 import { pointsService } from "../api/Points";
 
-interface Point {
+export interface Point {
     id: number;
     RU_city: string;
     RU_country: string;
