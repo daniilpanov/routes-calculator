@@ -7,12 +7,13 @@ class SeaPrices(BaseModel):
 
 
 class RailPrices(BaseModel):
-    price: int | None = None
-    drop: int | None = None
+    price: int
+    drop: int = 0
     guard: int | None = None
 
 
 class AddRouteRequest(BaseModel):
+    route_type: str
     company_id: int
     container_id: int
     start_point_id: int
