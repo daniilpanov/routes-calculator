@@ -36,6 +36,7 @@ class FilterParams(BaseModel):
 class FilterRoutesRequest(BaseModel):
     page: int = 1
     limit: int = 25
+    batch_id: int | None = None
     filter_fields: FilterParams
 
 

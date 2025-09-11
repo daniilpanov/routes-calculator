@@ -88,6 +88,8 @@ async def getRoutes(_filter: FilterRoutesRequest):
         joinedload(RailRouteModel.company),
         joinedload(RailRouteModel.start_point),
         joinedload(RailRouteModel.end_point),
+    ).where(
+        RailRouteModel.batch_id.is_(None) if not _filter.batch_id else RailRouteModel.batch_id == _filter.batch_id,
     )
 
     sea_stmt = select(
@@ -97,6 +99,8 @@ async def getRoutes(_filter: FilterRoutesRequest):
         joinedload(SeaRouteModel.company),
         joinedload(SeaRouteModel.start_point),
         joinedload(SeaRouteModel.end_point),
+    ).where(
+        SeaRouteModel.batch_id.is_(None) if not _filter.batch_id else SeaRouteModel.batch_id == _filter.batch_id,
     )
 
     no_key_fields = ["effective_from", "effective_to", "route_type"]

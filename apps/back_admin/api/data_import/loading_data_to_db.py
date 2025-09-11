@@ -1,7 +1,11 @@
+import datetime
+
 import pandas as pd
 from dotenv import load_dotenv
 from fastapi import APIRouter
 from sqlalchemy import select
+
+from back_admin.models.route import BatchModel
 
 load_dotenv(".env.local") or load_dotenv("../.env.local")
 
@@ -14,15 +18,15 @@ from back_admin.models import (
 router = APIRouter(prefix="/r", tags=["r"])
 
 
-def extract_data(df: pd.DataFrame):
-    services = df["Service"].unique()
+def extract_data(df: pd.DataFrame, company_col):
+    services = df[company_col].unique()
 
     points = pd.concat(  # noqa: ECE001
         [
-            df[["Service", "POL COUNTRY", "POL FULL NAME"]].rename(
+            df[[company_col, "POL COUNTRY", "POL FULL NAME"]].rename(
                 columns={"POL COUNTRY": "Country", "POL FULL NAME": "City"},
             ),
-            df[["Service", "POD COUNTRY", "POD FULL NAME"]].rename(
+            df[[company_col, "POD COUNTRY", "POD FULL NAME"]].rename(
                 columns={"POD COUNTRY": "Country", "POD FULL NAME": "City"},
             ),
         ]
@@ -89,8 +93,9 @@ def create_independent_models(services, points, containers):
         service_models[service] = CompanyModel(name=service)
 
     for _, point in points.iterrows():
-        point_models[(point["Country"], point["City"])] = PointModel(
-            country=point["Country"], city=point["City"]
+        point_models[(point["Country"], point["City"])] = PointModel(  # todo: check parse for spaces
+            country=point["Country"].strip().title() if point["Country"] != "UAE" else point["Country"].strip(),
+            city=point["City"].strip().title()
         )
 
     container_models, container_typed_models = group_containers(containers)
@@ -107,6 +112,8 @@ def create_routes(
     points,
     containers_3_keys,
     containers_2_keys,
+    company_col,
+    dates_col,
 ):
     models = []
     for _, route in df.iterrows():
@@ -117,13 +124,11 @@ def create_routes(
         else:
             continue
 
-        print(route)
-        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-
+        date_from, date_to = dates_col.split(";")
         values = {
-            "effective_from": route["EFFECTIVE FROM"],
-            "effective_to": route["EFFECTIVE TO"],
-            "company": services.get(route["Service"]),
+            "effective_from": route[date_from],
+            "effective_to": route[date_to],
+            "company": services.get(route[company_col]),
             "start_point": points.get(
                 (
                     route["POL COUNTRY"],
@@ -203,21 +208,29 @@ async def write_entities(entities, session):
     entities = await select_only_new(entities, session)
     if entities:
         session.add_all(entities)
+    return len(entities)
 
 
 async def write_independent_data(services, points, containers, session):
-    await write_entities(services, session)
+    if services:
+        await write_entities(services, session)
     await write_entities(containers, session)
-    await write_entities(points, session)
+    count_points = await write_entities(points, session)
     await session.flush()
+    return count_points
 
 
 async def write_routes(routes, session):
+    new_batch_id = BatchModel(create_date=datetime.datetime.now())
+    session.add(new_batch_id)
+    await session.flush()
+
     for route in routes:
         route.company = await session.merge(route.company, load=True)
         route.container = await session.merge(route.container, load=True)
         route.start_point = await session.merge(route.start_point, load=True)
         route.end_point = await session.merge(route.end_point, load=True)
+        route.batch_id = new_batch_id.id
 
     for route in routes:
         try:
@@ -230,10 +243,9 @@ async def write_routes(routes, session):
     await session.flush()
 
 
-def validate_route_data(df):
+def validate_route_data(df, company_col, dates_col):
     # Check duplicates.
     dup_check_cols = [
-        "Service",
         "POL COUNTRY",
         "POL FULL NAME",
         "POD COUNTRY",
@@ -241,9 +253,13 @@ def validate_route_data(df):
         "CONTAINER TYPE",
         "CONTAINER SIZE",
         "Container weight limit",
-        "EFFECTIVE FROM",
-        "EFFECTIVE TO",
     ]
+
+    if company_col:
+        dup_check_cols += [company_col]
+    if dates_col:
+        dup_check_cols += dates_col.split(";")
+
     duplicates = df[df.duplicated(subset=dup_check_cols, keep=False)]
     if not duplicates.empty:
         print("Duplicates occurred:")
@@ -251,9 +267,48 @@ def validate_route_data(df):
         raise ValueError("Duplicates occurred")
 
 
-def parse_date(date_str):
+def parse_date(date_input):
+    if pd.isna(date_input):
+        return None
+
+    if isinstance(date_input, pd.Timestamp):
+        return date_input.to_pydatetime()
+
+    if isinstance(date_input, datetime.datetime):
+        return date_input
+
+    if isinstance(date_input, str):
+        try:
+            formats = [
+                "%d-%b-%y",
+                "%d.%m.%Y",
+                "%Y-%m-%d",
+                "%d/%m/%Y",
+                "%m/%d/%Y",
+            ]
+
+            for fmt in formats:
+                try:
+                    return pd.to_datetime(date_input, format=fmt, errors="raise")
+                except ValueError:
+                    continue
+
+            return pd.to_datetime(date_input, errors='coerce')
+
+        except Exception as e:
+            print(f"Date parsing error: {date_input}, error: {e}")
+            return None
+
+    if isinstance(date_input, (int, float)):
+        try:
+            if 1000000000 < date_input < 2000000000:
+                return datetime.datetime.fromtimestamp(int(date_input))
+        except Exception as e:
+            print(f"Number date parsing error: {date_input}, error: {e}")
+
     try:
-        return pd.to_datetime(date_str, format="%d-%b-%y", errors="raise")
-    except Exception:
-        print(f"Date parsing error: {date_str}")
-        raise
+        return pd.to_datetime(date_input, errors='coerce').to_pydatetime()
+
+    except Exception as e:
+        print(f"Could not parse date: {date_input}, error: {e}")
+        return None
