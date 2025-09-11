@@ -8,6 +8,12 @@ from . import CompanyModel, ContainerModel
 from .point import PointModel
 
 
+class BatchModel(Base):
+    __tablename__ = "batches"
+    id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
+    create_date: Mapped[datetime.date] = mapped_column(DateTime(timezone=False))
+
+
 class SeaRouteModel(Base):
     uid = (
         "company_id",
@@ -22,6 +28,7 @@ class SeaRouteModel(Base):
     __table_args__ = (UniqueConstraint(*uid),)
 
     id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
+    batch_id: Mapped[int | None] = mapped_column(ForeignKey("batches.id"))
     company_id: Mapped[int] = mapped_column(ForeignKey("companies.id"))
     container_id: Mapped[int] = mapped_column(ForeignKey("containers.id"))
     start_point_id: Mapped[int] = mapped_column(ForeignKey("points.id"))
@@ -60,6 +67,7 @@ class RailRouteModel(Base):
     __table_args__ = (UniqueConstraint(*uid),)
 
     id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
+    batch_id: Mapped[int | None] = mapped_column(ForeignKey("batches.id"))
     company_id: Mapped[int] = mapped_column(ForeignKey("companies.id"))
     container_id: Mapped[int] = mapped_column(ForeignKey("containers.id"))
     start_point_id: Mapped[int] = mapped_column(ForeignKey("points.id"))

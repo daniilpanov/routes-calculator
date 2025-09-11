@@ -1,7 +1,11 @@
+import datetime
+
 import pandas as pd
 from dotenv import load_dotenv
 from fastapi import APIRouter
 from sqlalchemy import select
+
+from back_admin.models.route import BatchModel
 
 load_dotenv(".env.local") or load_dotenv("../.env.local")
 
@@ -14,25 +18,40 @@ from back_admin.models import (
 router = APIRouter(prefix="/r", tags=["r"])
 
 
-def extract_data(df: pd.DataFrame):
-    services = df["Service"].unique()
-
-    points = pd.concat(  # noqa: ECE001
-        [
-            df[["Service", "POL COUNTRY", "POL FULL NAME"]].rename(
-                columns={"POL COUNTRY": "Country", "POL FULL NAME": "City"},
-            ),
-            df[["Service", "POD COUNTRY", "POD FULL NAME"]].rename(
-                columns={"POD COUNTRY": "Country", "POD FULL NAME": "City"},
-            ),
-        ]
-    ).drop_duplicates()
-
+def extract_data(df: pd.DataFrame, company_col: str | None = None):
     containers = df[
         ["CONTAINER TYPE", "CONTAINER SIZE", "Container weight limit"]
     ].drop_duplicates()
 
-    return services, points, containers
+    if company_col:
+        services = df[company_col].unique()
+
+        points = pd.concat(  # noqa: ECE001
+            [
+                df[[company_col, "POL COUNTRY", "POL FULL NAME"]].rename(
+                    columns={"POL COUNTRY": "Country", "POL FULL NAME": "City"},
+                ),
+                df[[company_col, "POD COUNTRY", "POD FULL NAME"]].rename(
+                    columns={"POD COUNTRY": "Country", "POD FULL NAME": "City"},
+                ),
+            ]
+        ).drop_duplicates()
+
+        return services, points, containers
+
+    else:
+        points = pd.concat(  # noqa: ECE001
+            [
+                df[["POL COUNTRY", "POL FULL NAME"]].rename(
+                    columns={"POL COUNTRY": "Country", "POL FULL NAME": "City"},
+                ),
+                df[["POD COUNTRY", "POD FULL NAME"]].rename(
+                    columns={"POD COUNTRY": "Country", "POD FULL NAME": "City"},
+                ),
+            ]
+        ).drop_duplicates()
+
+        return points, containers
 
 
 def group_containers(containers):
@@ -107,6 +126,9 @@ def create_routes(
     points,
     containers_3_keys,
     containers_2_keys,
+    company_col,
+    dates_col,
+    dates,
 ):
     models = []
     for _, route in df.iterrows():
@@ -116,14 +138,15 @@ def create_routes(
                 break
         else:
             continue
-
-        print(route)
-        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-
+        if dates_col:
+            date_from, date_to = dates_col.split(";")
+        else:
+            date_from, date_to = dates.split(" - ")
+            date_from, date_to = parse_date(date_from), parse_date(date_to)
         values = {
-            "effective_from": route["EFFECTIVE FROM"],
-            "effective_to": route["EFFECTIVE TO"],
-            "company": services.get(route["Service"]),
+            "effective_from": route[date_from] if dates_col else date_from,
+            "effective_to": route[date_to] if dates_col else date_to,
+            "company": services.get(route[company_col]) if company_col else services,
             "start_point": points.get(
                 (
                     route["POL COUNTRY"],
@@ -206,18 +229,24 @@ async def write_entities(entities, session):
 
 
 async def write_independent_data(services, points, containers, session):
-    await write_entities(services, session)
+    if services:
+        await write_entities(services, session)
     await write_entities(containers, session)
     await write_entities(points, session)
     await session.flush()
 
 
 async def write_routes(routes, session):
+    new_batch_id = BatchModel(create_date=datetime.datetime.now())
+    session.add(new_batch_id)
+    await session.flush()
+
     for route in routes:
         route.company = await session.merge(route.company, load=True)
         route.container = await session.merge(route.container, load=True)
         route.start_point = await session.merge(route.start_point, load=True)
         route.end_point = await session.merge(route.end_point, load=True)
+        route.batch_id = new_batch_id.id
 
     for route in routes:
         try:
@@ -230,10 +259,9 @@ async def write_routes(routes, session):
     await session.flush()
 
 
-def validate_route_data(df):
+def validate_route_data(df, company_col, dates_col):
     # Check duplicates.
     dup_check_cols = [
-        "Service",
         "POL COUNTRY",
         "POL FULL NAME",
         "POD COUNTRY",
@@ -241,9 +269,13 @@ def validate_route_data(df):
         "CONTAINER TYPE",
         "CONTAINER SIZE",
         "Container weight limit",
-        "EFFECTIVE FROM",
-        "EFFECTIVE TO",
     ]
+
+    if company_col:
+        dup_check_cols += [company_col]
+    if dates_col:
+        dup_check_cols += dates_col.split(";")
+
     duplicates = df[df.duplicated(subset=dup_check_cols, keep=False)]
     if not duplicates.empty:
         print("Duplicates occurred:")
@@ -251,9 +283,46 @@ def validate_route_data(df):
         raise ValueError("Duplicates occurred")
 
 
-def parse_date(date_str):
+def parse_date(date_input):
+    if pd.isna(date_input):
+        return None
+
+    if isinstance(date_input, pd.Timestamp):
+        return date_input
+
+    if isinstance(date_input, datetime.datetime):
+        return pd.Timestamp(date_input)
+
+    if isinstance(date_input, (int, float)):
+        try:
+            return pd.Timestamp('1899-12-30') + pd.Timedelta(days=date_input)
+        except:
+            return pd.to_datetime(date_input, errors='coerce')
+
+    if isinstance(date_input, str):
+        try:
+            formats = [
+                "%d-%b-%y",
+                "%d.%m.%Y",
+                "%Y-%m-%d",
+                "%d/%m/%Y",
+                "%m/%d/%Y",
+            ]
+
+            for fmt in formats:
+                try:
+                    return pd.to_datetime(date_input, format=fmt, errors="raise")
+                except ValueError:
+                    continue
+
+            return pd.to_datetime(date_input, errors='coerce')
+
+        except Exception as e:
+            print(f"Date parsing error: {date_input}, error: {e}")
+            return None
+
     try:
-        return pd.to_datetime(date_str, format="%d-%b-%y", errors="raise")
-    except Exception:
-        print(f"Date parsing error: {date_str}")
-        raise
+        return pd.to_datetime(date_input, errors='coerce')
+    except:
+        print(f"Could not parse date: {date_input}")
+        return None
