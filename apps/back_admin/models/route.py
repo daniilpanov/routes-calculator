@@ -36,8 +36,8 @@ class SeaRouteModel(Base):
     effective_from: Mapped[datetime.date] = mapped_column(DateTime(timezone=False))
     effective_to: Mapped[datetime.date] = mapped_column(DateTime(timezone=False))
 
-    fifo: Mapped[float | None] = mapped_column()
-    filo: Mapped[float | None] = mapped_column()
+    fifo: Mapped[float | None] = mapped_column(nullable=True)
+    filo: Mapped[float | None] = mapped_column(nullable=True)
 
     start_point: Mapped[PointModel] = relationship(
         PointModel, foreign_keys=[start_point_id]
@@ -77,7 +77,7 @@ class RailRouteModel(Base):
 
     price: Mapped[float] = mapped_column()
     drop: Mapped[float] = mapped_column()
-    guard: Mapped[float | None] = mapped_column()
+    guard: Mapped[float | None] = mapped_column(nullable=True, default=None)
 
     start_point: Mapped[PointModel] = relationship(
         PointModel, foreign_keys=[start_point_id]
