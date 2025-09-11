@@ -13,22 +13,22 @@ class RailPrices(BaseModel):
 
 
 class AddRouteRequest(BaseModel):
-    company: str
-    container: str
-    start_point_name: str
-    end_point_name: str
+    company_id: int
+    container_id: int
+    start_point_id: int
+    end_point_id: int
     effective_from: str
     effective_to: str
     price: RailPrices | SeaPrices
 
 
 class FilterParams(BaseModel):
-    start_point: str | None = None
-    end_point: str | None = None
+    start_point_id: int | None = None
+    end_point_id: int | None = None
+    company_id: int | None = None
+    container_id: int | None = None
     effective_from: str | None = None
     effective_to: str | None = None
-    company: str | None = None
-    container: str | None = None
     route_type: str | None = None
     price: RailPrices | SeaPrices | None = None
 
@@ -39,11 +39,11 @@ class FilterRoutesRequest(BaseModel):
     filter_fields: FilterParams
 
 
-class DeleteManyRoutesRequest(BaseModel):
-    rail: list[int]
-    sea: list[int]
+class DeleteRoutesRequest(BaseModel):
+    rail: list[int] | None = None
+    sea: list[int] | None = None
 
 
 class EditRouteRequest(BaseModel):
     route_id: int
-    other_params: FilterParams
+    edit_params: FilterParams
