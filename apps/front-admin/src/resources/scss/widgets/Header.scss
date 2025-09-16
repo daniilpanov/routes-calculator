@@ -1,4 +1,4 @@
-@import "variables";
+@import "../variables";
 
 .app_header {
   width: 300px;
@@ -39,7 +39,6 @@
   display: flex;
   justify-content: center;
 }
-
 
 .nav_btn {
   display: flex;

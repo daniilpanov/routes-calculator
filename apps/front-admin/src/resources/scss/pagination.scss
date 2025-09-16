@@ -1,12 +1,10 @@
-@import "../../variables";
+@import "variables";
 .pagination_controls {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 8px;
-  margin-top: 20px;
   flex-wrap: wrap;
-
   .control_btn {
     padding: 8px 12px;
     border: 1px solid #ccc;
@@ -41,4 +39,12 @@
       }
     }
   }
+}
+.pagination_div{
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
 }

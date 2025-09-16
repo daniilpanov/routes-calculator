@@ -23,4 +23,7 @@ export const API_ENDPOINTS = {
     COMPANIES: {
         GET: "api/company",
     },
+    DATA_IMPORT: {
+        IMPORT: "api/data/import",
+    },
 } as const;

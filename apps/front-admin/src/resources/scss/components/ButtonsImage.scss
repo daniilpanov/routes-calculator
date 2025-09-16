@@ -1,0 +1,31 @@
+$size: 35px;
+
+.actions_btn{
+  width: $size;
+  height: $size;
+  border: none;
+  background: none;
+  padding: 0;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &.cancel {
+      background: rgba(255, 0, 0, 0.65);
+  }
+  &.save {
+      background: rgba(0, 255, 60, 0.49);
+  }
+  &.edit {
+      background: rgba(9, 143, 138, 0.5);
+  }
+  &.copy {
+      background: rgba(94, 92, 92, 0.5);
+  }
+}
+.actions_img{
+  width: $size;
+  height: $size;
+  cursor: pointer;
+}

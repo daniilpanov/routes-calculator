@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from "react";
-import "../resources/scss/components/dropdown_style.scss";
 
 interface DropdownProps {
     options: string[];

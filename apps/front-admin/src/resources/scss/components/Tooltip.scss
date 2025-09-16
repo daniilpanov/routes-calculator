@@ -1,0 +1,58 @@
+@import "../variables";
+.samples_list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-radius: 5px;
+  padding: 10px;
+}
+
+.tooltip_container {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+  border-radius: 5px;
+  padding: 8px 12px;
+  transition: all 0.3s;
+  background-color: #fff;
+  color: #444;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  width: 100%;
+
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+}
+
+.tooltip_word {
+  text-decoration: none;
+  font-family: $base_front_family;
+  text-align: center;
+  display: block;
+}
+
+.tooltip_content {
+  visibility: hidden;
+  opacity: 0;
+  width: 280px;
+  background-color: rgba(0,0,0,0.9);
+  color: #fff;
+  text-align: left;
+  padding: 10px;
+  border-radius: 5px;
+  position: absolute;
+  z-index: 10;
+  top: 100%;
+  left: 100%;
+  margin-left: 10px;
+  margin-top: 5px;
+  font-size: 14px;
+  transition: opacity 0.2s, visibility 0.2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.tooltip_container:hover .tooltip_content {
+  visibility: visible;
+  opacity: 1;
+}
