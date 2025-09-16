@@ -1,11 +1,9 @@
-import { Modal } from "../components/Modal";
-import { Dropdown } from "../components/Dropdown";
+import { Modal } from "../../components/Modal";
 import React, { useState } from "react";
-import FormInput from "../components/form/FormInput";
-import FormSubmit from "../components/form/FormSubmit";
-import "../resources/scss/page/route/modal/createPoint/dropdown.scss";
-import "../resources/scss/page/route/modal/createPoint/main.scss";
-import "../resources/scss/page/route/modal/createPoint/modal.scss";
+import FormInput from "../../components/form/FormInput";
+import FormSubmit from "../../components/form/FormSubmit";
+import { Dropdown } from "../../components/Dropdown";
+import "../../resources/scss/index.scss";
 
 interface CreatePointModalProps {
     isOpen: boolean;
@@ -20,7 +18,7 @@ interface CreatePointValues {
     rueAdditionalName: string;
 }
 
-export function CreatePointModal({ isOpen, onClose }: CreatePointModalProps) {
+export function CreatePoint({ isOpen, onClose }: CreatePointModalProps) {
     const [ selectedOption, setSelectedOption ] = useState(""); //todo поменять на настоящие значения
     const [ pointValues, setPointValues ] = useState<CreatePointValues>(
         {
@@ -61,7 +59,7 @@ export function CreatePointModal({ isOpen, onClose }: CreatePointModalProps) {
         <Modal
             isOpen={ isOpen }
             onClose={ onClose }
-            className="point-modal-wrapper"
+            className="modal-wrapper"
         >
             <form onSubmit={ handleSubmitSave }>
                 <h2>Где находится точка?</h2>
@@ -70,7 +68,7 @@ export function CreatePointModal({ isOpen, onClose }: CreatePointModalProps) {
                     selected={ selectedOption }
                     onSelect={ setSelectedOption }
                     placeholder="Точка..."
-                    className = "point-modal-dropdown-wrapper"
+                    className = "dropdown-container"
                 />
 
                 <h2>Наименование точки</h2>
@@ -81,7 +79,7 @@ export function CreatePointModal({ isOpen, onClose }: CreatePointModalProps) {
                     value={ pointValues.rusMainName }
                     placeholder=""
                     onChange={ handleChangeField }
-                    className="field-input"
+                    className="input"
                     required={ true }></FormInput>
 
                 <p>Английское</p>
@@ -91,7 +89,7 @@ export function CreatePointModal({ isOpen, onClose }: CreatePointModalProps) {
                     value={ pointValues.engMainName }
                     placeholder=""
                     onChange={ handleChangeField }
-                    className="field-input"
+                    className="input"
                     required={ true }></FormInput>
 
                 <p>Перечислите через символ ; русские названия-синомимы</p>
@@ -101,7 +99,7 @@ export function CreatePointModal({ isOpen, onClose }: CreatePointModalProps) {
                     value={ pointValues.rueAdditionalName }
                     placeholder=""
                     onChange={ handleChangeField }
-                    className="field-input"
+                    className="input"
                     required={ true }></FormInput>
 
                 <p>Перечислите через символ ; английские названия-синомимы</p>
@@ -111,7 +109,7 @@ export function CreatePointModal({ isOpen, onClose }: CreatePointModalProps) {
                     value={ pointValues.engAdditionalName }
                     placeholder=""
                     onChange={ handleChangeField }
-                    className="field-input"
+                    className="input"
                     required={ true }></FormInput>
 
                 <FormSubmit className="form_submit" disabled={ false } type="button" onclick={ handleSubmitCancel }>Отменить</FormSubmit>

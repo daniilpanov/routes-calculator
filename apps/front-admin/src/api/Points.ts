@@ -1,6 +1,9 @@
 import axios from "axios";
 import { API_ENDPOINTS } from "./ApiConfig";
-import { PointAddResponse, PointsAddRequest, PointsGetResponse, PointsSearchResponse } from "../interfaces/Points";
+import { PointAddResponse, PointsAddRequest, PointsSearchResponse } from "../interfaces/Points";
+import { PointsGetResponse } from "../interfaces/Response/Points";
+import { PointsGetRequest } from "../interfaces/Request/Points";
+import { api } from "./api";
 
 
 export const pointsService = {
@@ -23,14 +26,14 @@ export const pointsService = {
             throw error;
         }
     },
-    async getPoints(): Promise<PointsGetResponse> {
+    async getPoints(data: PointsGetRequest): Promise<PointsGetResponse> {
         try {
-            const response = await axios.post(
+            const response = await axios.post<PointsGetResponse>(
                 API_ENDPOINTS.POINTS.GET,
-                null,
+                data,
                 {
-                    params: {},
                     headers: { "Content-Type": "application/json" },
+                    withCredentials: true,
                 },
             );
 

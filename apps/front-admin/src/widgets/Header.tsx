@@ -1,6 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { ROUTES } from "../services/RoutesConst";
-import "../resources/scss/header_style.scss";
+import "../resources/scss/widgets/Header.scss";
 import logo from "../resources/images/logo1.png";
 import React, { useEffect, useState } from "react";
 import { authService } from "../api/Auth";

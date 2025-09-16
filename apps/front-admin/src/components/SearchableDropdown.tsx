@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from "react";
-import "../resources/scss/components/dropdown_style.scss";
 import { pointsService } from "../api/Points";
 import { Point } from "../interfaces/Points";
 

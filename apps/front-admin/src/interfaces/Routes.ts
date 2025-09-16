@@ -25,7 +25,7 @@ export interface GetRoutesResponse {
 
 export interface DeleteRouteResponse {
     status: string;
-    route_id: number;
+    deleted_routes: number;
 }
 
 

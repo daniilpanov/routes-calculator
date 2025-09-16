@@ -1,12 +1,10 @@
-import "../resources/scss/page/route/index.scss";
-import "../resources/scss/components/modal_style.scss";
+import "../resources/scss/index.scss";
 
 import React, { useEffect, useState } from "react";
-import { CreatePointModal } from "./CreatePointModal";
+import { CreatePoint } from "./modals/CreatePoint";
 import { routesService } from "../api/Routes";
 import { companiesService } from "../api/Companies";
 import { containersService } from "../api/Containers";
-import { pointsService } from "../api/Points";
 import { Dropdown } from "../components/Dropdown";
 import { SearchableDropdown } from "../components/SearchableDropdown";
 
@@ -17,11 +15,11 @@ import cross from "../resources/images/cross.png";
 import magnifier from "../resources/images/magnifier.png";
 import changeMarker from "../resources/images/changeMarker.png";
 
-import { formatDate, formatDateForServerFromInput, formatDateISO, parseWeirdDate } from "../utils/Date";
+import { formatDate, formatDateForServerFromInput, formatDateISO } from "../utils/Date";
 import { Route, RouteEditRequest } from "../interfaces/Routes";
 import { Company } from "../interfaces/Companies";
 import { Container } from "../interfaces/Containers";
-import { Point } from "../interfaces/Points";
+import { Pagination } from "../widgets/Pagination";
 
 const PAGE_SIZE = 25;
 
@@ -33,12 +31,11 @@ export function RoutesTable() {
     const [ isModalOpen, setIsModalOpen ] = useState(false);
     const [ selectedRouteIds, setSelectedRouteIds ] = useState<number[]>([]);
 
+    const [ totalPage, setTotalPages ] = useState<number>(0);
     const [ page, setPage ] = useState(1);
-    const [ totalPages, setTotalPages ] = useState(1);
 
     const [ companies, setCompanies ] = useState<Company[]>([]);
     const [ containers, setContainers ] = useState<Container[]>([]);
-    const [ points, setPoints ] = useState<Point[]>([]);
     const [ editingRouteId, setEditingRouteId ] = useState<number | null>(null);
     const [ editedRoute, setEditedRoute ] = useState<Omit<Route, "id"> | null>(null);
 
@@ -146,7 +143,6 @@ export function RoutesTable() {
         fetchRoutes();
         fetchCompanies();
         fetchContainers();
-        fetchPoints();
     }, [ page ]);
 
     const fetchRoutes = async () => {
@@ -179,12 +175,7 @@ export function RoutesTable() {
         } catch (err) { console.error(err); }
     };
 
-    const fetchPoints = async () => {
-        try {
-            const res = await pointsService.getPoints();
-            setPoints(res.points);
-        } catch (err) { console.error(err); }
-    };
+
 
     const handleAddRoute = () => setAddingRoutes(prev => [ ...prev, { ...emptyRoute } ]);
 
@@ -336,23 +327,6 @@ export function RoutesTable() {
     };
 
 
-    const getPaginationPages = () => {
-        const pages: (number | string)[] = [];
-        const maxVisiblePages = 5;
-        if (totalPages <= maxVisiblePages) for (let i = 1; i <= totalPages; i++) pages.push(i);
-        else {
-            pages.push(1);
-            let startPage = Math.max(2, page - 1);
-            let endPage = Math.min(totalPages - 1, page + 1);
-            if (page <= 3) endPage = 4;
-            else if (page >= totalPages - 2) startPage = totalPages - 3;
-            if (startPage > 2) pages.push("...");
-            for (let i = startPage; i <= endPage; i++) pages.push(i);
-            if (endPage < totalPages - 1) pages.push("...");
-            pages.push(totalPages);
-        }
-        return pages;
-    };
     if (loading) return <div className="page_div">Загрузка...</div>;
 
     const availableFilterFields = optionsDropdown.filter.filter(
@@ -365,9 +339,13 @@ export function RoutesTable() {
         }
     };
     const handleRoutesDelete = async (route: Route) => {
+        console.log("234");
         if (!window.confirm("Удалить маршрут?")) return;
+        console.log("1111111");
 
         try {
+            console.log("222222");
+
             const payload = {
                 rail: route.route_type === "rail" ? [ route.id ] : [],
                 sea: route.route_type === "sea" ? [ route.id ] : [],
@@ -422,8 +400,6 @@ export function RoutesTable() {
     };
 
     const handleDeleteSelectedRoutes = async () => {
-        if (!window.confirm("Удалить выбранные маршруты?")) return;
-
         try {
             const payload: { rail: number[]; sea: number[] } = { rail: [], sea: [] };
 
@@ -500,7 +476,7 @@ export function RoutesTable() {
                                     options={ remainingFields }
                                     selected={ filter.field }
                                     onSelect={ val => handleChangeFilterField(index, val) }
-                                    className="filter-dropdown-wrapper"
+                                    className="dropdown-container"
                                 />
 
                                 {filter.field === "Тип маршрута" && (
@@ -508,7 +484,7 @@ export function RoutesTable() {
                                         options={ [ "ЖД", "Морской" ] }
                                         selected={ typeof filter.value === "string" ? reverseRouteTypeMapping[filter.value as keyof typeof reverseRouteTypeMapping] || "" : "" }
                                         onSelect={ val => handleChangeFilterValue(index, routeTypeMapping[val as keyof typeof routeTypeMapping]) }
-                                        className="filter-dropdown-wrapper"
+                                        className="dropdown-container"
                                         placeholder="Выберите тип"
                                     />
                                 )}
@@ -518,7 +494,7 @@ export function RoutesTable() {
                                         options={ companies.map(c => c.name) }
                                         selected={ typeof filter.value === "string" ? filter.value : "" }
                                         onSelect={ val => handleChangeFilterValue(index, val) }
-                                        className="filter-dropdown-wrapper"
+                                        className="dropdown-container"
                                         placeholder="Выберите компанию"
                                     />
                                 )}
@@ -528,7 +504,7 @@ export function RoutesTable() {
                                         options={ containers.map(c => c.name) }
                                         selected={ typeof filter.value === "string" ? filter.value : "" }
                                         onSelect={ val => handleChangeFilterValue(index, val) }
-                                        className="filter-dropdown-wrapper"
+                                        className="dropdown-container"
                                         placeholder="Выберите контейнер"
                                     />
                                 )}
@@ -557,13 +533,13 @@ export function RoutesTable() {
                                     <SearchableDropdown
                                         value={ typeof filter.value === "object" ? filter.value : null }
                                         onSelect={ point => handleChangeFilterValue(index, point) }
-                                        className="input-dropdown-wrapper"
+                                        className="dropdown-container"
                                         placeholder={ filter.field === "Точка отправления" ? "Выберите точку отправления" : "Выберите точку прибытия" }
                                     />
                                 )}
 
-                                <button className="cancel_magnifier_btn" onClick={ () => handleRemoveFilter(index) }>
-                                    <img src={ cross } className="cancel_magnifier_img" />
+                                <button className="actions_btn cancel" onClick={ () => handleRemoveFilter(index) }>
+                                    <img src={ cross } className="actions_img" />
                                 </button>
                             </div>
                         </div>
@@ -572,13 +548,13 @@ export function RoutesTable() {
 
                 <div className="control_filter_div">
                     {availableFilterFields.length > 0 && (
-                        <button className="filter_btn" onClick={ handleAddFilter }>
+                        <button className="control_btn" onClick={ handleAddFilter }>
                             + Добавить фильтр
                         </button>
                     )}
 
-                    <button className="magnifier_btn" onClick={ handleApplyFilters }>
-                        <img src={ magnifier } alt="Поиск" className="magnifier_img" />
+                    <button className="actions_btn" onClick={ handleApplyFilters }>
+                        <img src={ magnifier } alt="Поиск" className="actions_img" />
                     </button>
                 </div>
             </div>
@@ -706,7 +682,7 @@ export function RoutesTable() {
                                                         <input
                                                             type="number"
                                                             value={ editedRoute?.price.find(p => p.type === type)?.value ?? "" }
-                                                            className="table_input price-input"
+                                                            className="cell_input price-input"
                                                             onChange={ e => setEditedRoute(prev => prev ? {
                                                                 ...prev,
                                                                 price: prev.price.map(p => p.type === type ? { ...p, value: Number(e.target.value) } : p),
@@ -715,7 +691,7 @@ export function RoutesTable() {
                                                         <Dropdown
                                                             options={ [ "RUB","USD","EUR" ] }
                                                             selected={ editedRoute?.price.find(p => p.type === type)?.currency || "USD" }
-                                                            className="currency-dropdown"
+                                                            className="dropdown-container"
                                                             onSelect={ currency => setEditedRoute(prev => prev ? {
                                                                 ...prev,
                                                                 price: prev.price.map(p => p.type === type ? { ...p, currency } : p),
@@ -739,22 +715,22 @@ export function RoutesTable() {
                                         <div className="action_div">
                                             {editingRouteId === route.id ? (
                                                 <>
-                                                    <button className="actions_save_btn" onClick={ () => handleSaveEditedRoute(route.id) }>
+                                                    <button className="actions_btn save" onClick={ () => handleSaveEditedRoute(route.id) }>
                                                         <img src={ accessMarks } alt="сохранить" className="actions_img" />
                                                     </button>
-                                                    <button className="actions_cancel_btn" onClick={ handleCancelEdit }>
+                                                    <button className="actions_btn cancel" onClick={ handleCancelEdit }>
                                                         <img src={ cross } alt="отменить" className="actions_img" />
                                                     </button>
                                                 </>
                                             ) : (
                                                 <>
-                                                    <button className="actions_edit_btn" onClick={ () => handleEditRoute(route) }>
+                                                    <button className="actions_btn edit" onClick={ () => handleEditRoute(route) }>
                                                         <img src={ changeMarker } alt="изменить" className="actions_img" />
                                                     </button>
-                                                    <button className="actions_trashcan_btn" onClick={ () => handleRoutesDelete(route) }>
+                                                    <button className="actions_btn cancel" onClick={ () => handleRoutesDelete(route) }>
                                                         <img src={ trashcan } alt="удалить" className="actions_img" />
                                                     </button>
-                                                    <button className="actions_copying_btn" onClick={ () => handleCopyRoute(route) }>
+                                                    <button className="actions_btn copy" onClick={ () => handleCopyRoute(route) }>
                                                         <img src={ copying } alt="копировать" className="actions_img" />
                                                     </button>
                                                 </>
@@ -819,12 +795,17 @@ export function RoutesTable() {
                                                         <input
                                                             type="number"
                                                             value={ newRoute.price.find(p => p.type === type)?.value ?? "" }
-                                                            className="table_input price-input"
+                                                            className="cell_input price-input"
                                                             onFocus={ () => handlePriceFocus(index, type) }
                                                             onBlur={ () => handlePriceBlur(index, type) }
                                                             onChange={ e => handleChangePriceValue(index, type, Number(e.target.value)) }
                                                         />
-                                                        <Dropdown options={ optionsDropdown.currency } selected={ newRoute.price.find(p => p.type === type)?.currency || "USD" } className="currency-dropdown" onSelect={ currency => handleChangePriceCurrency(index, type, currency) } placeholder="Валюта" />
+                                                        <Dropdown
+                                                            options={ optionsDropdown.currency }
+                                                            selected={ newRoute.price.find(p => p.type === type)?.currency || "USD" }
+                                                            className="dropdown-container"
+                                                            onSelect={ currency => handleChangePriceCurrency(index, type, currency) }
+                                                            placeholder="Валюта" />
                                                     </div>
                                                 ))}
                                             </div>
@@ -836,12 +817,12 @@ export function RoutesTable() {
                                                         <input
                                                             type="number"
                                                             value={ newRoute.price.find(p => p.type === type)?.value ?? "" }
-                                                            className="table_input price-input"
+                                                            className="input"
                                                             onFocus={ () => handlePriceFocus(index, type) }
                                                             onBlur={ () => handlePriceBlur(index, type) }
                                                             onChange={ e => handleChangePriceValue(index, type, Number(e.target.value)) }
                                                         />
-                                                        <Dropdown options={ optionsDropdown.currency } selected={ newRoute.price.find(p => p.type === type)?.currency || (type === "price" ? "RUB" : "USD") } className="currency-dropdown" onSelect={ currency => handleChangePriceCurrency(index, type, currency) } placeholder="Валюта" />
+                                                        <Dropdown options={ optionsDropdown.currency } selected={ newRoute.price.find(p => p.type === type)?.currency || (type === "price" ? "RUB" : "USD") } className="dropdown-container" onSelect={ currency => handleChangePriceCurrency(index, type, currency) } placeholder="Валюта" />
                                                     </div>
                                                 ))}
                                             </div>
@@ -849,10 +830,10 @@ export function RoutesTable() {
                                     </td>
                                     <td>
                                         <div className="action_div">
-                                            <button className="actions_save_btn" onClick={ () => handleSaveNewRoute(index) }>
+                                            <button className="actions_btn save" onClick={ () => handleSaveNewRoute(index) }>
                                                 <img src={ accessMarks } alt="сохранить" className="actions_img" />
                                             </button>
-                                            <button className="actions_cancel_btn" onClick={ () => handleCancelNewRoute(index) }>
+                                            <button className="actions_btn cancel" onClick={ () => handleCancelNewRoute(index) }>
                                                 <img src={ cross } alt="отменить" className="actions_img" />
                                             </button>
                                         </div>
@@ -863,26 +844,16 @@ export function RoutesTable() {
                     </tbody>
                 </table>
 
-                <div className="pagination_controls">
-                    <button disabled={ page === 1 } className="control_btn" onClick={ () => setPage(page - 1) }>
-                        Назад
-                    </button>
-                    {getPaginationPages().map((pageNumber, index) => (
-                        <button
-                            key={ index }
-                            className={ `control_btn ${pageNumber === page ? "active" : ""} ${pageNumber === "..." ? "ellipsis" : ""}` }
-                            disabled={ pageNumber === "..." }
-                            onClick={ () => typeof pageNumber === "number" && setPage(pageNumber) }
-                        >
-                            {pageNumber}
-                        </button>
-                    ))}
-                    <button disabled={ page === totalPages } className="control_btn" onClick={ () => setPage(page + 1) }>
-                        Вперёд
-                    </button>
+                <div className="pagination_div">
+                    <Pagination
+                        currentPage={ page }
+                        totalPages={ totalPage }
+                        onPageChange={ setPage } />
                 </div>
 
-                <CreatePointModal isOpen={ isModalOpen } onClose={ () => setIsModalOpen(false) } />
+                <CreatePoint
+                    isOpen={ isModalOpen }
+                    onClose={ () => setIsModalOpen(false) } />
             </div>
         </div>
     );

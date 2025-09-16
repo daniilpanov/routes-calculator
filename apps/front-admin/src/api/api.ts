@@ -1,5 +1,4 @@
 import axios from "axios";
-import { API_ENDPOINTS } from "./ApiConfig";
 
 export const api = axios.create({
     baseURL: "/admin",
@@ -8,7 +7,7 @@ export const api = axios.create({
         "Content-Type": "application/json",
         Accept: "application/json",
     },
-    validateStatus: (status) => status >= 200 && status < 300, // только 2xx успех
+    validateStatus: (status) => status >= 200 && status < 300,
 });
 
 api.interceptors.response.use(
