@@ -1,0 +1,35 @@
+body, html, #root, .app-container {
+  margin: 0;
+  padding: 0;
+  min-height: 100dvh;
+}
+
+.in_development {
+  text-transform: uppercase;
+  font-size: larger;
+}
+
+.main-container {
+  padding: 3rem;
+  height: calc(100dvh - 6rem);
+}
+
+.mobile-space {
+  display: none;
+  width: 100%;
+  height: 50px;
+
+  @media (max-width: 716px) {
+    display: block;
+  }
+}
+
+.rs-row {
+  margin-left: 0!important;
+  margin-right: 0!important;
+}
+
+.rs-col {
+  padding-left: 0!important;
+  padding-right: 0!important;
+}

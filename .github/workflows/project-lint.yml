@@ -1,9 +1,9 @@
-name: pre-commit
+name: project-lint
 
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [master]
 
 jobs:
   pre-commit:
