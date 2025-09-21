@@ -7,7 +7,7 @@ WORKDIR "/app"
 ENTRYPOINT ["python3", "-m", "uvicorn"]
 
 
-FROM node:alpine AS reactapp
+FROM node:alpine AS front
 
 WORKDIR "/app"
 ENTRYPOINT ["npm"]

@@ -40,7 +40,7 @@ services:
   adminfrontinstaller:
     build:
       dockerfile: "Dockerfile"
-      target: "reactapp"
+      target: "front"
     volumes:
       - "./apps/front-admin/:/app:rw"
     networks:
@@ -52,7 +52,7 @@ services:
         condition: service_completed_successfully
     build:
       dockerfile: "Dockerfile"
-      target: "reactapp"
+      target: "front"
     environment:
       - DANGEROUSLY_DISABLE_HOST_CHECK=true
       - PORT=${ADMIN_FRONT_PORT}
