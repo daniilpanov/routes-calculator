@@ -17,4 +17,4 @@ FROM mariadb:latest AS database
 
 FROM adminer:latest AS dbadmin
 
-FROM nginx:alpine as reverseproxy
+FROM nginx:alpine AS reverseproxy
