@@ -2,7 +2,7 @@ services:
   ### DATABASE
   database:
     build:
-      dockerfile: "Dockerfile"
+      dockerfile: "local.Dockerfile"
       target: "database"
     environment:
       MARIADB_RANDOM_ROOT_PASSWORD: 1
@@ -35,7 +35,7 @@ services:
     depends_on:
       - database
     build:
-      dockerfile: "Dockerfile"
+      dockerfile: "local.Dockerfile"
       target: "dbadmin"
     expose:
       - 8080
@@ -49,7 +49,7 @@ services:
     depends_on:
       - database
     build:
-      dockerfile: "Dockerfile"
+      dockerfile: "local.Dockerfile"
       target: "calculator"
     env_file:
       - ".env"
@@ -68,7 +68,7 @@ services:
       - "--reload"
   auth:
     build:
-      dockerfile: "Dockerfile"
+      dockerfile: "local.Dockerfile"
       target: "calculator"
     env_file:
       - ".env"
@@ -89,7 +89,7 @@ services:
   ### FRONT
   adminfrontinstaller:
     build:
-      dockerfile: "Dockerfile"
+      dockerfile: "local.Dockerfile"
       target: "front"
     volumes:
       - "./apps/front-admin/:/app:rw"
@@ -101,7 +101,7 @@ services:
       adminfrontinstaller:
         condition: service_completed_successfully
     build:
-      dockerfile: "Dockerfile"
+      dockerfile: "local.Dockerfile"
       target: "front"
     environment:
       - DANGEROUSLY_DISABLE_HOST_CHECK=true
@@ -128,7 +128,7 @@ services:
       adminfront:
         condition: service_started
     build:
-      dockerfile: "Dockerfile"
+      dockerfile: "local.Dockerfile"
       target: "reverseproxy"
     env_file:
       - ".env"
