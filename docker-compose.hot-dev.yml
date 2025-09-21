@@ -1,5 +1,53 @@
 services:
+  ### DATABASE
+  database:
+    build:
+      dockerfile: "Dockerfile"
+      target: "database"
+    environment:
+      MARIADB_RANDOM_ROOT_PASSWORD: 1
+      MARIADB_USER: "${DB_USER}"
+      MARIADB_PASSWORD: "${DB_PASS}"
+      MARIADB_DATABASE: "${DB_NAME}"
+    volumes:
+      - "./config/database/backups/:/backup:rw"
+      - "./config/database/dev-version/:/docker-entrypoint-initdb.d:ro"
+    expose:
+      - 3306
+    networks:
+      local:
+    entrypoint: [ "docker-entrypoint.sh", "mariadbd" ]
+    healthcheck:
+      test: >
+        sh -c '
+        mariadb-dump -u$${MARIADB_USER} -p$${MARIADB_PASSWORD} $${MARIADB_DATABASE} > /backup/last_dump.sql 2>/backup/dump_error.log;
+        if [ $$? -eq 0 ]; then
+        gzip /backup/last_dump.sql -c > /backup/$$(date -I)-dump.gz;
+        rm /backup/last_dump.sql;
+        exit 0;
+        else
+        exit 1;
+        fi
+        '
+      interval: 30m
+      retries: 3
+  dbadmin:
+    depends_on:
+      - database
+    build:
+      dockerfile: "Dockerfile"
+      target: "dbadmin"
+    expose:
+      - 8080
+    ports:
+      - "${ADMINER_PORT}:8080"
+    networks:
+      local:
+
+  ### BACK
   calculator:
+    depends_on:
+      - database
     build:
       dockerfile: "Dockerfile"
       target: "calculator"
@@ -37,6 +85,8 @@ services:
       - "--port"
       - "8081"
       - "--reload"
+
+  ### FRONT
   adminfrontinstaller:
     build:
       dockerfile: "Dockerfile"
@@ -67,47 +117,8 @@ services:
     networks:
       local:
     command: ["start"]
-  database:
-    build:
-      dockerfile: "Dockerfile"
-      target: "database"
-    environment:
-      MARIADB_RANDOM_ROOT_PASSWORD: 1
-      MARIADB_USER: "${DB_USER}"
-      MARIADB_PASSWORD: "${DB_PASS}"
-      MARIADB_DATABASE: "${DB_NAME}"
-    volumes:
-      - "./config/database/backups/:/backup:rw"
-      - "./config/database/dev-version/:/docker-entrypoint-initdb.d:ro"
-    expose:
-      - 3306
-    networks:
-      local:
-    entrypoint: ["docker-entrypoint.sh", "mariadbd"]
-    healthcheck:
-      test: >
-        sh -c '
-        mariadb-dump -u$${MARIADB_USER} -p$${MARIADB_PASSWORD} $${MARIADB_DATABASE} > /backup/last_dump.sql 2>/backup/dump_error.log;
-        if [ $$? -eq 0 ]; then
-        gzip /backup/last_dump.sql -c > /backup/$$(date -I)-dump.gz;
-        rm /backup/last_dump.sql;
-        exit 0;
-        else
-        exit 1;
-        fi
-        '
-      interval: 30m
-      retries: 3
-  dbadmin:
-    build:
-      dockerfile: "Dockerfile"
-      target: "dbadmin"
-    expose:
-      - 8080
-    ports:
-      - "${ADMINER_PORT}:8080"
-    networks:
-      local:
+
+  ### PROXY
   reverseproxy:
     depends_on:
       calculator:
