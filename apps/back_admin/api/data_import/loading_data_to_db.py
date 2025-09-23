@@ -18,40 +18,25 @@ from back_admin.models import (
 router = APIRouter(prefix="/r", tags=["r"])
 
 
-def extract_data(df: pd.DataFrame, company_col: str | None = None):
+def extract_data(df: pd.DataFrame, company_col):
+    services = df[company_col].unique()
+
+    points = pd.concat(  # noqa: ECE001
+        [
+            df[[company_col, "POL COUNTRY", "POL FULL NAME"]].rename(
+                columns={"POL COUNTRY": "Country", "POL FULL NAME": "City"},
+            ),
+            df[[company_col, "POD COUNTRY", "POD FULL NAME"]].rename(
+                columns={"POD COUNTRY": "Country", "POD FULL NAME": "City"},
+            ),
+        ]
+    ).drop_duplicates()
+
     containers = df[
         ["CONTAINER TYPE", "CONTAINER SIZE", "Container weight limit"]
     ].drop_duplicates()
 
-    if company_col:
-        services = df[company_col].unique()
-
-        points = pd.concat(  # noqa: ECE001
-            [
-                df[[company_col, "POL COUNTRY", "POL FULL NAME"]].rename(
-                    columns={"POL COUNTRY": "Country", "POL FULL NAME": "City"},
-                ),
-                df[[company_col, "POD COUNTRY", "POD FULL NAME"]].rename(
-                    columns={"POD COUNTRY": "Country", "POD FULL NAME": "City"},
-                ),
-            ]
-        ).drop_duplicates()
-
-        return services, points, containers
-
-    else:
-        points = pd.concat(  # noqa: ECE001
-            [
-                df[["POL COUNTRY", "POL FULL NAME"]].rename(
-                    columns={"POL COUNTRY": "Country", "POL FULL NAME": "City"},
-                ),
-                df[["POD COUNTRY", "POD FULL NAME"]].rename(
-                    columns={"POD COUNTRY": "Country", "POD FULL NAME": "City"},
-                ),
-            ]
-        ).drop_duplicates()
-
-        return points, containers
+    return services, points, containers
 
 
 def group_containers(containers):
@@ -108,8 +93,9 @@ def create_independent_models(services, points, containers):
         service_models[service] = CompanyModel(name=service)
 
     for _, point in points.iterrows():
-        point_models[(point["Country"], point["City"])] = PointModel(
-            country=point["Country"], city=point["City"]
+        point_models[(point["Country"], point["City"])] = PointModel(  # todo: check parse for spaces
+            country=point["Country"].strip().title() if point["Country"] != "UAE" else point["Country"].strip(),
+            city=point["City"].strip().title()
         )
 
     container_models, container_typed_models = group_containers(containers)
@@ -128,7 +114,6 @@ def create_routes(
     containers_2_keys,
     company_col,
     dates_col,
-    dates,
 ):
     models = []
     for _, route in df.iterrows():
@@ -138,15 +123,12 @@ def create_routes(
                 break
         else:
             continue
-        if dates_col:
-            date_from, date_to = dates_col.split(";")
-        else:
-            date_from, date_to = dates.split(" - ")
-            date_from, date_to = parse_date(date_from), parse_date(date_to)
+
+        date_from, date_to = dates_col.split(";")
         values = {
-            "effective_from": route[date_from] if dates_col else date_from,
-            "effective_to": route[date_to] if dates_col else date_to,
-            "company": services.get(route[company_col]) if company_col else services,
+            "effective_from": route[date_from],
+            "effective_to": route[date_to],
+            "company": services.get(route[company_col]),
             "start_point": points.get(
                 (
                     route["POL COUNTRY"],
@@ -226,14 +208,16 @@ async def write_entities(entities, session):
     entities = await select_only_new(entities, session)
     if entities:
         session.add_all(entities)
+    return len(entities)
 
 
 async def write_independent_data(services, points, containers, session):
     if services:
         await write_entities(services, session)
     await write_entities(containers, session)
-    await write_entities(points, session)
+    count_points = await write_entities(points, session)
     await session.flush()
+    return count_points
 
 
 async def write_routes(routes, session):
@@ -288,16 +272,10 @@ def parse_date(date_input):
         return None
 
     if isinstance(date_input, pd.Timestamp):
-        return date_input
+        return date_input.to_pydatetime()
 
     if isinstance(date_input, datetime.datetime):
-        return pd.Timestamp(date_input)
-
-    if isinstance(date_input, (int, float)):
-        try:
-            return pd.Timestamp('1899-12-30') + pd.Timedelta(days=date_input)
-        except:
-            return pd.to_datetime(date_input, errors='coerce')
+        return date_input
 
     if isinstance(date_input, str):
         try:
@@ -321,8 +299,16 @@ def parse_date(date_input):
             print(f"Date parsing error: {date_input}, error: {e}")
             return None
 
+    if isinstance(date_input, (int, float)):
+        try:
+            if 1000000000 < date_input < 2000000000:
+                return datetime.datetime.fromtimestamp(int(date_input))
+        except Exception as e:
+            print(f"Number date parsing error: {date_input}, error: {e}")
+
     try:
-        return pd.to_datetime(date_input, errors='coerce')
-    except:
-        print(f"Could not parse date: {date_input}")
+        return pd.to_datetime(date_input, errors='coerce').to_pydatetime()
+
+    except Exception as e:
+        print(f"Could not parse date: {date_input}, error: {e}")
         return None

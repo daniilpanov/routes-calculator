@@ -2,7 +2,7 @@ import io
 
 import pandas as pd
 from fastapi import APIRouter, UploadFile, HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, update
 
 from back_admin.api.data_import.loading_data_to_db import validate_route_data, extract_data, create_independent_models, \
     group_containers_from_db, create_routes, write_independent_data, write_routes, parse_date
@@ -21,19 +21,10 @@ async def dataImport(file: UploadFile,
                      company_name: str | None = None,
                      dates_col: str | None = None,
                      dates: str | None = None):
-    async def process_dataframe(_df: pd.DataFrame) -> int:
-        # company_col = Service
-        # dates_col = EFFECTIVE FROM;EFFECTIVE TO
+    async def process_dataframe(_df: pd.DataFrame, _company_col, _dates_col):
+        validate_route_data(_df, _company_col, _dates_col)
 
-        validate_route_data(_df, company_col, dates_col)
-
-        if company_col:
-            services, points, containers = extract_data(_df, company_col)
-
-        else:
-            points, containers = extract_data(_df)
-            services = [company_name]
-
+        services, points, containers = extract_data(_df, _company_col)
         services, points, containers, typed_containers = create_independent_models(
             services, points, containers
         )
@@ -45,32 +36,36 @@ async def dataImport(file: UploadFile,
         containers = {**containers, **db_containers}
         typed_containers = {**typed_containers, **db_typed_containers}
 
-        _additional_data = [""]
-        if route_type != "sea":
+        _additional_data = None
+        if route_type != "sea" and type_data:
             _additional_data = type_data.split(";")
             if _additional_data[0] == "column":  # todo: finalize 5th item
-                column_type = "ROUTE TYPE" if _additional_data[1] == "" else _additional_data[1]
+                route_type_col = "ROUTE TYPE" if _additional_data[1] == "" else _additional_data[1]
 
         if route_type == "rail":
             prices = {"Price, RUB": "price", "Guard": "guard"}
-            if _additional_data[0] == "drop":
-                drop_col = "Drop, $" if _additional_data[1] == "" else _additional_data[1]
-                prices[drop_col] = "drop"
-            if _additional_data[0] == "only drop":  # todo: make into point check
-                prices = {"Drop, $": "drop"}
+            if not _additional_data:
+                _additional_data = ["drop", "Drop, $"]
+                _df[_additional_data[1]] = 0
+
+            if _additional_data:
+                if _additional_data[0] == "drop":  # Drop = Drop, $
+                    prices[_additional_data[1]] = "drop"
+
+                if _additional_data[0] == "only drop":  # todo: make into point check
+                    prices = {_additional_data[2]: "drop"}
 
             routes = create_routes(
                 _df,
                 RailRouteModel,
                 prices,
                 ["Price, RUB"],
-                services if company_col else services[company_name],
+                services,
                 points,
                 containers,
                 typed_containers,
-                company_col if company_col else None,
-                dates_col if dates_col else None,
-                dates if dates else None,
+                _company_col if _company_col else None,
+                _dates_col if _dates_col else None,
             )
 
         elif route_type == "sea":
@@ -79,17 +74,13 @@ async def dataImport(file: UploadFile,
                 SeaRouteModel,
                 {"FILO": "filo", "FIFO": "fifo"},
                 ["FIFO", "FILO"],
-                services if company_col else services[company_name],
+                services,
                 points,
                 containers,
                 typed_containers,
-                company_col if company_col else None,
-                dates_col if dates_col else None,
-                dates if dates else None,
+                _company_col if _company_col else None,
+                _dates_col if _dates_col else None,
             )
-
-        elif route_type == "column":
-            ...
 
         else:
             raise HTTPException(
@@ -98,17 +89,21 @@ async def dataImport(file: UploadFile,
             )
 
         async with database.session() as session:
-            await write_independent_data(services, points, containers, session)
+            count_points = await write_independent_data(services, points, containers, session)
             await write_routes(routes, session)
             await session.commit()
 
-        return len(routes)
+        return len(routes), count_points
 
     file_extension = file.filename.rsplit('.', maxsplit=1)[-1].lower()
     contents = await file.read()
 
-    if dates_col:
-        date_from, date_to = dates_col.split(";")
+    if dates:
+        dates_col = "EFFECTIVE FROM;EFFECTIVE TO"
+    date_from, date_to = dates_col.split(";")
+
+    if company_name:
+        company_col = "Service"
 
     if file_extension == "csv" or file_extension == "txt":
         df = pd.read_csv(
@@ -117,12 +112,22 @@ async def dataImport(file: UploadFile,
             delimiter=";",
             converters={date_from: parse_date, date_to: parse_date} if dates_col else None,
         )
-        total_count = await process_dataframe(df)
+
+        if dates:
+            date_from_val, date_to_val = dates.split(" - ")
+            df[date_from] = parse_date(date_from_val)
+            df[date_to] = parse_date(date_to_val)
+
+        if company_name:
+            df[company_col] = company_name
+
+        count_new_routes, count_new_points = await process_dataframe(df, company_col, dates_col)
         processed_sheets = [{"sheet": "main", "rows": len(df)}]
 
     elif file_extension == "xlsx":
         processed_sheets = []
-        total_count = 0
+        count_new_routes = 0
+        count_new_points = 0
 
         excel_file = pd.ExcelFile(io.BytesIO(contents))
 
@@ -134,29 +139,52 @@ async def dataImport(file: UploadFile,
                     converters={date_from: parse_date, date_to: parse_date} if dates_col else None,
                 )
 
-                required_columns = [
+                if route_type == "sea":
+                    filo_col = next((col for col in df.columns if isinstance(col, str) if 'FILO' in col.upper()), None)
+                    if filo_col and filo_col != 'FILO':
+                        df = df.rename(columns={filo_col: 'FILO'})
+
+                df.columns = df.columns.str.strip()
+                if not "Container weight limit" in df.columns:
+                    df["Container weight limit"] = 0
+                df['CONTAINER TYPE'] = df['CONTAINER TYPE'].str[:2]
+
+                required_columns = {
                     "POL COUNTRY", "POL FULL NAME", "POD COUNTRY",
                     "POD FULL NAME", "CONTAINER TYPE", "CONTAINER SIZE",
                     "Container weight limit",
-                ]
+                }
 
                 if company_col:
-                    required_columns += [company_col]
+                    required_columns.add(company_col)
                 if dates_col:
-                    required_columns += [date_from, date_to]
+                    required_columns.add(date_from)
+                    required_columns.add(date_to)
 
-                if not all(col in df.columns for col in required_columns):
-                    print(f"Sheet {sheet_name} doesn't contain required columns. Skipping.")
+                if dates:
+                    date_from_val, date_to_val = dates.split(" - ")
+                    df[date_from] = parse_date(date_from_val)
+                    df[date_to] = parse_date(date_to_val)
+
+                if company_name:
+                    df[company_col] = company_name
+
+                data_columns = set(df.columns)
+
+                if not all(col in data_columns for col in required_columns):
+                    print(f"Sheet {sheet_name} doesn't contain {required_columns - data_columns}. Skipping.")
                     continue
 
                 df_for_processing = df.copy()
 
-                sheet_count = await process_dataframe(df_for_processing)
-                total_count += sheet_count
+                count_new_routes_on_sheet, count_new_points_on_sheet = await process_dataframe(df_for_processing,
+                                                                                               company_col, dates_col)
+                count_new_points += count_new_points_on_sheet
+                count_new_routes += count_new_routes_on_sheet
                 processed_sheets.append({
                     "sheet": sheet_name,
                     "rows": len(df),
-                    "processed_routes": sheet_count
+                    "processed_routes": count_new_routes_on_sheet
                 })
 
             except Exception as e:
@@ -172,23 +200,45 @@ async def dataImport(file: UploadFile,
             status_code=400,
             detail="Wrong file extension. Allowed only CSV (TXT), XLSX"
         )
-
     return {
         "status": "OK",
-        "total_count": total_count,
+        "count_new_routes": count_new_routes,
+        "count_new_points": count_new_points,
         "processed_sheets": processed_sheets,
         "file": file.filename,
     }
 
 
+@router.patch("/save")
+async def saveData(batch_id: int):
+    total_count = 0
+    async with database.session() as session:
+        new_vals = {"batch_id": None}
+        temp = await session.execute(
+            update(
+                RailRouteModel,
+            ).where(
+                RailRouteModel.batch_id == batch_id,
+            ).values(
+                **new_vals
+            )
+        )
+        total_count = temp.rowcount
+
+    return {
+        "status": "OK",
+        "count": total_count,
+    }
+
+
 @router.post("/batches")
 async def getBatches():
-    batch_stmt = select(
-        BatchModel,
-    )
-
     async with database.session() as session:
-        temp = await session.execute(batch_stmt)
+        temp = await session.execute(
+            select(
+                BatchModel,
+            )
+        )
         batches = temp.scalars().all()
 
     return {
