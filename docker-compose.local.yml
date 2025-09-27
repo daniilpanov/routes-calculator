@@ -1,66 +1,8 @@
 services:
-  calculator:
-    build:
-      dockerfile: "Dockerfile"
-      target: "calculator"
-    env_file:
-      - ".env"
-    volumes:
-      - "./apps/backend/:/app/backend/:r"
-    expose:
-      - 8080
-    networks:
-      local:
-    command:
-      - "backend.main:app"
-      - "--host"
-      - "0.0.0.0"
-      - "--port"
-      - "8080"
-  auth:
-    build:
-      dockerfile: "Dockerfile"
-      target: "calculator"
-    env_file:
-      - ".env"
-    volumes:
-      - "./apps/auth/:/app/auth/:r"
-    expose:
-      - 8081
-    networks:
-      local:
-    command:
-      - "auth.main:app"
-      - "--host"
-      - "0.0.0.0"
-      - "--port"
-      - "8081"
-  adminfrontinstaller:
-    build:
-      dockerfile: "Dockerfile"
-      target: "reactapp"
-    volumes:
-      - "./apps/front-admin/:/app:rw"
-    networks:
-      local:
-    command: ["ci"]
-  adminfrontbuilder:
-    depends_on:
-      adminfrontinstaller:
-        condition: service_completed_successfully
-    build:
-      dockerfile: "Dockerfile"
-      target: "reactapp"
-    environment:
-      - VITE_PUBLIC_URL=/admin
-    volumes:
-      - "./apps/front-admin/:/app:rw"
-    networks:
-      local:
-    command: ["run", "build"]
+  ### DATABASE
   database:
     build:
-      dockerfile: "Dockerfile"
+      dockerfile: "local.Dockerfile"
       target: "database"
     environment:
       MARIADB_RANDOM_ROOT_PASSWORD: 1
@@ -89,8 +31,10 @@ services:
       interval: 30m
       retries: 3
   dbadmin:
+    depends_on:
+      - database
     build:
-      dockerfile: "Dockerfile"
+      dockerfile: "local.Dockerfile"
       target: "dbadmin"
     expose:
       - 8080
@@ -98,6 +42,73 @@ services:
       - "${ADMINER_PORT}:8080"
     networks:
       local:
+
+  ### BACK
+  calculator:
+    depends_on:
+      - database
+    build:
+      dockerfile: "local.Dockerfile"
+      target: "calculator"
+    env_file:
+      - ".env"
+    volumes:
+      - "./apps/backend/:/app/backend/:r"
+    expose:
+      - 8080
+    networks:
+      local:
+    command:
+      - "backend.main:app"
+      - "--host"
+      - "0.0.0.0"
+      - "--port"
+      - "8080"
+  auth:
+    build:
+      dockerfile: "local.Dockerfile"
+      target: "calculator"
+    env_file:
+      - ".env"
+    volumes:
+      - "./apps/auth/:/app/auth/:r"
+    expose:
+      - 8081
+    networks:
+      local:
+    command:
+      - "auth.main:app"
+      - "--host"
+      - "0.0.0.0"
+      - "--port"
+      - "8081"
+
+  ### FRONT
+  adminfrontinstaller:
+    build:
+      dockerfile: "local.Dockerfile"
+      target: "front"
+    volumes:
+      - "./apps/front-admin/:/app:rw"
+    networks:
+      local:
+    command: ["ci"]
+  adminfrontbuilder:
+    depends_on:
+      adminfrontinstaller:
+        condition: service_completed_successfully
+    build:
+      dockerfile: "local.Dockerfile"
+      target: "front"
+    environment:
+      - VITE_PUBLIC_URL=/admin
+    volumes:
+      - "./apps/front-admin/:/app:rw"
+    networks:
+      local:
+    command: ["run", "build"]
+
+  ### PROXY
   reverseproxy:
     depends_on:
       calculator:
@@ -107,7 +118,7 @@ services:
       adminfrontbuilder:
         condition: service_completed_successfully
     build:
-      dockerfile: "Dockerfile"
+      dockerfile: "local.Dockerfile"
       target: "reverseproxy"
     restart: unless-stopped
     volumes:
