@@ -51,8 +51,11 @@ export function Sidebar() {
                     <Col><button onClick={ handleSubmit } className="nav-btn">Выйти</button></Col>
                 </Row>
 
-                <div className="back_to_site-block">
-                    <NavLink to={ ROUTES.MAIN_SITE } className="nav-btn">Вернуться на сайт</NavLink>
+                <div className="back_to_site-wrapper">
+                    <button onClick={ () => {
+                        history.pushState([], null, ROUTES.MAIN_SITE);
+                        location.reload();
+                    } } className="nav-btn">Вернуться на сайт</button>
                 </div>
             </div>
         </div>
