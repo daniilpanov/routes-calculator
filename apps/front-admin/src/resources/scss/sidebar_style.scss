@@ -87,7 +87,13 @@
     width: 50%;
   }
 
-  & button {
+  & .nav-btn {
+    width: calc(100% - 2rem);
+  }
+}
+
+.back_to_site-wrapper {
+  & .nav-btn {
     width: calc(100% - 2rem);
   }
 }

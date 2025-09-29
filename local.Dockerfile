@@ -7,7 +7,7 @@ WORKDIR "/app"
 ENTRYPOINT ["python3", "-m", "uvicorn"]
 
 
-FROM node:alpine AS reactapp
+FROM node:alpine AS front
 
 WORKDIR "/app"
 ENTRYPOINT ["npm"]
@@ -17,4 +17,4 @@ FROM mariadb:latest AS database
 
 FROM adminer:latest AS dbadmin
 
-FROM nginx:alpine as reverseproxy
+FROM nginx:alpine AS reverseproxy
