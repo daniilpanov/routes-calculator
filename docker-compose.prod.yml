@@ -33,7 +33,7 @@ services:
 
   ### BACK
   calculator:
-    image: danielgreen1806/calculator-backend
+    image: danielgreen1806/calculator-backend:${DOCKER_PROD_IMAGES_TAG}
     env_file:
       - ".env"
     expose:
@@ -46,7 +46,7 @@ services:
       - "--port"
       - "8080"
   auth:
-    image: danielgreen1806/auth-backend
+    image: danielgreen1806/auth-backend:${DOCKER_PROD_IMAGES_TAG}
     env_file:
       - ".env"
     expose:
@@ -66,7 +66,7 @@ services:
         condition: service_started
       auth:
         condition: service_started
-    image: danielgreen1806/calculator-reverseproxy
+    image: danielgreen1806/calculator-reverseproxy:${DOCKER_PROD_IMAGES_TAG}
     env_file:
       - ".env"
     restart: unless-stopped
@@ -77,7 +77,7 @@ services:
 
   ### WATCHTOWER
   watchtower:
-    image: containrrr/watchtower
+    image: containrrr/watchtower:latest
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     command: --interval 180 --cleanup

@@ -1,8 +1,16 @@
 name: project-build
 
 on:
-  pull_request:
   workflow_dispatch:
+    inputs:
+      tag:
+        default: "latest"
+        required: true
+        description: "Select target tag: latest - just latest version, latest-stable - version for production"
+        options:
+          - "latest"
+          - "latest-stable"
+        type: choice
 
 jobs:
   build:
@@ -26,6 +34,8 @@ jobs:
 
       - name: Build and push
         uses: docker/bake-action@v5
+        env:
+          TAG: ${{ github.event.inputs.tag || 'latest' }}
         with:
           files: docker-bake.hcl
           push: true
