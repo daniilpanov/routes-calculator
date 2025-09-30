@@ -3,7 +3,7 @@ import re
 from fastapi import APIRouter, HTTPException
 from sqlalchemy.exc import IntegrityError
 
-from back_admin.database import database
+from back_admin.database import database, exe_q
 from back_admin.models import PointModel
 from back_admin.models.requests.point import (
     AddPointModelRequest,
@@ -13,12 +13,6 @@ from back_admin.models.requests.point import (
 from sqlalchemy import delete, or_, select, update, func
 
 router = APIRouter(prefix="/points", tags=["points-admin"])
-
-
-async def exe_q(q, return_scalar=False):
-    async with database.session() as session:
-        temp = await session.execute(q)
-        return temp.scalar() if return_scalar else temp.scalars().all()
 
 
 def is_cyrillic(text: str) -> bool:

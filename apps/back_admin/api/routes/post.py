@@ -2,7 +2,7 @@ from datetime import datetime
 
 from fastapi import APIRouter, HTTPException
 
-from back_admin.database import database
+from back_admin.database import database, exe_q
 from back_admin.models import RailRouteModel, SeaRouteModel
 from back_admin.models.requests.route import (
     AddRouteRequest,
@@ -15,12 +15,6 @@ from sqlalchemy.exc import InvalidRequestError
 from sqlalchemy.orm import joinedload
 
 router = APIRouter(prefix="/routes", tags=["routes-admin"])
-
-
-async def exe_q(q, return_scalar=False):
-    async with database.session() as session:
-        temp = await session.execute(q)
-        return temp.scalar() if return_scalar else temp.scalars().all()
 
 
 def parse_date(date_value: str):

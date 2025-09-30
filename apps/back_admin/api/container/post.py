@@ -1,16 +1,11 @@
 from fastapi import APIRouter
 
-from back_admin.database import database
+from back_admin.database import database, exe_q
 from back_admin.models import ContainerModel
 from back_admin.models.requests.container import AddContainerRequest, EditContainerRequest
 from sqlalchemy import select, update
 
 router = APIRouter(prefix="/container", tags=["container-admin"])
-
-async def exe_q(q, return_scalar=False):
-    async with database.session() as session:
-        temp = await session.execute(q)
-        return temp.scalar() if return_scalar else temp.scalars().all()
 
 
 @router.post("")

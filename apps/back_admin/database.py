@@ -12,6 +12,12 @@ from sqlalchemy.ext.asyncio import (
 from sqlalchemy.orm import DeclarativeBase
 
 
+async def exe_q(q, return_scalar=False):
+    async with database.session() as session:
+        temp = await session.execute(q)
+        return temp.scalar() if return_scalar else temp.scalars().all()
+
+
 class Base(DeclarativeBase):
     __table_args__: dict[str, Any] | tuple[Any] = {
         "mysql_default_charset": os.getenv("DB_CHARSET", "utf8mb4"),
