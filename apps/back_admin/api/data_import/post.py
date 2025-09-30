@@ -96,12 +96,109 @@ async def dataImport(file: UploadFile,
 
         return len(routes), count_points
 
+    def combine_excel_sheets(excel_file: pd.ExcelFile,
+                             dates_col: str | None = None,
+                             dates: str | None = None,
+                             company_col: str | None = None,
+                             company_name: str | None = None,
+                             route_type: str = "sea") -> pd.DataFrame:
+        all_sheets_data = []
+        processed_sheets_info = []
+
+        date_from = None
+        date_to = None
+        if dates_col:
+            date_from, date_to = dates_col.split(";")
+
+        for sheet_name in excel_file.sheet_names:
+            try:
+                df = pd.read_excel(
+                    excel_file,
+                    sheet_name=sheet_name,
+                    converters={date_from: parse_date, date_to: parse_date} if dates_col else None,
+                )
+
+                df.columns = df.columns.str.strip()
+
+                required_columns = {
+                    "POL COUNTRY", "POL FULL NAME", "POD COUNTRY",
+                    "POD FULL NAME", "CONTAINER TYPE", "CONTAINER SIZE",
+                    "Container weight limit",
+                }
+
+                if company_col:
+                    required_columns.add(company_col)
+                if dates_col:
+                    required_columns.add(date_from)
+                    required_columns.add(date_to)
+
+                if "Container weight limit" not in df.columns:
+                    df["Container weight limit"] = np.nan
+
+                if 'CONTAINER TYPE' in df.columns:
+                    df['CONTAINER TYPE'] = df['CONTAINER TYPE'].str[:2]
+
+                if dates and date_from and date_to:
+                    date_from_val, date_to_val = dates.split(" - ")
+                    df[date_from] = parse_date(date_from_val)
+                    df[date_to] = parse_date(date_to_val)
+
+                if company_name and company_col:
+                    df[company_col] = company_name
+
+                data_columns = set(df.columns)
+
+                if not all(col in data_columns for col in required_columns):
+                    print(f"Sheet {sheet_name} doesn't contain {required_columns - data_columns}. Skipping.")
+                    processed_sheets_info.append({
+                        "sheet": sheet_name,
+                        "rows": len(df),
+                        "status": "skipped",
+                        "reason": f"Missing columns: {required_columns - data_columns}"
+                    })
+                    continue
+
+                if route_type == "sea":
+                    filo_col = next((col for col in df.columns if isinstance(col, str) and 'FILO' in col.upper()), None)
+                    if filo_col and filo_col != 'FILO':
+                        df = df.rename(columns={filo_col: 'FILO'})
+
+                df['_source_sheet'] = sheet_name
+
+                all_sheets_data.append(df)
+                processed_sheets_info.append({
+                    "sheet": sheet_name,
+                    "rows": len(df),
+                    "status": "processed"
+                })
+
+            except Exception as e:
+                print(f"Error processing sheet {sheet_name}: {e}")
+                processed_sheets_info.append({
+                    "sheet": sheet_name,
+                    "error": str(e),
+                    "status": "failed"
+                })
+
+        if not all_sheets_data:
+            raise HTTPException(
+                status_code=400,
+                detail="No valid sheets found in Excel file"
+            )
+
+        combined_df = pd.concat(all_sheets_data, ignore_index=True)
+
+        return combined_df, processed_sheets_info
+
     file_extension = file.filename.rsplit('.', maxsplit=1)[-1].lower()
     contents = await file.read()
 
     if dates:
         dates_col = "EFFECTIVE FROM;EFFECTIVE TO"
-    date_from, date_to = dates_col.split(";")
+
+    date_from, date_to = None, None
+    if dates_col:
+        date_from, date_to = dates_col.split(";")
 
     if company_name:
         company_col = "Service"
@@ -126,81 +223,29 @@ async def dataImport(file: UploadFile,
         processed_sheets = [{"sheet": "main", "rows": len(df)}]
 
     elif file_extension == "xlsx":
-        processed_sheets = []
-        count_new_routes = 0
-        count_new_points = 0
-
         excel_file = pd.ExcelFile(io.BytesIO(contents))
 
-        for sheet_name in excel_file.sheet_names:
-            try:
-                df = pd.read_excel(
-                    io.BytesIO(contents),
-                    sheet_name=sheet_name,
-                    converters={date_from: parse_date, date_to: parse_date} if dates_col else None,
-                )
+        combined_df, processed_sheets = combine_excel_sheets(
+            excel_file,
+            dates_col=dates_col,
+            dates=dates,
+            company_col=company_col,
+            company_name=company_name,
+            route_type=route_type
+        )
 
-                if route_type == "sea":
-                    filo_col = next((col for col in df.columns if isinstance(col, str) if 'FILO' in col.upper()), None)
-                    if filo_col and filo_col != 'FILO':
-                        df = df.rename(columns={filo_col: 'FILO'})
+        count_new_routes, count_new_points = await process_dataframe(combined_df, company_col, dates_col)
 
-                df.columns = df.columns.str.strip()
-                if not "Container weight limit" in df.columns:
-                    df["Container weight limit"] = np.nan
-                df['CONTAINER TYPE'] = df['CONTAINER TYPE'].str[:2]
-
-                required_columns = {
-                    "POL COUNTRY", "POL FULL NAME", "POD COUNTRY",
-                    "POD FULL NAME", "CONTAINER TYPE", "CONTAINER SIZE",
-                    "Container weight limit",
-                }
-
-                if company_col:
-                    required_columns.add(company_col)
-                if dates_col:
-                    required_columns.add(date_from)
-                    required_columns.add(date_to)
-
-                if dates:
-                    date_from_val, date_to_val = dates.split(" - ")
-                    df[date_from] = parse_date(date_from_val)
-                    df[date_to] = parse_date(date_to_val)
-
-                if company_name:
-                    df[company_col] = company_name
-
-                data_columns = set(df.columns)
-
-                if not all(col in data_columns for col in required_columns):
-                    print(f"Sheet {sheet_name} doesn't contain {required_columns - data_columns}. Skipping.")
-                    continue
-
-                df_for_processing = df.copy()
-
-                count_new_routes_on_sheet, count_new_points_on_sheet = await process_dataframe(df_for_processing,
-                                                                                               company_col, dates_col)
-                count_new_points += count_new_points_on_sheet
-                count_new_routes += count_new_routes_on_sheet
-                processed_sheets.append({
-                    "sheet": sheet_name,
-                    "rows": len(df),
-                    "processed_routes": count_new_routes_on_sheet
-                })
-
-            except Exception as e:
-                print(f"Error processing sheet {sheet_name}: {e}")
-                processed_sheets.append({
-                    "sheet": sheet_name,
-                    "error": str(e),
-                    "status": "failed"
-                })
+        for sheet_info in processed_sheets:
+            if sheet_info["status"] == "processed":
+                sheet_info["processed_routes"] = count_new_routes
 
     else:
         raise HTTPException(
             status_code=400,
             detail="Wrong file extension. Allowed only CSV (TXT), XLSX"
         )
+
     return {
         "status": "OK",
         "count_new_routes": count_new_routes,
@@ -212,7 +257,6 @@ async def dataImport(file: UploadFile,
 
 @router.patch("/save")
 async def saveData(batch_id: int):
-    total_count = 0
     async with database.session() as session:
         new_vals = {"batch_id": None}
         rail_q = await session.execute(
