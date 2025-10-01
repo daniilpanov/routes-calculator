@@ -1,7 +1,8 @@
-import { isAuth } from "@/services/Auth";
-import { Navigate } from "react-router-dom";
 import React from "react";
+import { Navigate } from "react-router-dom";
 import Element = React.JSX.Element;
+
+import { isAuth } from "@/services/Auth";
 
 
 interface IRequireAuthProps {
