@@ -1,10 +1,13 @@
-import "@/resources/images/logo.png";
-import "@/resources/scss/main_style.scss";
+import { Outlet } from "react-router-dom";
+import { Col, Row } from "rsuite";
+
 import "rsuite/Row/styles/index.css";
 import "rsuite/Col/styles/index.css";
-import { Outlet } from "react-router-dom";
+
+import "@/resources/images/logo.png";
+import "@/resources/scss/main_style.scss";
+
 import { Sidebar } from "@/widgets/Sidebar";
-import { Col, Row } from "rsuite";
 
 
 export default function MainLayout() {
