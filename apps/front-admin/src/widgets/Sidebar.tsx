@@ -13,8 +13,8 @@ import { Col, Row } from "rsuite";
 
 
 export default function Sidebar() {
-    const [ currentUser, setCurrentUser ] = useState(getUserName);
-    const [ show, setShow ] = useState(false);
+    const [ currentUser, setCurrentUser ] = useState<string | null>(getUserName);
+    const [ show, setShow ] = useState<boolean>(false);
 
     useEffect(() => {
         if (isAuth())
@@ -28,7 +28,8 @@ export default function Sidebar() {
     };
 
 
-    return (
+    return (<>
+        <div className="sidebar-relative desktop-only" />
         <div className={ show ? "sidebar show" : "sidebar" }>
             <div id="navToggler" onClick={ () => setShow(!show) }>
                 <img src={ show ? closeIcon : menuIcon } width="30" alt="Toggle Sidebar" />
@@ -38,7 +39,7 @@ export default function Sidebar() {
 
             <div className="mobile-space"></div>
 
-            <div className="nav-block">
+            <div className="nav-block" onClick={ () => setShow(false) }>
                 <NavLink to={ ROUTES.DASHBOARD } className="nav-btn">Панель инструментов</NavLink>
                 <NavLink to={ ROUTES.ROUTES_MANAGEMENT } className="nav-btn">Управление маршрутами</NavLink>
                 <NavLink to={ ROUTES.POINTS_MANAGEMENT } className="nav-btn">Управление точками</NavLink>
@@ -59,5 +60,5 @@ export default function Sidebar() {
                 </div>
             </div>
         </div>
-    );
+    </>);
 }
