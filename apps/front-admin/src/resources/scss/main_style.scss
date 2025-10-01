@@ -1,7 +1,47 @@
+@use "./variables";
+
 body, html, #root, .app-container {
   margin: 0;
   padding: 0;
+  width: 100dvw;
+  overflow-x: hidden;
   min-height: 100dvh;
+}
+
+.sidebar-col {
+  width: 15dvw;
+
+  @media (max-width: 1000px) {
+    width: 25dvw;
+  }
+
+  @media (max-width: variables.$mobile_max_width) {
+    width: 100dvw;
+  }
+}
+
+.main-col {
+  width: 85dvw;
+
+  @media (max-width: 1000px) {
+    width: 75dvw;
+  }
+
+  @media (max-width: variables.$mobile_max_width) {
+    width: 100dvw;
+  }
+}
+
+.mobile-only {
+  @media (min-width: variables.$mobile_max_width) {
+    display: none;
+  }
+}
+
+.desktop-only {
+  @media (max-width: variables.$mobile_max_width) {
+    display: none;
+  }
 }
 
 .in_development {
@@ -11,7 +51,7 @@ body, html, #root, .app-container {
 
 .main-container {
   padding: 3rem;
-  height: calc(100dvh - 6rem);
+  min-height: calc(100dvh - 6rem);
 }
 
 .mobile-space {

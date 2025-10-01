@@ -10,8 +10,8 @@ import { Col, Row } from "rsuite";
 export default function MainLayout() {
     return (
         <Row className="app-container">
-            <Col><Sidebar /></Col>
-            <Col>
+            <Col className="sidebar-col"><Sidebar /></Col>
+            <Col className="main-col">
                 <main className="main-container">
                     <Outlet />
                 </main>
