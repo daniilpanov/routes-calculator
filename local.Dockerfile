@@ -7,9 +7,14 @@ WORKDIR "/app"
 ENTRYPOINT ["python3", "-m", "uvicorn"]
 
 
-FROM node:alpine AS front
+FROM node:alpine AS frontadmin
 
 WORKDIR "/app"
+# install
+COPY ./apps/front-admin/package.json ./package.json
+COPY ./apps/front-admin/package-lock.json ./package-lock.json
+RUN ["npm", "ci"]
+# run
 ENTRYPOINT ["npm"]
 
 
