@@ -1,15 +1,18 @@
-import logo from "@/resources/images/logo.png";
-import menuIcon from "@/resources/images/menu-icon.svg";
-import closeIcon from "@/resources/images/close-icon.svg";
-import "rsuite/Button/styles/index.css";
-import "rsuite/Col/styles/index.css";
-import "rsuite/Row/styles/index.css";
-import "@/resources/scss/sidebar_style.scss";
-import { ROUTES } from "@/constants";
-import { logout, getUserName, isAuth } from "@/services/Auth";
 import { useEffect, useState, FormEvent } from "react";
 import { NavLink } from "react-router-dom";
 import { Col, Row } from "rsuite";
+
+import "rsuite/Button/styles/index.css";
+import "rsuite/Col/styles/index.css";
+import "rsuite/Row/styles/index.css";
+
+import logo from "@/resources/images/logo.png";
+import menuIcon from "@/resources/images/menu-icon.svg";
+import closeIcon from "@/resources/images/close-icon.svg";
+import "@/resources/scss/widgets/Sidebar.scss";
+
+import { ROUTES } from "@/constants";
+import { logout, getUserName, isAuth } from "@/services/Auth";
 
 
 export default function Sidebar() {

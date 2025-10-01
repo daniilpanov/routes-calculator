@@ -1,7 +1,7 @@
-import { ILoginCredentials } from "@/interfaces/Auth";
-import * as AuthAPI from "@/api/Auth";
-import { LOGIN_CHECK_INTERVAL, ROUTES } from "@/constants";
 import router from "@/router";
+import { LOGIN_CHECK_INTERVAL, ROUTES } from "@/constants";
+import * as AuthAPI from "@/api/Auth";
+import { ILoginCredentials } from "@/interfaces/Auth";
 
 let updateUserInfoIntervalId: number | undefined;
 

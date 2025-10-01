@@ -1,7 +1,8 @@
+import axios, { AxiosError } from "axios";
+
 import { API_ENDPOINTS } from "./ApiConfig";
 import { ILoginCredentials } from "@/interfaces/Auth";
 import ExecuteProtectedRequest from "@/services/ExecuteProtectedRequest";
-import axios, { AxiosError } from "axios";
 
 interface ILoginResponse {
     status: string;
