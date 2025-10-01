@@ -1,5 +1,5 @@
-import { refresh } from "@/api/Auth";
 import { AxiosError, AxiosResponse } from "axios";
+import { refresh } from "@/api/Auth";
 
 export default async function ExecuteProtectedRequest<T = any>(requestCoro: (...args: any[]) => Promise<AxiosResponse<T>>, ...args: any[]): Promise<AxiosResponse<T>> {
     try {
