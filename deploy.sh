@@ -1,1 +1,1 @@
-docker buildx build --push
+docker buildx bake --push
