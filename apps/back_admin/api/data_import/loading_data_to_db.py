@@ -242,6 +242,8 @@ async def write_routes(routes, session):
             continue
     await session.flush()
 
+    return new_batch_id
+
 
 def validate_route_data(df, company_col, dates_col):
     # Check duplicates.

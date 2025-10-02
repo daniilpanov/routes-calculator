@@ -3,7 +3,7 @@ import io
 import pandas as pd
 import numpy as np
 from fastapi import APIRouter, UploadFile, HTTPException
-from sqlalchemy import select, update
+from sqlalchemy import select, update, delete
 
 from back_admin.api.data_import.loading_data_to_db import validate_route_data, extract_data, create_independent_models, \
     group_containers_from_db, create_routes, write_independent_data, write_routes, parse_date
@@ -89,12 +89,14 @@ async def dataImport(file: UploadFile,
                 detail=f"Unknown route type '{route_type}'"
             )
 
+        this_batch_id = 0
+
         async with database.session() as session:
             count_points = await write_independent_data(services, points, containers, session)
-            await write_routes(routes, session)
+            this_batch_id = await write_routes(routes, session)
             await session.commit()
 
-        return len(routes), count_points
+        return len(routes), count_points, this_batch_id
 
     def combine_excel_sheets(excel_file: pd.ExcelFile,
                              dates_col: str | None = None,
@@ -219,7 +221,7 @@ async def dataImport(file: UploadFile,
         if company_name:
             df[company_col] = company_name
 
-        count_new_routes, count_new_points = await process_dataframe(df, company_col, dates_col)
+        count_new_routes, count_new_points, import_batch_id = await process_dataframe(df, company_col, dates_col)
         processed_sheets = [{"sheet": "main", "rows": len(df)}]
 
     elif file_extension == "xlsx":
@@ -234,7 +236,7 @@ async def dataImport(file: UploadFile,
             route_type=route_type
         )
 
-        count_new_routes, count_new_points = await process_dataframe(combined_df, company_col, dates_col)
+        count_new_routes, count_new_points, import_batch_id = await process_dataframe(combined_df, company_col, dates_col)
 
         for sheet_info in processed_sheets:
             if sheet_info["status"] == "processed":
@@ -251,6 +253,7 @@ async def dataImport(file: UploadFile,
         "count_new_routes": count_new_routes,
         "count_new_points": count_new_points,
         "processed_sheets": processed_sheets,
+        "batch_id": import_batch_id,
         "file": file.filename,
     }
 
@@ -278,6 +281,11 @@ async def saveData(batch_id: int):
                 **new_vals
             )
         )
+        await session.execute(delete(
+            BatchModel,
+        ).where(
+            BatchModel.id == batch_id,
+        ))
 
         rail_count = rail_q.rowcount
         sea_count = sea_q.rowcount
