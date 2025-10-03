@@ -1,15 +1,24 @@
-import { AxiosError, AxiosResponse } from "axios";
+import axios, { AxiosResponse } from "axios";
 import { refresh } from "@/api/Auth";
+import { logout } from "@/services/Auth";
 
 export default async function ExecuteProtectedRequest<T = any>(requestCoro: (...args: any[]) => Promise<AxiosResponse<T>>, ...args: any[]): Promise<AxiosResponse<T>> {
     try {
         return await requestCoro(...args);
     } catch (e) {
-        const error = e as AxiosError;
-        if (error.response?.status !== 401 && error.response?.status !== 422)
+        if (!axios.isAxiosError(e) || e.response?.status !== 401)
             throw e;
 
         await refresh();
-        return await requestCoro(...args);
+
+        try {
+            return await requestCoro(...args);
+        } catch (e) {
+            if (!axios.isAxiosError(e) || e.response?.status !== 401)
+                throw e;
+
+            await logout();
+            throw new Error("Unauthorized");
+        }
     }
 }
