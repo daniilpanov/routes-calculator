@@ -18,6 +18,9 @@ class Base(DeclarativeBase):
         "mysql_collate": os.getenv("DB_COLLATE", "utf8mb4_unicode_ci"),
     }
 
+    def dict(self):
+        return {col.name: getattr(self, col.name) for col in self.__table__.columns}
+
 
 def _build_db_url():
     required = ["DB_SCHEME", "DB_HOST"]
@@ -55,7 +58,7 @@ class Database:
             await conn.run_sync(Base.metadata.create_all)
 
     @asynccontextmanager
-    async def session(self) -> AsyncGenerator:
+    async def session(self) -> AsyncGenerator[AsyncSession, None]:
         if not self._sessionmaker:
             await self.init()
 
