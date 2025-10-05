@@ -3,7 +3,7 @@ variable "TAG" {
 }
 
 group "default" {
-  targets = ["backend", "auth", "reverseproxy"]
+  targets = ["backend", "auth", "backadmin", "reverseproxy"]
 }
 
 target "backend" {
@@ -18,6 +18,13 @@ target "auth" {
   dockerfile = "deploy.Dockerfile"
   target = "auth"
   tags = ["danielgreen1806/auth-backend:${TAG}"]
+}
+
+target "backadmin" {
+  context = "."
+  dockerfile = "deploy.Dockerfile"
+  target = "backadmin"
+  tags = ["danielgreen1806/admin-backend:${TAG}"]
 }
 
 target "frontadmin" {

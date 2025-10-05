@@ -1,0 +1,11 @@
+@import "../variables";
+.heading_div{
+  width: 100%;
+  height: 80px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  font-family: $base_front_family;
+  background: rgba(0, 0, 0, 0.11);
+}

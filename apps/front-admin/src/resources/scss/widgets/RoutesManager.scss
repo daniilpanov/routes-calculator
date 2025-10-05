@@ -1,0 +1,53 @@
+@import "../variables";
+
+html, body {
+  font-family: $base_front_family;
+}
+
+.page_div {
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.control_panel_div {
+  width: 100%;
+  height: 50px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  margin-left: 5%;
+}
+
+.table_div {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.action_div {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 5px;
+}
+
+.filter_div {
+  width: 90%;
+}
+
+.control_filter_div {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  margin: 5px 0;
+}
+
+.filter_item_div {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: left;
+}
