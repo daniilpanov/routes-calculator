@@ -52,4 +52,20 @@ async def calculate(request: CalculateFormRequest):
                 request.containerType,
             )
         )
-    return routes
+
+    one_service_routes = []
+    multi_service_routes = []
+
+    for routes_net in routes:
+        initial_company = routes_net[0]["company"]
+        for route in routes_net[1:]:
+            if route["company"] != initial_company:
+                multi_service_routes.append(routes_net)
+                break
+        else:
+            one_service_routes.append(routes_net)
+
+    return {
+        "one_service_routes": one_service_routes,
+        "multi_service_routes": multi_service_routes,
+    }
