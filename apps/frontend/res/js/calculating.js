@@ -66,44 +66,54 @@ async function calculateAndRender(icons) {
     if (!response.ok)
         throw new Error(`[${response.status} ${response.statusText}]<p>` + await response.text());
 
-    const data = await response.json();
-    const container = document.getElementById('results');
-    container.innerHTML = '';
+    const responseData = await response.json();
+    const wrappers = [document.getElementById('results-direct'), document.getElementById('results-other')];
+    const dataEls = [responseData.one_service_routes, responseData.multi_service_routes];
 
-    data.forEach(route => {
-        const routeEl = document.createElement('div');
-        routeEl.className = 'p-3 mb-4 border rounded shadow-sm result-item';
+    for (let i = 0; i < dataEls.length; ++i) {
+        const data = dataEls[i];
+        if (!data)
+            continue;
 
-        const segmentsHTML = route.map(segment => {
-            let svg = icons[segment.type] || '';
+        const container = wrappers[i];
+        container.innerHTML = '';
 
-            const roundedPrice = Math.round((segment.price + Number.EPSILON) * 100) / 100;
-            return `
-                <div class="align-items-center my-2 result-segment" data-bs-price="${roundedPrice}" data-bs-currency="${segment.currency}">
-                    <div class="route-icon">${svg} &emsp; ${segment.company}</div>
-                    <div class="mb-2">${segment.beginCond ? `Условия: ${segment.beginCond} - ${segment.finishCond}` : ''}</div>
-                    <div class="mb-2">Ставка действует: ${new Date(segment.effectiveFrom).toLocaleDateString()} — ${new Date(segment.effectiveTo).toLocaleDateString()}</div>
-                    <div class="mb-3">Контейнер: ${segment.container.name}</div>
-                    <div>
+        data.forEach(route => {
+            const routeEl = document.createElement('div');
+            routeEl.className = 'p-3 mb-4 border rounded shadow-sm result-item';
+
+            const segmentsHTML = route.map(segment => {
+                let svg = icons[segment.type] || '';
+
+                const roundedPrice = Math.round((segment.price + Number.EPSILON) * 100) / 100;
+                return `
+                    <div class="align-items-center my-2 result-segment" data-bs-price="${roundedPrice}" data-bs-currency="${segment.currency}">
+                        <div class="route-icon">${svg} &emsp; ${segment.company}</div>
+                        <div class="mb-2">${segment.beginCond ? `Условия: ${segment.beginCond} - ${segment.finishCond}` : ''}</div>
+                        <div class="mb-2">Ставка действует: ${new Date(segment.effectiveFrom).toLocaleDateString()} — ${new Date(segment.effectiveTo).toLocaleDateString()}</div>
+                        <div class="mb-3">Контейнер: ${segment.container.name}</div>
                         <div>
-                            <strong>${segment.startPointCountry.toUpperCase()}, ${segment.startPointName}</strong>
-                             →
-                             <strong>${segment.endPointCountry.toUpperCase()}, ${segment.endPointName}</strong>
-                         </div>
-                        <div class="text-muted">${roundedPrice} ${segment.currency}</div>
+                            <div>
+                                <strong>${segment.startPointCountry.toUpperCase()}, ${segment.startPointName}</strong>
+                                 →
+                                 <strong>${segment.endPointCountry.toUpperCase()}, ${segment.endPointName}</strong>
+                             </div>
+                            <div class="text-muted">${roundedPrice} ${segment.currency}</div>
+                        </div>
                     </div>
+                `;
+            }).join('<div class="text-center mb-3 col-md-2">↓</div>');
+
+            routeEl.innerHTML = `
+                <div class="segments">
+                    ${segmentsHTML}
                 </div>
+                <div class="mb-3 sum-price"></div>
             `;
-        }).join('<div class="text-center mb-3 col-md-2">↓</div>');
 
-        routeEl.innerHTML = `
-            <div class="segments">
-                ${segmentsHTML}
-            </div>
-            <div class="mb-3 sum-price"></div>
-        `;
+            container.appendChild(routeEl);
+        });
+    }
 
-        container.appendChild(routeEl);
-    });
     updateResults(document.getElementById('currencySwitcher').value);
 }

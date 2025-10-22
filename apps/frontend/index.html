@@ -142,7 +142,11 @@
         </div>
 
         <hr>
-        <div id="results" class="mt-4"></div>
+        <h3>Сквозные маршруты</h3>
+        <div id="results-direct" class="mt-4"></div>
+
+        <h3>Прочие маршруты</h3>
+        <div id="results-other" class="mt-4"></div>
     </div>
 </main>
 
@@ -159,38 +163,41 @@
     }
 
     function updateResults(selectedCurrency) {
-        let i = 0;
-        const keys = [];
-        const values = [];
-        const elements = [];
-        const resultsEl = document.getElementById('results');
-        const results = [...resultsEl.getElementsByClassName('result-item')];
+        const resultWrappers = [document.getElementById('results-direct'), document.getElementById('results-other')];
 
-        for (const result of results) {
-            const sumPriceEl = result.getElementsByClassName('sum-price')[0];
-            if (!sumPriceEl)
-                continue;
+        for (const resultsEl of resultWrappers) {
+            let i = 0;
+            const keys = [];
+            const values = [];
+            const elements = [];
+            const results = [...resultsEl.getElementsByClassName("result-item")];
 
-            elements.push(result);
-            result.remove();
+            for (const result of results) {
+                const sumPriceEl = result.getElementsByClassName("sum-price")[0];
+                if (!sumPriceEl)
+                    continue;
 
-            let sumPrice = 0;
-            for (const item of result.querySelectorAll('.segments .result-segment')) {
-                const price = item.getAttribute('data-bs-price');
-                const currency = item.getAttribute('data-bs-currency');
-                sumPrice += updateResultRates(Number.parseFloat(price), currency, selectedCurrency);
+                elements.push(result);
+                result.remove();
+
+                let sumPrice = 0;
+                for (const item of result.querySelectorAll(".segments .result-segment")) {
+                    const price = item.getAttribute("data-bs-price");
+                    const currency = item.getAttribute("data-bs-currency");
+                    sumPrice += updateResultRates(Number.parseFloat(price), currency, selectedCurrency);
+                }
+
+                const price = Math.round((sumPrice + Number.EPSILON) * 100) / 100;
+                keys.push(i++);
+                values.push(price);
+                sumPriceEl.innerHTML = `Суммарная стоимость: ${numberWithSpaces(price)} ${selectedCurrency}`;
             }
 
-            const price = Math.round((sumPrice + Number.EPSILON) * 100) / 100;
-            keys.push(i++);
-            values.push(price);
-            sumPriceEl.innerHTML = `Суммарная стоимость: ${numberWithSpaces(price)} ${selectedCurrency}`;
+            keys.sort((a, b) => values[a] - values[b]);
+
+            for (const key of keys)
+                resultsEl.appendChild(results[key]);
         }
-
-        keys.sort((a, b) => values[a] - values[b]);
-
-        for (const key of keys)
-            resultsEl.appendChild(results[key]);
     }
 
     updateRates().then(rates => {
