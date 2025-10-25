@@ -50,8 +50,8 @@ setupAutocomplete('destination', 'destinationList', destinations, 'destinationId
 async function calculateAndRender(icons) {
     const payload = {
         dispatchDate: dispatchDateInput.value,
-        departureId: departureHiddenInput.value,
-        destinationId: destinationHiddenInput.value,
+        departureId: JSON.parse(departureHiddenInput.value),
+        destinationId: JSON.parse(destinationHiddenInput.value),
         cargoWeight: cargoWeightInput.value,
         containerType: containerTypeInput.value,
     };
