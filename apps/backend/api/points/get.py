@@ -1,6 +1,5 @@
 import datetime
 import json
-from functools import lru_cache
 
 from fastapi import APIRouter
 
@@ -27,7 +26,6 @@ async def _add_data(main_dict, data):
         main_dict.setdefault(full_name, {})[service] = _id
 
 
-@lru_cache(1024)
 @router.get("/departures")
 async def all_departure_by_date(date: datetime.date):
     prepared_from: dict[str, dict] = {}
@@ -43,7 +41,6 @@ async def all_departure_by_date(date: datetime.date):
     return result
 
 
-@lru_cache(1024)
 @router.get("/destinations")
 async def all_destination_by_date(date: datetime.date, departure_point_id: str):
     departure_ids = json.loads(departure_point_id)
