@@ -41,7 +41,6 @@ async def calculate(request: CalculateFormRequest):
         if service not in request.departureId:
             continue
 
-        print(service)
         routes.extend(
             await _get_routes(
                 custom,
