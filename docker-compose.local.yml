@@ -37,11 +37,14 @@ services:
       dockerfile: "local.Dockerfile"
       target: "dbadmin"
     expose:
-      - 8080
+      - 80
     ports:
-      - "${ADMINER_PORT}:8080"
+      - "${ADMINER_PORT}:80"
     networks:
       local:
+    environment:
+      PMA_HOST: "${DB_HOST}"
+      PMA_PORT: 3306
 
   ### BACK
   calculator:

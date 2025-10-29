@@ -15,6 +15,6 @@ ENTRYPOINT ["npm"]
 
 FROM mariadb:latest AS database
 
-FROM adminer:latest AS dbadmin
+FROM phpmyadmin:latest AS dbadmin
 
 FROM nginx:alpine AS reverseproxy
