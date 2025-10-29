@@ -31,6 +31,20 @@ services:
       interval: 30m
       retries: 3
 
+  dbadmin:
+    depends_on:
+      - database
+    image: phpmyadmin:latest
+    expose:
+      - 80
+    ports:
+      - "${ADMINER_PORT}:80"
+    networks:
+      local:
+    environment:
+      PMA_HOST: "${DB_HOST}"
+      PMA_PORT: 3306
+
   ### BACK
   calculator:
     image: danielgreen1806/calculator-backend:${DOCKER_PROD_IMAGES_TAG}
