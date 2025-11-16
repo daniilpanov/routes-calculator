@@ -53,7 +53,7 @@ export function Sidebar() {
 
                 <div className="back_to_site-wrapper">
                     <button onClick={ () => {
-                        history.pushState([], null, ROUTES.MAIN_SITE);
+                        history.pushState([], "", ROUTES.MAIN_SITE);
                         location.reload();
                     } } className="nav-btn">Вернуться на сайт</button>
                 </div>
