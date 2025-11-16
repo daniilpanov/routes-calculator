@@ -1,4 +1,4 @@
-import { LoginForm } from "@/widgets/LoginForm";
+import LoginForm from "@/widgets/LoginForm";
 
 export default function Login() {
     return (

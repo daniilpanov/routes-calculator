@@ -8,7 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { useState, ChangeEvent, FormEvent } from "react";
 
 
-export function LoginForm() {
+export default function LoginForm() {
     const [ dataForm, setDataForm ] = useState<ILoginCredentials>({
         login: "",
         password: "",
