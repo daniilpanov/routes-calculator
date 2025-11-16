@@ -2,8 +2,8 @@ import "@/resources/images/logo.png";
 import "@/resources/scss/main_style.scss";
 import "rsuite/Row/styles/index.css";
 import "rsuite/Col/styles/index.css";
+import Sidebar from "@/widgets/Sidebar";
 import { Outlet } from "react-router-dom";
-import { Sidebar } from "@/widgets/Sidebar";
 import { Col, Row } from "rsuite";
 
 

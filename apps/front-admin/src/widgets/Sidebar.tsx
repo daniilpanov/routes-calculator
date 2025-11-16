@@ -9,10 +9,10 @@ import { ROUTES } from "@/constants";
 import { logout, getUserName, isAuth } from "@/services/Auth";
 import { useEffect, useState, FormEvent } from "react";
 import { NavLink } from "react-router-dom";
-import { Button, Col, Row } from "rsuite";
+import { Col, Row } from "rsuite";
 
 
-export function Sidebar() {
+export default function Sidebar() {
     const [ currentUser, setCurrentUser ] = useState(getUserName);
     const [ show, setShow ] = useState(false);
 
@@ -53,7 +53,7 @@ export function Sidebar() {
 
                 <div className="back_to_site-wrapper">
                     <button onClick={ () => {
-                        history.pushState([], null, ROUTES.MAIN_SITE);
+                        history.pushState([], "", ROUTES.MAIN_SITE);
                         location.reload();
                     } } className="nav-btn">Вернуться на сайт</button>
                 </div>
