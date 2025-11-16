@@ -86,78 +86,11 @@ async def find_all_paths(
             joinedload(rail.container),
         )
     )
-    query_rail_sea = (  # noqa: ECE001
-        select(rail, sea)
-        .where(
-            (rail.effective_from <= date)
-            & (rail.effective_to >= date)
-            & (sea.effective_from <= date)
-            & (sea.effective_to >= date)
-            & (rail.start_point_id == start_point_id)
-            & (sea.end_point_id == end_point_id)
-            & rail.container_id.in_(container_ids)
-        )
-        .join(
-            sea,
-            (rail.end_point_id == sea.start_point_id)
-            & (rail.container_id == sea.container_id),
-        )
-        .options(
-            joinedload(rail.start_point),
-            joinedload(rail.end_point),
-            joinedload(rail.company),
-            joinedload(rail.container),
-            joinedload(sea.start_point),
-            joinedload(sea.end_point),
-            joinedload(sea.company),
-            joinedload(sea.container),
-        )
-    )
-    query_rail_sea_rail = (  # noqa: ECE001
-        select(rail, sea, rail2)
-        .where(
-            (rail.effective_from <= date)
-            & (rail.effective_to >= date)
-            & (sea.effective_from <= date)
-            & (sea.effective_to >= date)
-            & (rail2.effective_from <= date)
-            & (rail2.effective_to >= date)
-            & (rail.start_point_id == start_point_id)
-            & (rail2.end_point_id == end_point_id)
-            & rail.container_id.in_(container_ids)
-        )
-        .join(
-            sea,
-            (rail.end_point_id == sea.start_point_id)
-            & (rail.container_id == sea.container_id),
-        )
-        .join(
-            rail2,
-            (sea.end_point_id == rail2.start_point_id)
-            & (sea.container_id == rail2.container_id),
-        )
-        .options(
-            joinedload(rail.start_point),
-            joinedload(rail.end_point),
-            joinedload(rail.company),
-            joinedload(rail.container),
-            joinedload(sea.start_point),
-            joinedload(sea.end_point),
-            joinedload(sea.company),
-            joinedload(sea.container),
-            joinedload(rail2.start_point),
-            joinedload(rail2.end_point),
-            joinedload(rail2.company),
-            joinedload(rail2.container),
-        )
-    )
 
     all_queries = [
         query_rail,
         query_sea,
-        query_rail_sea,
         query_sea_rail,
-        query_rail_sea_rail,
     ]
 
     coroutines = [_execute_query(query) for query in all_queries]
