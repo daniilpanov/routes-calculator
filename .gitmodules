@@ -1,4 +1,0 @@
-[submodule "config/database/versions"]
-	path = config/database/versions
-	url = git@github.com:daniilpanov/transferenigma-dumps.git
-	branch = main
