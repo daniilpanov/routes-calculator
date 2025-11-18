@@ -1,7 +1,7 @@
 import datetime
 
 from backend.database import Base
-from sqlalchemy import DateTime, ForeignKey, UniqueConstraint
+from sqlalchemy import DateTime, ForeignKey, UniqueConstraint, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from . import CompanyModel, ContainerModel
@@ -68,7 +68,7 @@ class RailRouteModel(Base):
     effective_to: Mapped[datetime.date] = mapped_column(DateTime(timezone=False))
 
     price: Mapped[float] = mapped_column()
-    drop: Mapped[float] = mapped_column()
+    drop: Mapped[float] = mapped_column(ForeignKey("drop.price"))
     guard: Mapped[float | None] = mapped_column()
 
     start_point: Mapped[PointModel] = relationship(
@@ -79,3 +79,41 @@ class RailRouteModel(Base):
     )
     company: Mapped[CompanyModel] = relationship()
     container: Mapped[ContainerModel] = relationship()
+
+
+class DropModel(Base):
+    uid = (
+        "sea_start_point_id",
+        "sea_end_point_id",
+        "rail_start_point_id",
+        "rail_end_point_id",
+        "company_id",
+    )
+
+    __tablename__ = "drop"
+    __table_args__ = (UniqueConstraint(*uid),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
+    sea_start_point_id: Mapped[int | None] = mapped_column(ForeignKey("sea_routes.start_point_id"), nullable=True)
+    sea_end_point_id: Mapped[int | None] = mapped_column(ForeignKey("sea_routes.end_point_id"), nullable=True)
+    rail_start_point_id: Mapped[int | None] = mapped_column(ForeignKey("rail_routes.start_point_id"), nullable=True)
+    rail_end_point_id: Mapped[int | None] = mapped_column(ForeignKey("rail_routes.end_point_id"), nullable=True)
+    start_date: Mapped[datetime.date] = mapped_column(DateTime(timezone=False))
+    end_date: Mapped[datetime.date] = mapped_column(DateTime(timezone=False))
+    company_id: Mapped[int] = mapped_column(ForeignKey("companies.id"))
+    price: Mapped[float] = mapped_column(default=0)
+    currency: Mapped[str] = mapped_column(String(25))
+
+    sea_start_point: Mapped[PointModel | None] = relationship(
+        PointModel, foreign_keys=[sea_start_point_id]
+    )
+    sea_end_point: Mapped[PointModel | None] = relationship(
+        PointModel, foreign_keys=[sea_end_point_id]
+    )
+    rail_start_point: Mapped[PointModel | None] = relationship(
+        PointModel, foreign_keys=[rail_start_point_id]
+    )
+    rail_end_point: Mapped[PointModel | None] = relationship(
+        PointModel, foreign_keys=[rail_end_point_id]
+    )
+    company: Mapped[CompanyModel] = relationship()
