@@ -70,7 +70,7 @@ class AbstractCRUD(ABC):
         if limit:
             query = query.limit(limit)
 
-        result = database.get_all_scalars(query)
+        result = await database.get_all_scalars(query)
         return [self.instance_schema_class.model_validate(item.dict()) for item in result]
 
     async def _get_by_id(self, _id: int) -> InstanceSchema:
