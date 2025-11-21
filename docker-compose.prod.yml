@@ -72,6 +72,19 @@ services:
       - "0.0.0.0"
       - "--port"
       - "8081"
+  backadmin:
+    image: danielgreen1806/admin-backend:${DOCKER_PROD_IMAGES_TAG}
+    env_file:
+      - ".env"
+    expose:
+      - 8082
+    networks:
+      local:
+    command:
+      - "--host"
+      - "0.0.0.0"
+      - "--port"
+      - "8082"
 
   ### PROXY
   reverseproxy:
@@ -79,6 +92,8 @@ services:
       calculator:
         condition: service_started
       auth:
+        condition: service_started
+      backadmin:
         condition: service_started
     image: danielgreen1806/calculator-reverseproxy:${DOCKER_PROD_IMAGES_TAG}
     env_file:

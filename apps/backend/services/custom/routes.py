@@ -25,7 +25,6 @@ async def find_all_paths(
 ) -> list[dict]:
     sea = aliased(SeaRouteModel)
     rail = aliased(RailRouteModel)
-    rail2 = aliased(RailRouteModel)
 
     query_rail = (  # noqa: ECE001
         select(rail)

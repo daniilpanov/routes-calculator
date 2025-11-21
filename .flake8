@@ -4,7 +4,7 @@ exclude =
   __pycache__,
   .venv,
 statistics = True
-max-line-length = 100
+max-line-length = 120
 max-complexity = 10
 ignore =
   PIE783

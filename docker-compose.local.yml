@@ -85,26 +85,33 @@ services:
       - "0.0.0.0"
       - "--port"
       - "8081"
-
-  ### FRONT
-  adminfrontinstaller:
+  backadmin:
     build:
       dockerfile: "local.Dockerfile"
-      target: "front"
+      target: "calculator"
+    env_file:
+      - ".env"
     volumes:
-      - "./apps/front-admin/:/app:rw"
+      - "./apps/back_admin/:/app/back_admin/:r"
+    expose:
+      - 8082
     networks:
       local:
-    command: ["ci"]
+    command:
+      - "back_admin.main:app"
+      - "--host"
+      - "0.0.0.0"
+      - "--port"
+      - "8082"
+
+  ### FRONT
   adminfrontbuilder:
-    depends_on:
-      adminfrontinstaller:
-        condition: service_completed_successfully
     build:
       dockerfile: "local.Dockerfile"
-      target: "front"
+      target: "frontadmin"
     environment:
       - VITE_PUBLIC_URL=/admin
+      - REACT_ROUTING_MAIN_SITE=/
     volumes:
       - "./apps/front-admin/:/app:rw"
     networks:
@@ -117,6 +124,8 @@ services:
       calculator:
         condition: service_started
       auth:
+        condition: service_started
+      backadmin:
         condition: service_started
       adminfrontbuilder:
         condition: service_completed_successfully
