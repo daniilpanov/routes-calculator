@@ -3,11 +3,11 @@ import datetime
 
 from backend.database import database
 from backend.mapper_decorator import apply_mapper
-from sqlalchemy import select
+from sqlalchemy import select, and_, or_
 from sqlalchemy.orm import aliased, joinedload
 
 from .mappers.routes import map_routes
-from .models import RailRouteModel, SeaRouteModel
+from .models import RailRouteModel, SeaRouteModel, DropModel
 
 
 async def _execute_query(q):
@@ -25,7 +25,7 @@ async def find_all_paths(
 ) -> list[dict]:
     sea = aliased(SeaRouteModel)
     rail = aliased(RailRouteModel)
-    rail2 = aliased(RailRouteModel)
+    drop = aliased(DropModel)
 
     query_rail = (  # noqa: ECE001
         select(rail)
@@ -35,6 +35,12 @@ async def find_all_paths(
             & (rail.start_point_id == start_point_id)
             & (rail.end_point_id == end_point_id)
             & rail.container_id.in_(container_ids)
+        )
+        .join(
+            drop,
+            and_(rail.start_point == drop.rail_start_point,
+                 rail.end_point == drop.rail_end_point,
+                 rail.company_id == drop.company_id,),
         )
         .options(
             joinedload(rail.start_point),
@@ -51,6 +57,12 @@ async def find_all_paths(
             & (sea.start_point_id == start_point_id)
             & (sea.end_point_id == end_point_id)
             & sea.container_id.in_(container_ids)
+        )
+        .join(
+            drop,
+            and_(sea.start_point == drop.sea_start_point,
+                 sea.end_point == drop.sea_end_point,
+                 sea.company_id == drop.company_id,),
         )
         .options(
             joinedload(sea.start_point),
@@ -74,6 +86,17 @@ async def find_all_paths(
             rail,
             (sea.end_point_id == rail.start_point_id)
             & (sea.container_id == rail.container_id),
+        )
+        .join(
+            drop,
+            or_(
+                and_(rail.start_point == drop.rail_start_point,
+                 rail.end_point == drop.rail_end_point,
+                 rail.company_id == drop.company_id),
+                and_(sea.start_point == drop.sea_start_point,
+                 sea.end_point == drop.sea_end_point,
+                 sea.company_id == drop.company_id),
+                ),
         )
         .options(
             joinedload(sea.start_point),
