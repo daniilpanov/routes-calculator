@@ -47,7 +47,7 @@ class CompanyCRUD(AbstractCRUD):
         self._router.add_api_route("/", self.create_compat, methods=["POST"])
         self._router.add_api_route("/{company_id}", self.edit_compat, methods=["PUT"])
         self._router.add_api_route("/{company_id}", self.delete_compat, methods=["DELETE"])
-        self._router.add_api_route("/[array]", self.delete_many_compat, methods=["DELETE"])
+        self._router.add_api_route("/", self.delete_many_compat, methods=["DELETE"])
 
     async def get_all_compat(
         self,

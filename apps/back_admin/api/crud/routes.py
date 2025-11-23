@@ -8,7 +8,7 @@ from back_admin.database import database
 from back_admin.models import RailRouteModel, SeaRouteModel
 from back_admin.models.requests.route import AddRouteRequest, DeleteRoutesRequest, EditRouteRequest
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import and_, delete, func, select, update
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import InvalidRequestError
 from sqlalchemy.orm import joinedload
 
@@ -60,8 +60,6 @@ class RouteCRUD(AbstractCRUD):
         self._router.prefix = "/routes"
 
         self._router.add_api_route("/", self.get_routes, methods=["GET"])
-        self._router.add_api_route("/company/{company_id}", self.get_company_routes, methods=["GET"])
-        self._router.add_api_route("/period", self.get_period_routes, methods=["GET"])
 
         self._router.add_api_route("/{route_id}", self.add_route, methods=["POST"])
         self._router.add_api_route("/{route_id}", self.edit_route, methods=["PUT"])
@@ -134,6 +132,9 @@ class RouteCRUD(AbstractCRUD):
         limit: int,
         route_type: str | None = None,
         company_id: int | None = None,
+        start_point_id: int | None = None,
+        end_point_id: int | None = None,
+        container_id: int | None = None,
         date_from: date | None = None,
         date_to: date | None = None
     ) -> dict:
@@ -156,19 +157,25 @@ class RouteCRUD(AbstractCRUD):
             rail_stmt = rail_stmt.where(RailRouteModel.company_id == company_id)
             sea_stmt = sea_stmt.where(SeaRouteModel.company_id == company_id)
 
-        if date_from and date_to:
-            rail_stmt = rail_stmt.where(
-                and_(
-                    RailRouteModel.effective_from <= date_to,
-                    RailRouteModel.effective_to >= date_from
-                )
-            )
-            sea_stmt = sea_stmt.where(
-                and_(
-                    SeaRouteModel.effective_from <= date_to,
-                    SeaRouteModel.effective_to >= date_from
-                )
-            )
+        if start_point_id:
+            rail_stmt = rail_stmt.where(RailRouteModel.start_point_id == start_point_id)
+            sea_stmt = sea_stmt.where(SeaRouteModel.start_point_id == start_point_id)
+
+        if end_point_id:
+            rail_stmt = rail_stmt.where(RailRouteModel.end_point_id == end_point_id)
+            sea_stmt = sea_stmt.where(SeaRouteModel.end_point_id == end_point_id)
+
+        if container_id:
+            rail_stmt = rail_stmt.where(RailRouteModel.container_id == container_id)
+            sea_stmt = sea_stmt.where(SeaRouteModel.container_id == container_id)
+
+        if date_from:
+            rail_stmt = rail_stmt.where(RailRouteModel.effective_to >= date_from)
+            sea_stmt = sea_stmt.where(SeaRouteModel.effective_to >= date_from)
+
+        if date_to:
+            rail_stmt = rail_stmt.where(RailRouteModel.effective_from <= date_to)
+            sea_stmt = sea_stmt.where(SeaRouteModel.effective_from <= date_to)
 
         rail_rows = []
         sea_rows = []
@@ -194,46 +201,38 @@ class RouteCRUD(AbstractCRUD):
             "routes": paginated_rows,
         }
 
-    # --- API Handlers ---
-
     async def get_routes(
         self,
         page: int = Query(1, ge=1, description="Номер страницы"),
         limit: int = Query(25, ge=1, description="Количество элементов"),
-        route_type: Literal["rail", "sea"] | None = Query(None, description="Тип маршрута")
+        route_type: Literal["rail", "sea"] | None = Query(None, description="Тип маршрута"),
+        company_id: int | None = Query(None, description="ID компании"),
+        start_point_id: int | None = Query(None, description="ID точки отправления"),
+        end_point_id: int | None = Query(None, description="ID точки назначения"),
+        container_id: int | None = Query(None, description="ID контейнера"),
+        effective_from: str | None = Query(None, description="Начало периода (YYYY-MM-DD) или (DD.MM.YYYY)"),
+        effective_to: str | None = Query(None, description="Конец периода (YYYY-MM-DD) или (DD.MM.YYYY)"),
     ):
-        return await self._get_filtered_routes_helper(page=page, limit=limit, route_type=route_type)
-
-    async def get_company_routes(
-        self,
-        company_id: int = Path(..., description="ID компании"),
-        page: int = Query(1, ge=1),
-        limit: int = Query(25, ge=1),
-        route_type: Literal["rail", "sea"] | None = Query(None)
-    ):
-        return await self._get_filtered_routes_helper(
-            page=page, limit=limit, route_type=route_type, company_id=company_id
-        )
-
-    async def get_period_routes(
-        self,
-        effective_from: str = Query(..., description="Начало периода (YYYY-MM-DD или DD.MM.YYYY)"),
-        effective_to: str = Query(..., description="Конец периода (YYYY-MM-DD или DD.MM.YYYY)"),
-        page: int = Query(1, ge=1),
-        limit: int = Query(25, ge=1),
-        route_type: Literal["rail", "sea"] | None = Query(None)
-    ):
+        d_from = None
+        d_to = None
         try:
-            d_from = self._parse_date(effective_from)
-            d_to = self._parse_date(effective_to)
+            if effective_from:
+                d_from = self._parse_date(effective_from)
+            if effective_to:
+                d_to = self._parse_date(effective_to)
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))
 
-        if d_from > d_to:
-            raise HTTPException(status_code=400, detail="effective_from cannot be greater than effective_to")
-
         return await self._get_filtered_routes_helper(
-            page=page, limit=limit, route_type=route_type, date_from=d_from, date_to=d_to
+            page=page,
+            limit=limit,
+            route_type=route_type,
+            company_id=company_id,
+            start_point_id=start_point_id,
+            end_point_id=end_point_id,
+            container_id=container_id,
+            date_from=d_from,
+            date_to=d_to
         )
 
     async def add_route(self, route_to_add: AddRouteRequest = Body(...)):
