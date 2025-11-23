@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from typing import Any, Literal
 
-from fastapi import Body, HTTPException, Path, Query
+from fastapi import Body, HTTPException, Query
 
 from back_admin.api.abstract_crud import AbstractCRUD
 from back_admin.database import database
@@ -306,94 +306,97 @@ class RouteCRUD(AbstractCRUD):
             "new_route": result,
         }
 
+    def _get_route_model_class(self, route_type: str | None):
+        if route_type == "rail":
+            return RailRouteModel
+        elif route_type == "sea":
+            return SeaRouteModel
+        raise HTTPException(status_code=400, detail=f"Incorrect route type '{route_type}'")
+
+    def _validate_dates_logic(self, edit_params, current_route):
+        try:
+            req_from = self._parse_date(edit_params.effective_from)
+            req_to = self._parse_date(edit_params.effective_to)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+
+        current_from = current_route.effective_from
+        if isinstance(current_from, datetime):
+            current_from = current_from.date()
+
+        current_to = current_route.effective_to
+        if isinstance(current_to, datetime):
+            current_to = current_to.date()
+
+        actual_from = req_from if req_from else current_from
+        actual_to = req_to if req_to else current_to
+
+        if actual_from > actual_to:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Effective From ({actual_from}) cannot be after Effective To ({actual_to})"
+            )
+
+        return req_from, req_to
+
+    def _get_price_fields(self, route_type: str | None) -> list[str]:
+        if route_type == "rail":
+            return ['price', 'drop', 'guard']
+        elif route_type == "sea":
+            return ['filo', 'fifo']
+        return []
+
+    def _calculate_update_values(self, edit_params, current_route, route_type: str | None):
+        update_values = {}
+
+        # 1. Валидация дат
+        req_from, req_to = self._validate_dates_logic(edit_params, current_route)
+
+        if req_from:
+            update_values['effective_from'] = req_from
+        if req_to:
+            update_values['effective_to'] = req_to
+
+        # 2. Обновление полей связей
+        for field in ['container_id', 'company_id', 'start_point_id', 'end_point_id']:
+            val = getattr(edit_params, field, None)
+            if val:
+                update_values[field] = val
+
+        # 3. Обновление полей цены
+        if edit_params.price:
+            price_fields = self._get_price_fields(route_type)
+            for field in price_fields:
+                val = getattr(edit_params.price, field, None)
+                if val is not None:
+                    update_values[field] = val
+
+        return update_values
+
     async def edit_route(self, edit_route: EditRouteRequest = Body(...)):
+        route_class = self._get_route_model_class(edit_route.edit_params.route_type)
         is_rail = edit_route.edit_params.route_type == "rail"
-        is_sea = edit_route.edit_params.route_type == "sea"
 
-        if is_rail:
-            route_class = RailRouteModel
-        elif is_sea:
-            route_class = SeaRouteModel
-        else:
-            raise HTTPException(status_code=400, detail=f"Incorrect route type '{edit_route.edit_params.route_type}'")
-
-        correct_route_id = await self._exe_q(
-            select(route_class.id).where(route_class.id == edit_route.route_id),
-            return_scalar=True
-        )
-
-        if not correct_route_id:
-            raise HTTPException(status_code=404, detail=f"Incorrect route id '{edit_route.route_id}'")
-
-        route_with_current_dates = await self._exe_q(
+        route_to_update = await self._exe_q(
             select(route_class).where(route_class.id == edit_route.route_id),
             return_scalar=True
         )
 
-        current_date_from = route_with_current_dates.effective_from.date()
-        current_date_to = route_with_current_dates.effective_to.date()
+        if not route_to_update:
+            raise HTTPException(status_code=404, detail=f"Incorrect route id '{edit_route.route_id}'")
 
-        try:
-            date_from = self._parse_date(
-                edit_route.edit_params.effective_from) if edit_route.edit_params.effective_from else datetime.fromtimestamp(0).date()
-            date_to = self._parse_date(
-                edit_route.edit_params.effective_to) if edit_route.edit_params.effective_to else datetime.fromtimestamp(10000000000).date()
-        except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
-
-        update_values = {}
-        fields_to_check = ['effective_from', 'effective_to',
-                           'container_id', 'company_id', 'start_point_id', 'end_point_id']
-
-        for field in fields_to_check:
-            value = getattr(edit_route.edit_params, field, None)
-            if value:
-                if field == 'effective_from':
-                    req_to = edit_route.edit_params.effective_to
-                    actual_to = date_to if req_to else current_date_to
-
-                    if date_from > actual_to:
-                        raise HTTPException(
-                            status_code=400,
-                            detail=f"Effective From ({date_from}) cannot be after Effective To ({actual_to})"
-                        )
-                    update_values[field] = date_from
-                    continue
-
-                if field == 'effective_to':
-                    req_from = edit_route.edit_params.effective_from
-                    actual_from = date_from if req_from else current_date_from
-
-                    if date_to < actual_from:
-                        raise HTTPException(
-                            status_code=400,
-                            detail=f"Effective To ({date_to}) cannot be before Effective From ({actual_from})"
-                        )
-                    update_values[field] = date_to
-                    continue
-
-                update_values[field] = value
-
-        rail_price = ['price', 'drop', 'guard']
-        sea_price = ['filo', 'fifo']
-
-        if is_rail and edit_route.edit_params.price:
-            for field in rail_price:
-                value = getattr(edit_route.edit_params.price, field, None)
-                if value is not None:
-                    update_values[field] = value
-        elif is_sea and edit_route.edit_params.price:
-            for field in sea_price:
-                value = getattr(edit_route.edit_params.price, field, None)
-                if value is not None:
-                    update_values[field] = value
+        update_values = self._calculate_update_values(
+            edit_route.edit_params,
+            route_to_update,
+            edit_route.edit_params.route_type
+        )
 
         if update_values:
             edit_stmt = update(route_class).where(route_class.id == edit_route.route_id).values(**update_values)
             async with database.session() as session:
                 await session.execute(edit_stmt)
 
-        route_to_change = await self._exe_q(
+        route_final = await self._exe_q(
             select(route_class).where(route_class.id == edit_route.route_id).options(
                 joinedload(route_class.container),
                 joinedload(route_class.company),
@@ -403,7 +406,7 @@ class RouteCRUD(AbstractCRUD):
             return_scalar=True
         )
 
-        result = self._parse_route_to_schema(route_to_change, "rail" if is_rail else "sea")
+        result = self._parse_route_to_schema(route_final, "rail" if is_rail else "sea")
 
         return {
             "status": "OK",
