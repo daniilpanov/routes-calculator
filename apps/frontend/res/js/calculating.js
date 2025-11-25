@@ -11,6 +11,11 @@ dispatchDateInput.min = dispatchDateInput.min || dispatchDateInput.value;
 
 const departures = { data: {} };
 
+function getCurrencySymbol(currName, defaultCur = '') {
+    const currMap = {RUB: '₽', USD: '$'};
+    return currMap[currName] ?? defaultCur;
+}
+
 async function updateDepartures() {
     if (!dispatchDateInput.validity.valid) return;
     const date = dispatchDateInput.value;
@@ -78,11 +83,14 @@ async function calculateAndRender(icons) {
         const container = wrappers[i];
         container.innerHTML = '';
 
-        data.forEach(route => {
+        data.forEach(([route, drop]) => {
             const routeEl = document.createElement('div');
             routeEl.className = 'p-3 mb-4 border rounded shadow-sm result-item';
 
-            const segmentsHTML = route.map(segment => {
+            const segmentsEl = document.createElement('div');
+            segmentsEl.className = 'segments';
+
+            segmentsEl.innerHTML = route.map(segment => {
                 let svg = icons[segment.type] || '';
 
                 const roundedPrice = Math.round((segment.price + Number.EPSILON) * 100) / 100;
@@ -103,13 +111,33 @@ async function calculateAndRender(icons) {
                     </div>
                 `;
             }).join('<div class="text-center mb-3 col-md-2">↓</div>');
+            routeEl.appendChild(segmentsEl);
 
-            routeEl.innerHTML = `
-                <div class="segments">
-                    ${segmentsHTML}
-                </div>
-                <div class="mb-3 sum-price"></div>
-            `;
+            let dropEl = document.createElement('div');
+            dropEl.className = 'drop-off';
+
+            if (drop) {
+                const priceSpan = document.createElement('span');
+                priceSpan.className = 'drop-off-price';
+                priceSpan.innerHTML = drop.price;
+
+                const currencySpan = document.createElement('span');
+                currencySpan.className = 'drop-off-currency';
+                currencySpan.setAttribute('data-bs-currency', drop.currency);
+                currencySpan.innerHTML = getCurrencySymbol(drop.currency);
+
+                dropEl.appendChild(document.createTextNode('+'));
+                dropEl.appendChild(currencySpan);
+                dropEl.appendChild(priceSpan);
+                dropEl.appendChild(document.createTextNode(' стоимость drop off'));
+            } else
+                dropEl.innerHTML = 'без drop off';
+
+            routeEl.appendChild(dropEl);
+
+            const sumPriceEl = document.createElement('div');
+            sumPriceEl.classList.add('sum-price', 'mb-3');
+            routeEl.appendChild(sumPriceEl);
 
             container.appendChild(routeEl);
         });
