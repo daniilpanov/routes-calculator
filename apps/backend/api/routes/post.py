@@ -54,15 +54,21 @@ async def calculate(request: CalculateFormRequest):
 
     one_service_routes = []
     multi_service_routes = []
-
-    for routes_net in routes:
-        initial_company = routes_net[0]["company"]
-        for route in routes_net[1:]:
-            if route["company"] != initial_company:
-                multi_service_routes.append(routes_net)
+    print(routes)
+    for route_and_drop in routes:
+        if len(route_and_drop) > 1:
+            route, drop = route_and_drop
+        else:
+            route = route_and_drop[0]
+            drop = None
+        print(route, drop)
+        initial_company = route[0]["company"]
+        for segment in route[1:]:
+            if segment["company"] != initial_company:
+                multi_service_routes.append((route, drop))
                 break
         else:
-            one_service_routes.append(routes_net)
+            one_service_routes.append((route, drop))
 
     return {
         "one_service_routes": one_service_routes,
