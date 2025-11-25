@@ -42,7 +42,7 @@ def _map_route(route):
                 }
             )
         res.append(item)
-    return res
+    return res, None
 
 
 def map_routes(routes):
