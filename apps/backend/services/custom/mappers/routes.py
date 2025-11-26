@@ -30,41 +30,32 @@ def _map_segment(
     return item
 
 
-def _map_route(routes):
+def _map_route(route_and_drop):
+    *segments, drop = route_and_drop
     res = []
     _types = []
-    for route in routes:
-        if getattr(route, "filo", None):
+
+    for segment in segments:
+        if getattr(segment, "filo", None):
             _types.append("sea")
-            res.append(_map_segment(route, "filo", "USD", "sea", {}, "FI", "LO"))
-        elif getattr(route, "fifo", None):
+            res.append(_map_segment(segment, "filo", "USD", "sea", {}, "FI", "LO"))
+        elif getattr(segment, "fifo", None):
             _types.append("sea")
-            res.append(_map_segment(route, "fifo", "USD", "sea", {}, "FI", "FOR"))
+            res.append(_map_segment(segment, "fifo", "USD", "sea", {}, "FI", "FOR"))
         else:
             _types.append("rail")
             res.append(
                 _map_segment(
-                    route,
+                    segment,
                     "price",
                     "RUB",
                     "rail",
-                    {
-                        "guard": "RUB",
-                    },
+                    {"guard": "RUB"},
                 )
             )
 
-    extended_routes = []
-    for i, _type in reversed(list(enumerate(_types))):
-        if _type != "rail":
-            break
-        extended_routes.append(_map_segment(routes[i], "drop", "USD", "truck", {}))
-    else:
-        extended_routes = []
-
-    res.extend(extended_routes)
-    return res
+    return (res, {"price": drop.price, "currency": drop.currency}) if drop else (res, None)
 
 
-def map_routes(routes):
-    return map(_map_route, routes)
+def map_routes(routes_and_drops):
+    return map(_map_route, routes_and_drops)

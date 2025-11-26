@@ -92,29 +92,22 @@ services:
       - "--reload"
 
   ### FRONT
-  adminfrontinstaller:
-    build:
-      dockerfile: "local.Dockerfile"
-      target: "front"
-    volumes:
-      - "./apps/front-admin/:/app:rw"
-    networks:
-      local:
-    command: ["ci"]
   adminfront:
-    depends_on:
-      adminfrontinstaller:
-        condition: service_completed_successfully
     build:
       dockerfile: "local.Dockerfile"
-      target: "front"
+      target: "frontadmin"
     environment:
       - DANGEROUSLY_DISABLE_HOST_CHECK=true
       - PORT=${ADMIN_FRONT_PORT}
       - VITE_PUBLIC_URL=/admin
       - REACT_ROUTING_MAIN_SITE=/
     volumes:
-      - "./apps/front-admin/:/app:r"
+      - "./apps/front-admin/public:/app/public:ro"
+      - "./apps/front-admin/src:/app/src:ro"
+      - "./apps/front-admin/index.html:/app/index.html:ro"
+      - "./apps/front-admin/tsconfig.json:/app/tsconfig.json:ro"
+      - "./apps/front-admin/eslint.config.mjs:/app/eslint.config.mjs:ro"
+      - "./apps/front-admin/vite.config.js:/app/vite.config.js:ro"
     expose:
       - ${ADMIN_FRONT_PORT}
     ports:

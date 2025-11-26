@@ -1,1 +1,1 @@
-docker compose -f docker-compose.hot-dev.yml down
+docker compose -f docker-compose.hot-dev.yml down %*

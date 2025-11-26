@@ -1,19 +1,21 @@
 FROM python:3.12.11 AS backend
 
+WORKDIR "/app"
+# install
 COPY ./requirements.txt ./
 RUN ["python3", "-m", "pip", "install", "--no-deps", "--no-cache-dir", "-r", "requirements.txt"]
-
-WORKDIR "/app"
+# run
 COPY ./apps/backend/ ./backend/
 ENTRYPOINT ["python3", "-m", "uvicorn", "backend.main:app"]
 
 
 FROM python:3.12.11 AS auth
 
+WORKDIR "/app"
+# install
 COPY ./requirements.txt ./
 RUN ["python3", "-m", "pip", "install", "--no-deps", "--no-cache-dir", "-r", "requirements.txt"]
-
-WORKDIR "/app"
+# run
 COPY ./apps/auth/ ./auth/
 ENTRYPOINT ["python3", "-m", "uvicorn", "auth.main:app"]
 

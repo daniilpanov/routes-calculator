@@ -87,24 +87,13 @@ services:
       - "8081"
 
   ### FRONT
-  adminfrontinstaller:
-    build:
-      dockerfile: "local.Dockerfile"
-      target: "front"
-    volumes:
-      - "./apps/front-admin/:/app:rw"
-    networks:
-      local:
-    command: ["ci"]
   adminfrontbuilder:
-    depends_on:
-      adminfrontinstaller:
-        condition: service_completed_successfully
     build:
       dockerfile: "local.Dockerfile"
-      target: "front"
+      target: "frontadmin"
     environment:
       - VITE_PUBLIC_URL=/admin
+      - REACT_ROUTING_MAIN_SITE=/
     volumes:
       - "./apps/front-admin/:/app:rw"
     networks:
