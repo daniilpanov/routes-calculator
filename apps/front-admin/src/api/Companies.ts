@@ -1,27 +1,31 @@
 import axios from "axios";
 import { API_ENDPOINTS } from "./ApiConfig";
-import { Company } from "@/interfaces/Companies";
-import request from "@/services/ExecuteProtectedRequest";
+import { getCompaniesResponse } from "@/interfaces/Response/CompaniesResponse";
+import { getCompaniesRequest } from "@/interfaces/Request/CompaniesRequest";
 
-export interface GetCompaniesResponse {
-    status: string,
-    companies: Company[],
-}
 
 export const companiesService = {
-    async getCompanies(): Promise<GetCompaniesResponse> {
+    async getCompanies(
+        page = 1,
+        limit = 25,
+    ): Promise<getCompaniesResponse> {
         try {
-            const response = await request<GetCompaniesResponse>(() => axios.post(
+            const params: getCompaniesRequest = {
+                page,
+                limit,
+            };
+            const response = await axios.get<getCompaniesResponse>(
                 API_ENDPOINTS.COMPANIES.GET,
-                undefined,
                 {
-                    headers: { "Content-Type": "application/json" },
-                    withCredentials: true,
+                    params: {
+                        params,
+                    },
                 },
-            ));
+            );
             return response.data;
-        } catch (error) {
-            throw new Error("Unexpected error during getRoutes");
+        } catch (error: any) {
+            console.log("Error:", error.response?.data || error.message);
+            throw error;
         }
     },
 };

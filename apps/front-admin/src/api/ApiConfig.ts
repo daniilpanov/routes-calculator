@@ -6,20 +6,20 @@ export const API_ENDPOINTS = {
         ME: "/admin/api/user/me",
     },
     ROUTES: {
-        GET: "/admin/api/routes",
+        GET: "/admin/api/routes/",
         CREATE: "/admin/api/routes/add",
         DELETE: "/admin/api/routes/delete",
         EDIT: "/admin/api/routes/edit",
     },
     POINTS: {
-        SEARCH: "/admin/api/points/find_name",
+        SEARCH: "/admin/api/points/{point_name}/",
         GET: "/admin/api/points",
         ADD: "/admin/api/points/add",
     },
     CONTAINERS: {
-        GET: "/admin/api/container",
+        GET: "/admin/api/container/",
     },
     COMPANIES: {
-        GET: "/admin/api/company",
+        GET: "/admin/api/company/",
     },
 };

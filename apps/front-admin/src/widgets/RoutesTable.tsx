@@ -7,9 +7,7 @@ import cross from "@/resources/images/cross.png";
 import magnifier from "@/resources/images/magnifier.png";
 import changeMarker from "@/resources/images/changeMarker.png";
 
-import { routesService } from "@/api/Routes";
 import { companiesService } from "@/api/Companies";
-import { containersService } from "@/api/Containers";
 import { Route, RouteEditRequest } from "@/interfaces/Routes";
 import { Company } from "@/interfaces/Companies";
 import { Container } from "@/interfaces/Containers";
@@ -18,6 +16,8 @@ import { SearchableDropdown } from "@/components/SearchableDropdown";
 import { formatDate, formatDateForServerFromInput, formatDateISO } from "@/utils/Date";
 import { Pagination } from "./Pagination";
 import { CreatePoint } from "./modals/CreatePoint";
+import { containersApi } from "@/api/ContainersApi";
+import { routesApi } from "@/api/RoutesApi";
 
 const PAGE_SIZE = 25;
 
@@ -113,7 +113,7 @@ export function RoutesTable() {
             };
 
 
-            const response = await routesService.editRoute(payload);
+            const response = await routesApi.editRoute(payload);
 
             if (response.status === "OK") {
                 setRoutes(prev =>
@@ -146,7 +146,7 @@ export function RoutesTable() {
     const fetchRoutes = async () => {
         try {
             setLoading(true);
-            const response = await routesService.getRoutes(page, PAGE_SIZE, buildFilterFields());
+            const response = await routesApi.getRoutes(page, PAGE_SIZE, buildFilterFields());
             if (response.status === "OK") {
                 setRoutes(response.routes);
                 setTotalPages(Math.ceil(response.count / PAGE_SIZE));
@@ -168,7 +168,7 @@ export function RoutesTable() {
 
     const fetchContainers = async () => {
         try {
-            const res = await containersService.getContainers();
+            const res = await containersApi.getContainers();
             setContainers(res.containers);
         } catch (err) { console.error(err); }
     };
@@ -199,7 +199,7 @@ export function RoutesTable() {
             }, {} as Record<string, number>),
         };
         try {
-            const response = await routesService.createRoute(requestData);
+            const response = await routesApi.createRoute(requestData);
             if (response.status === "OK") {
                 setRoutes(prev => [ ...prev, response.new_route ]);
                 alert("Маршрут успешно добавлен");
@@ -351,7 +351,7 @@ export function RoutesTable() {
                 sea: route.route_type === "sea" ? [ route.id ] : [],
             };
 
-            const response = await routesService.deleteRoute(payload);
+            const response = await routesApi.deleteRoute(payload);
 
             if (response.status === "OK") {
                 setRoutes(prev => prev.filter(r => r.id !== route.id));
@@ -408,7 +408,7 @@ export function RoutesTable() {
                 if (route) payload[route.route_type].push(route.id);
             });
 
-            const response = await routesService.deleteRoute(payload);
+            const response = await routesApi.deleteRoute(payload);
 
             if (response.status === "OK") {
                 setRoutes(prev => prev.filter(r => !selectedRouteIds.includes(r.id)));
@@ -460,6 +460,15 @@ export function RoutesTable() {
                     disabled={ selectedRouteIds.length === 0 }
                 >
                     Удалить выбранные
+                </button>
+                {availableFilterFields.length > 0 && (
+                    <button className="control_btn" onClick={ handleAddFilter }>
+                        + Добавить фильтр
+                    </button>
+                )}
+
+                <button className="control_btn" onClick={ handleApplyFilters }>
+                    <img src={ magnifier } alt="Поиск" className="actions_img" />
                 </button>
             </div>
 
@@ -547,15 +556,7 @@ export function RoutesTable() {
                 })}
 
                 <div className="control_filter_div">
-                    {availableFilterFields.length > 0 && (
-                        <button className="control_btn" onClick={ handleAddFilter }>
-                            + Добавить фильтр
-                        </button>
-                    )}
 
-                    <button className="actions_btn" onClick={ handleApplyFilters }>
-                        <img src={ magnifier } alt="Поиск" className="actions_img" />
-                    </button>
                 </div>
             </div>
 
@@ -673,7 +674,7 @@ export function RoutesTable() {
                                         )}
                                     </td>
 
-                                    <td className="cell">
+                                    <td>
                                         {editingRouteId === route.id ? (
                                             <div className="price-edit-grid">
                                                 {(route.route_type === "sea" ? [ "fifo","filo" ] : [ "price","guard","drop" ]).map(type => (

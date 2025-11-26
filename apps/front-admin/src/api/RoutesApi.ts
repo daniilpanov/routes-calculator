@@ -10,17 +10,28 @@ import {
     RouteEditResponse,
 } from "@/interfaces/Routes";
 
-export const routesService = {
+export const routesApi = {
     async getRoutes(
         page = 1,
         limit = 25,
         filter_fields: Record<string, string | number> = {},
     ): Promise<GetRoutesResponse> {
-        const response = await axios.post<GetRoutesResponse>(
-            API_ENDPOINTS.ROUTES.GET,
-            { page, limit, filter_fields },
-        );
-        return response.data;
+        try {
+            const response = await axios.get<GetRoutesResponse>(
+                API_ENDPOINTS.ROUTES.GET,
+                {
+                    params: {
+                        page,
+                        limit,
+                        ...filter_fields,
+                    },
+                },
+            );
+            return response.data;
+        } catch (error: any) {
+            console.log("Error:", error.response?.data || error.message);
+            throw error;
+        }
     },
 
     async deleteRoute(data: RouteDeleteRequest): Promise<DeleteRouteResponse> {
