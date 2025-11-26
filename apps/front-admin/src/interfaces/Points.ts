@@ -6,10 +6,7 @@ export interface Point {
     country: string;
 }
 
-export interface PointsSearchResponse {
-    status: string;
-    point_name: Point[];
-}
+
 export interface PointsGetResponse{
     status: string;
     points: Point[];

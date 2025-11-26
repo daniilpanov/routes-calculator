@@ -5,3 +5,7 @@ export interface PointsGetResponse {
     count: number;
     points: Point[]
 }
+export interface searchPointsResponse {
+    status: string;
+    point_name: Point[];
+}

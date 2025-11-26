@@ -12,7 +12,7 @@ export const API_ENDPOINTS = {
         EDIT: "/admin/api/routes/edit",
     },
     POINTS: {
-        SEARCH: "/admin/api/points/find_name",
+        SEARCH: "/admin/api/points/{point_name}/",
         GET: "/admin/api/points",
         ADD: "/admin/api/points/add",
     },

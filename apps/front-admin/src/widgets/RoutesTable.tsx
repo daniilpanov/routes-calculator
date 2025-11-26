@@ -673,7 +673,7 @@ export function RoutesTable() {
                                         )}
                                     </td>
 
-                                    <td className="cell">
+                                    <td>
                                         {editingRouteId === route.id ? (
                                             <div className="price-edit-grid">
                                                 {(route.route_type === "sea" ? [ "fifo","filo" ] : [ "price","guard","drop" ]).map(type => (

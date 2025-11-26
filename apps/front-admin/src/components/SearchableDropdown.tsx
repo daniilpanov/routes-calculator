@@ -2,8 +2,8 @@ import React, { useState, useRef, useEffect } from "react";
 
 import "@/resources/scss/components/Dropdown.scss";
 
-import { pointsService } from "@/api/Points";
 import { Point } from "@/interfaces/Points";
+import { pointsApi } from "@/api/PointsApi";
 
 
 interface SearchableDropdownProps {
@@ -53,7 +53,7 @@ export const SearchableDropdown = ({
             }
 
             try {
-                const data = await pointsService.search(search);
+                const data = await pointsApi.searchPoints(search);
                 if (data.status === "OK")
                     setOptions(data.point_name);
             } catch (err) {

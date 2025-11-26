@@ -1,25 +1,24 @@
 import axios from "axios";
 import { API_ENDPOINTS } from "./ApiConfig";
-import { PointAddResponse, PointsAddRequest, PointsSearchResponse } from "@/interfaces/Points";
-import { PointsGetResponse } from "@/interfaces/Response/Points";
+import { PointAddResponse, PointsAddRequest } from "@/interfaces/Points";
+import { PointsGetResponse, searchPointsResponse } from "@/interfaces/Response/PointsResponse";
 import { PointsGetRequest } from "@/interfaces/Request/Points";
 
 
-export const pointsService = {
-    async search(searchText: string): Promise<PointsSearchResponse> {
+export const pointsApi = {
+    async searchPoints(
+        searchText: string,
+    ): Promise<searchPointsResponse> {
         try {
-            const response = await axios.post(
-                API_ENDPOINTS.POINTS.SEARCH,
-                undefined,
+            const response = await axios.get<searchPointsResponse>(
+                `/admin/api/points/${searchText}`,
                 {
                     params: { search_txt: searchText },
-                    headers: { "Content-Type": "application/json" },
                 },
             );
-
             return response.data;
-        } catch (error) {
-            console.error("Error searching points:", error);
+        } catch (error: any) {
+            console.log("Error:", error.response?.data || error.message);
             throw error;
         }
     },
