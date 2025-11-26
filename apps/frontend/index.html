@@ -246,6 +246,17 @@
             if (!destinationHiddenInput.value) destinationInput.classList.add('is-invalid');
             return;
         }
+        const selectedCurrency = document.getElementById('currencySwitcher').value;
+        if (!selectedCurrency || selectedCurrency.trim() === '') {
+            showGlobalAlert("Пожалуйста, выберите валюту.");
+            document.getElementById('currencySwitcher').classList.add('is-invalid');
+            return;
+        }
+        if (!rates || !rates[selectedCurrency]) {
+            showGlobalAlert(`Валюта "${selectedCurrency}" не найдена.`);
+            document.getElementById('currencySwitcher').classList.add('is-invalid');
+            return;
+        }
 
         departureInput.classList.remove('is-invalid');
         destinationInput.classList.remove('is-invalid');
