@@ -6,7 +6,7 @@ export const API_ENDPOINTS = {
         ME: "/admin/api/user/me",
     },
     ROUTES: {
-        GET: "/admin/api/routes",
+        GET: "/admin/api/routes/",
         CREATE: "/admin/api/routes/add",
         DELETE: "/admin/api/routes/delete",
         EDIT: "/admin/api/routes/edit",
