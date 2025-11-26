@@ -20,6 +20,6 @@ export const API_ENDPOINTS = {
         GET: "/admin/api/container",
     },
     COMPANIES: {
-        GET: "/admin/api/company",
+        GET: "/admin/api/company/",
     },
 };
