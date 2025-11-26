@@ -2,15 +2,19 @@ from datetime import date, datetime
 from typing import Any, Literal
 
 from fastapi import Body, HTTPException, Query
+from pydantic import BaseModel, ConfigDict, field_validator
+from sqlalchemy import delete, func, select, update
+from sqlalchemy.exc import InvalidRequestError
+from sqlalchemy.orm import joinedload
 
 from back_admin.api.abstract_crud import AbstractCRUD
 from back_admin.database import database
 from back_admin.models import RailRouteModel, SeaRouteModel
-from back_admin.models.requests.route import AddRouteRequest, DeleteRoutesRequest, EditRouteRequest
-from pydantic import BaseModel, ConfigDict
-from sqlalchemy import delete, func, select, update
-from sqlalchemy.exc import InvalidRequestError
-from sqlalchemy.orm import joinedload
+from back_admin.models.requests.route import (
+    AddRouteRequest,
+    DeleteRoutesRequest,
+    EditRouteRequest,
+)
 
 
 class RoutePriceItem(BaseModel):
@@ -26,11 +30,18 @@ class RouteResponseSchema(BaseModel):
     container: Any
     start_point: Any
     end_point: Any
-    effective_from: date
-    effective_to: date
+    effective_from: int
+    effective_to: int
     price: list[RoutePriceItem]
 
     model_config = ConfigDict(from_attributes=True)
+
+    @field_validator("effective_from", "effective_to", mode="before")
+    @classmethod
+    def date_to_timestamp(cls, v: Any) -> int:
+        if isinstance(v, (date, datetime)):
+            return int(datetime.combine(v, datetime.min.time()).timestamp())
+        return v
 
 
 class RouteListResponse(BaseModel):
@@ -63,7 +74,9 @@ class RouteCRUD(AbstractCRUD):
 
         self._router.add_api_route("/{route_id}", self.add_route, methods=["POST"])
         self._router.add_api_route("/{route_id}", self.edit_route, methods=["PUT"])
-        self._router.add_api_route("/{route_id}", self.delete_routes, methods=["DELETE"])
+        self._router.add_api_route(
+            "/{route_id}", self.delete_routes, methods=["DELETE"]
+        )
 
     @staticmethod
     async def _exe_q(q, return_scalar=False):
@@ -72,20 +85,13 @@ class RouteCRUD(AbstractCRUD):
             return temp.scalar() if return_scalar else temp.scalars().all()
 
     @staticmethod
-    def _parse_date(date_value: str | date | None) -> date | None:
-        if not date_value:
+    def _ts_to_date(ts: int | None) -> date | None:
+        if ts is None:
             return None
-        if isinstance(date_value, date):
-            return date_value
-
-        formats = ["%Y-%m-%d", "%d.%m.%Y"]
-        for fmt in formats:
-            try:
-                return datetime.strptime(date_value, fmt).date()
-            except ValueError:
-                continue
-
-        raise ValueError(f"Invalid date format: {date_value}. Expected YYYY-MM-DD or DD.MM.YYYY")
+        try:
+            return datetime.fromtimestamp(ts).date()
+        except (ValueError, OSError, OverflowError):
+            raise HTTPException(status_code=400, detail=f"Invalid timestamp: {ts}")
 
     def _parse_route_to_schema(self, _route, _type: str) -> dict:
         return {
@@ -115,7 +121,9 @@ class RouteCRUD(AbstractCRUD):
                 },
                 {
                     "type": "price",
-                    "value": getattr(_route, "price", None) if _type == "rail" else None,
+                    "value": getattr(_route, "price", None)
+                    if _type == "rail"
+                    else None,
                     "currency": "RUB",
                 },
                 {
@@ -136,7 +144,7 @@ class RouteCRUD(AbstractCRUD):
         end_point_id: int | None = None,
         container_id: int | None = None,
         date_from: date | None = None,
-        date_to: date | None = None
+        date_to: date | None = None,
     ) -> dict:
         offset = (page - 1) * limit
 
@@ -190,10 +198,10 @@ class RouteCRUD(AbstractCRUD):
         all_routes.extend([self._parse_route_to_schema(r, "rail") for r in rail_rows])
         all_routes.extend([self._parse_route_to_schema(r, "sea") for r in sea_rows])
 
-        all_routes.sort(key=lambda x: x['id'], reverse=True)
+        all_routes.sort(key=lambda x: x["id"], reverse=True)
 
         total_count = len(all_routes)
-        paginated_rows = all_routes[offset: offset + limit]
+        paginated_rows = all_routes[offset : offset + limit]
 
         return {
             "status": "OK",
@@ -205,23 +213,20 @@ class RouteCRUD(AbstractCRUD):
         self,
         page: int = Query(1, ge=1, description="Номер страницы"),
         limit: int = Query(25, ge=1, description="Количество элементов"),
-        route_type: Literal["rail", "sea"] | None = Query(None, description="Тип маршрута"),
+        route_type: Literal["rail", "sea"] | None = Query(
+            None, description="Тип маршрута"
+        ),
         company_id: int | None = Query(None, description="ID компании"),
         start_point_id: int | None = Query(None, description="ID точки отправления"),
         end_point_id: int | None = Query(None, description="ID точки назначения"),
         container_id: int | None = Query(None, description="ID контейнера"),
-        effective_from: str | None = Query(None, description="Начало периода (YYYY-MM-DD) или (DD.MM.YYYY)"),
-        effective_to: str | None = Query(None, description="Конец периода (YYYY-MM-DD) или (DD.MM.YYYY)"),
+        effective_from: int | None = Query(
+            None, description="Начало периода (Timestamp)"
+        ),
+        effective_to: int | None = Query(None, description="Конец периода (Timestamp)"),
     ):
-        d_from = None
-        d_to = None
-        try:
-            if effective_from:
-                d_from = self._parse_date(effective_from)
-            if effective_to:
-                d_to = self._parse_date(effective_to)
-        except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+        d_from = self._ts_to_date(effective_from)
+        d_to = self._ts_to_date(effective_to)
 
         return await self._get_filtered_routes_helper(
             page=page,
@@ -232,21 +237,18 @@ class RouteCRUD(AbstractCRUD):
             end_point_id=end_point_id,
             container_id=container_id,
             date_from=d_from,
-            date_to=d_to
+            date_to=d_to,
         )
 
     async def add_route(self, route_to_add: AddRouteRequest = Body(...)):
-        try:
-            date_from = self._parse_date(route_to_add.effective_from)
-            date_to = self._parse_date(route_to_add.effective_to)
-        except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+        date_from = self._ts_to_date(route_to_add.effective_from)
+        date_to = self._ts_to_date(route_to_add.effective_to)
 
         if route_to_add.route_type == "rail":
-            if not hasattr(route_to_add.price, 'price'):
+            if not hasattr(route_to_add.price, "price"):
                 raise HTTPException(
                     status_code=400,
-                    detail="Invalid price structure for 'rail'. Expected: price, drop, guard."
+                    detail="Invalid price structure for 'rail'. Expected: price, drop, guard.",
                 )
             new_route = RailRouteModel(
                 company_id=route_to_add.company_id,
@@ -260,10 +262,12 @@ class RouteCRUD(AbstractCRUD):
                 guard=route_to_add.price.guard,
             )
         elif route_to_add.route_type == "sea":
-            if not hasattr(route_to_add.price, 'filo') and not hasattr(route_to_add.price, 'fifo'):
+            if not hasattr(route_to_add.price, "filo") and not hasattr(
+                route_to_add.price, "fifo"
+            ):
                 raise HTTPException(
                     status_code=400,
-                    detail="Invalid price structure for 'sea'. Expected: filo, fifo."
+                    detail="Invalid price structure for 'sea'. Expected: filo, fifo.",
                 )
             new_route = SeaRouteModel(
                 company_id=route_to_add.company_id,
@@ -272,21 +276,29 @@ class RouteCRUD(AbstractCRUD):
                 end_point_id=route_to_add.end_point_id,
                 effective_from=date_from,
                 effective_to=date_to,
-                filo=getattr(route_to_add.price, 'filo', None),
-                fifo=getattr(route_to_add.price, 'fifo', None),
+                filo=getattr(route_to_add.price, "filo", None),
+                fifo=getattr(route_to_add.price, "fifo", None),
             )
         else:
-            raise HTTPException(status_code=400, detail=f"Unknown route_type: {route_to_add.route_type}")
+            raise HTTPException(
+                status_code=400, detail=f"Unknown route_type: {route_to_add.route_type}"
+            )
 
         async with database.session() as session:
             try:
                 session.add(new_route)
                 await session.flush()
 
-                route_class = RailRouteModel if route_to_add.route_type == "rail" else SeaRouteModel
+                route_class = (
+                    RailRouteModel
+                    if route_to_add.route_type == "rail"
+                    else SeaRouteModel
+                )
 
                 temp = await session.execute(
-                    select(route_class).where(route_class.id == new_route.id).options(
+                    select(route_class)
+                    .where(route_class.id == new_route.id)
+                    .options(
                         joinedload(route_class.container),
                         joinedload(route_class.company),
                         joinedload(route_class.start_point),
@@ -311,14 +323,13 @@ class RouteCRUD(AbstractCRUD):
             return RailRouteModel
         elif route_type == "sea":
             return SeaRouteModel
-        raise HTTPException(status_code=400, detail=f"Incorrect route type '{route_type}'")
+        raise HTTPException(
+            status_code=400, detail=f"Incorrect route type '{route_type}'"
+        )
 
     def _validate_dates_logic(self, edit_params, current_route):
-        try:
-            req_from = self._parse_date(edit_params.effective_from)
-            req_to = self._parse_date(edit_params.effective_to)
-        except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+        req_from = self._ts_to_date(edit_params.effective_from)
+        req_to = self._ts_to_date(edit_params.effective_to)
 
         current_from = current_route.effective_from
         if isinstance(current_from, datetime):
@@ -334,36 +345,35 @@ class RouteCRUD(AbstractCRUD):
         if actual_from > actual_to:
             raise HTTPException(
                 status_code=400,
-                detail=f"Effective From ({actual_from}) cannot be after Effective To ({actual_to})"
+                detail=f"Effective From ({actual_from}) cannot be after Effective To ({actual_to})",
             )
 
         return req_from, req_to
 
     def _get_price_fields(self, route_type: str | None) -> list[str]:
         if route_type == "rail":
-            return ['price', 'drop', 'guard']
+            return ["price", "drop", "guard"]
         elif route_type == "sea":
-            return ['filo', 'fifo']
+            return ["filo", "fifo"]
         return []
 
-    def _calculate_update_values(self, edit_params, current_route, route_type: str | None):
+    def _calculate_update_values(
+        self, edit_params, current_route, route_type: str | None
+    ):
         update_values = {}
 
-        # 1. Валидация дат
         req_from, req_to = self._validate_dates_logic(edit_params, current_route)
 
         if req_from:
-            update_values['effective_from'] = req_from
+            update_values["effective_from"] = req_from
         if req_to:
-            update_values['effective_to'] = req_to
+            update_values["effective_to"] = req_to
 
-        # 2. Обновление полей связей
-        for field in ['container_id', 'company_id', 'start_point_id', 'end_point_id']:
+        for field in ["container_id", "company_id", "start_point_id", "end_point_id"]:
             val = getattr(edit_params, field, None)
             if val:
                 update_values[field] = val
 
-        # 3. Обновление полей цены
         if edit_params.price:
             price_fields = self._get_price_fields(route_type)
             for field in price_fields:
@@ -379,31 +389,37 @@ class RouteCRUD(AbstractCRUD):
 
         route_to_update = await self._exe_q(
             select(route_class).where(route_class.id == edit_route.route_id),
-            return_scalar=True
+            return_scalar=True,
         )
 
         if not route_to_update:
-            raise HTTPException(status_code=404, detail=f"Incorrect route id '{edit_route.route_id}'")
+            raise HTTPException(
+                status_code=404, detail=f"Incorrect route id '{edit_route.route_id}'"
+            )
 
         update_values = self._calculate_update_values(
-            edit_route.edit_params,
-            route_to_update,
-            edit_route.edit_params.route_type
+            edit_route.edit_params, route_to_update, edit_route.edit_params.route_type
         )
 
         if update_values:
-            edit_stmt = update(route_class).where(route_class.id == edit_route.route_id).values(**update_values)
+            edit_stmt = (
+                update(route_class)
+                .where(route_class.id == edit_route.route_id)
+                .values(**update_values)
+            )
             async with database.session() as session:
                 await session.execute(edit_stmt)
 
         route_final = await self._exe_q(
-            select(route_class).where(route_class.id == edit_route.route_id).options(
+            select(route_class)
+            .where(route_class.id == edit_route.route_id)
+            .options(
                 joinedload(route_class.container),
                 joinedload(route_class.company),
                 joinedload(route_class.start_point),
                 joinedload(route_class.end_point),
             ),
-            return_scalar=True
+            return_scalar=True,
         )
 
         result = self._parse_route_to_schema(route_final, "rail" if is_rail else "sea")
@@ -418,16 +434,24 @@ class RouteCRUD(AbstractCRUD):
             count_sea, count_rail = 0, 0
 
             if ids_dict.sea:
-                sea_count_stmt = select(func.count(SeaRouteModel.id)).where(SeaRouteModel.id.in_(ids_dict.sea))
+                sea_count_stmt = select(func.count(SeaRouteModel.id)).where(
+                    SeaRouteModel.id.in_(ids_dict.sea)
+                )
                 res = await session.execute(sea_count_stmt)
                 count_sea = res.scalar() or 0
-                await session.execute(delete(SeaRouteModel).where(SeaRouteModel.id.in_(ids_dict.sea)))
+                await session.execute(
+                    delete(SeaRouteModel).where(SeaRouteModel.id.in_(ids_dict.sea))
+                )
 
             if ids_dict.rail:
-                rail_count_stmt = select(func.count(RailRouteModel.id)).where(RailRouteModel.id.in_(ids_dict.rail))
+                rail_count_stmt = select(func.count(RailRouteModel.id)).where(
+                    RailRouteModel.id.in_(ids_dict.rail)
+                )
                 res = await session.execute(rail_count_stmt)
                 count_rail = res.scalar() or 0
-                await session.execute(delete(RailRouteModel).where(RailRouteModel.id.in_(ids_dict.rail)))
+                await session.execute(
+                    delete(RailRouteModel).where(RailRouteModel.id.in_(ids_dict.rail))
+                )
 
         return {
             "status": "OK",

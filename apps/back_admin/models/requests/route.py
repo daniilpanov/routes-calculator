@@ -18,8 +18,8 @@ class AddRouteRequest(BaseModel):
     container_id: int
     start_point_id: int
     end_point_id: int
-    effective_from: str
-    effective_to: str
+    effective_from: int
+    effective_to: int
     price: RailPrices | SeaPrices
 
 
@@ -28,8 +28,8 @@ class FilterParams(BaseModel):
     end_point_id: int | None = None
     company_id: int | None = None
     container_id: int | None = None
-    effective_from: str | None = None
-    effective_to: str | None = None
+    effective_from: int | None = None
+    effective_to: int | None = None
     route_type: str | None = None
     price: RailPrices | SeaPrices | None = None
 
