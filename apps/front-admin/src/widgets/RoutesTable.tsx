@@ -9,7 +9,6 @@ import changeMarker from "@/resources/images/changeMarker.png";
 
 import { routesService } from "@/api/Routes";
 import { companiesService } from "@/api/Companies";
-import { containersService } from "@/api/Containers";
 import { Route, RouteEditRequest } from "@/interfaces/Routes";
 import { Company } from "@/interfaces/Companies";
 import { Container } from "@/interfaces/Containers";
@@ -18,6 +17,7 @@ import { SearchableDropdown } from "@/components/SearchableDropdown";
 import { formatDate, formatDateForServerFromInput, formatDateISO } from "@/utils/Date";
 import { Pagination } from "./Pagination";
 import { CreatePoint } from "./modals/CreatePoint";
+import { containersApi } from "@/api/ContainersApi";
 
 const PAGE_SIZE = 25;
 
@@ -168,7 +168,7 @@ export function RoutesTable() {
 
     const fetchContainers = async () => {
         try {
-            const res = await containersService.getContainers();
+            const res = await containersApi.getContainers();
             setContainers(res.containers);
         } catch (err) { console.error(err); }
     };

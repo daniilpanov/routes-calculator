@@ -17,7 +17,7 @@ export const API_ENDPOINTS = {
         ADD: "/admin/api/points/add",
     },
     CONTAINERS: {
-        GET: "/admin/api/container",
+        GET: "/admin/api/container/",
     },
     COMPANIES: {
         GET: "/admin/api/company/",

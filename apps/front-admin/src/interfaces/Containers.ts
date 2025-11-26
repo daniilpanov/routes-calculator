@@ -6,7 +6,3 @@ export interface Container {
     weight_to: number,
     type: string,
 }
-export interface ContainersResponse {
-    status: "OK",
-    containers: Container[],
-}
