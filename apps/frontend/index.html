@@ -187,6 +187,14 @@
                     sumPrice += updateResultRates(Number.parseFloat(price), currency, selectedCurrency);
                 }
 
+                const dropEl = result.getElementsByClassName('drop-off')[0];
+                if (dropEl) {
+                    const currency = dropEl.getElementsByClassName('drop-off-currency')[0]?.getAttribute('data-bs-currency');
+                    const price = dropEl.getElementsByClassName('drop-off-price')[0]?.textContent;
+                    if (currency && price)
+                        sumPrice += updateResultRates(Number.parseFloat(price), currency, selectedCurrency);
+                }
+
                 const price = Math.round((sumPrice + Number.EPSILON) * 100) / 100;
                 keys.push(i++);
                 values.push(price);
