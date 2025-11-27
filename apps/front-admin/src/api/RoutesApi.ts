@@ -10,7 +10,7 @@ import {
     RouteEditResponse,
 } from "@/interfaces/Routes";
 
-export const routesService = {
+export const routesApi = {
     async getRoutes(
         page = 1,
         limit = 25,
@@ -23,13 +23,13 @@ export const routesService = {
                     params: {
                         page,
                         limit,
-                        ...filter_fields
-                    }
-                }
+                        ...filter_fields,
+                    },
+                },
             );
             return response.data;
         } catch (error: any) {
-            console.log('Error:', error.response?.data || error.message);
+            console.log("Error:", error.response?.data || error.message);
             throw error;
         }
     },
