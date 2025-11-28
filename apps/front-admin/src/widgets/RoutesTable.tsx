@@ -18,6 +18,8 @@ import { Pagination } from "./Pagination";
 import { CreatePoint } from "./modals/CreatePoint";
 import { containersApi } from "@/api/ContainersApi";
 import { routesApi } from "@/api/RoutesApi";
+import { NavLink } from "react-router-dom";
+import { ROUTES } from "@/constants";
 
 const PAGE_SIZE = 25;
 
@@ -470,6 +472,7 @@ export function RoutesTable() {
                 <button className="control_btn" onClick={ handleApplyFilters }>
                     <img src={ magnifier } alt="Поиск" className="actions_img" />
                 </button>
+                <NavLink to={ ROUTES.DROPS_MANAGEMENT } className="control_btn">Таблица drop</NavLink>
             </div>
 
             <div className="filter_div">

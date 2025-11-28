@@ -8,6 +8,8 @@ import RequireAuth from "@/providers/RequireAuth";
 import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 import RoutesManagement from "@/pages/RoutesManagement";
+import { DropsTable } from "@/widgets/DropsTable";
+import DropsManagement from "@/pages/DropsManagement";
 
 
 export const routesConfig = [
@@ -23,6 +25,7 @@ export const routesConfig = [
             { path: ROUTES.ROOT, element: <Dashboard /> },
             { path: ROUTES.DASHBOARD, element: <Dashboard /> },
             { path: ROUTES.ROUTES_MANAGEMENT, element: <RoutesManagement /> },
+            { path: ROUTES.DROPS_MANAGEMENT, element: <DropsManagement /> },
         ],
     },
 ];

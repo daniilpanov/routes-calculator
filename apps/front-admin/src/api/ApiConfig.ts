@@ -22,4 +22,7 @@ export const API_ENDPOINTS = {
     COMPANIES: {
         GET: "/admin/api/company/",
     },
+    DROPS: {
+        GET: "/admin/api/drop/",
+    },
 };
