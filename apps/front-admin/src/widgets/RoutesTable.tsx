@@ -461,6 +461,15 @@ export function RoutesTable() {
                 >
                     Удалить выбранные
                 </button>
+                {availableFilterFields.length > 0 && (
+                    <button className="control_btn" onClick={ handleAddFilter }>
+                        + Добавить фильтр
+                    </button>
+                )}
+
+                <button className="control_btn" onClick={ handleApplyFilters }>
+                    <img src={ magnifier } alt="Поиск" className="actions_img" />
+                </button>
             </div>
 
             <div className="filter_div">
@@ -547,15 +556,7 @@ export function RoutesTable() {
                 })}
 
                 <div className="control_filter_div">
-                    {availableFilterFields.length > 0 && (
-                        <button className="control_btn" onClick={ handleAddFilter }>
-                            + Добавить фильтр
-                        </button>
-                    )}
 
-                    <button className="actions_btn" onClick={ handleApplyFilters }>
-                        <img src={ magnifier } alt="Поиск" className="actions_img" />
-                    </button>
                 </div>
             </div>
 
