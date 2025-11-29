@@ -236,6 +236,12 @@ class DropCRUD(AbstractCRUD):
                 status_code=400, detail="Start date cannot be after End date"
             )
 
+        if not (drop_data.sea_start_point_id and drop_data.sea_end_point_id or \
+                drop_data.rail_start_point_id and drop_data.rail_end_point_id):
+            raise HTTPException(
+                status_code=400, detail="Must be 2 points of rail or sea, or both"
+            )
+
         new_drop = DropModel(
             company_id=drop_data.company_id,
             container_id=drop_data.container_id,
