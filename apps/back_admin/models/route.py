@@ -68,7 +68,6 @@ class RailRouteModel(Base):
     effective_to: Mapped[datetime.date] = mapped_column(DateTime(timezone=False))
 
     price: Mapped[float] = mapped_column()
-    drop: Mapped[float] = mapped_column()
     guard: Mapped[float | None] = mapped_column(nullable=True, default=None)
 
     start_point: Mapped[PointModel] = relationship(
