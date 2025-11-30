@@ -6,6 +6,8 @@ export const ROUTES = {
     POINTS_MANAGEMENT: `${import.meta.env.VITE_PUBLIC_URL || ""}/points-management`,
     DATA_IMPORT: `${import.meta.env.VITE_PUBLIC_URL || ""}/data-import`,
     MAIN_SITE: import.meta.env.VITE_REACT_ROUTING_MAIN_SITE || "/",
+    DROPS_MANAGEMENT: `${import.meta.env.VITE_PUBLIC_URL || ""}/routes-management/drops-management`,
+
 };
 
 export const LOGIN_CHECK_INTERVAL = 60 * 1000;
