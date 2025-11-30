@@ -10,3 +10,6 @@ export interface addDropRequest {
     price: number,
     currency: string,
 }
+export interface deleteDropRequest {
+    ids: number[]
+}

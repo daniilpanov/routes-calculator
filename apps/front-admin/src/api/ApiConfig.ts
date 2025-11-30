@@ -25,5 +25,6 @@ export const API_ENDPOINTS = {
     DROPS: {
         GET: "/admin/api/drop/",
         ADD: "/admin/api/drop/",
+        DELETE: "/admin/api/drop/",
     },
 };

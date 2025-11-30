@@ -45,6 +45,7 @@ export function DropsTable() {
     const [ error, setError ] = useState<string>();
     const [ totalPage, setTotalPages ] = useState<number>(0);
     const [ page, setPage ] = useState(1);
+    const [ deletingDrops, setDeletingDrops ] = useState<{ ids: number[] }>({ ids: [] });
 
     const emptyDrop: addingDrops = {
         company_name: null,
@@ -164,6 +165,56 @@ export function DropsTable() {
         setAddingDrops(prevDrops => prevDrops.filter((_, i) => i !== index));
     }
 
+    async function handleDeleteDrops(id: number) {
+        const deleteDrop = {
+            ids: [ id ],
+        };
+        try {
+            const response = await dropsApi.deleteDrops(deleteDrop);
+            if (response.status === "OK") {
+                setDrops(prevDrops => prevDrops.filter(drop => drop.id !== id));
+                setDeletingDrops(prev => ({
+                    ids: prev.ids.filter(dropId => dropId !== id),
+                }));
+                console.log(response);
+                setDeletingDrops({ ids: [] });
+                alert("Дроп успешно удален");
+            } else {
+                alert("Ошибка при удалении дропа");
+            }
+        } catch (err) { console.error(err); }
+    }
+    async function handleDeleteSelectedDrops() {
+        if (deletingDrops.ids.length === 0) {
+            return alert("Нет дропов для удаления");
+        }
+
+        const idsToDelete = [ ...deletingDrops.ids ];
+
+        try {
+            const response = await dropsApi.deleteDrops({ ids: idsToDelete });
+            if (response.status === "OK") {
+                setDrops(prevDrops => prevDrops.filter(drop => !idsToDelete.includes(drop.id)));
+                setDeletingDrops({ ids: [] });
+                console.log(response);
+                alert("Дропы успешно удалены");
+            } else {
+                alert("Ошибка при удалении дропов");
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Ошибка при удалении дропов");
+        }
+    }
+    const handleCheckboxChange = (id: number) => {
+        setDeletingDrops(prev => {
+            if (prev.ids.includes(id)) {
+                return { ids: prev.ids.filter(dropId => dropId !== id) };
+            } else {
+                return { ids: [ ...prev.ids, id ] };
+            }
+        });
+    };
     return (
         <div className="page_div">
             <div className="heading_div"><h1>Управление drop'ами</h1></div>
@@ -172,8 +223,8 @@ export function DropsTable() {
                 <button className="control_btn" onClick={ addDrop }>Создать drop</button>
                 <button
                     className="control_btn"
-                    //onClick={ handleDeleteSelectedRoutes }
-                    //disabled={ selectedRouteIds.length === 0 }
+                    onClick={ handleDeleteSelectedDrops }
+                    disabled={ deletingDrops.ids.length === 0 }
                 >
                     Удалить выбранные
                 </button>
@@ -196,7 +247,13 @@ export function DropsTable() {
                         {drops.map(drop => {
                             return (
                                 <tr key={ drop.id }>
-                                    <td className="cell_cb"></td>
+                                    <td className="cell_cb">
+                                        <input
+                                            type="checkbox"
+                                            checked={ deletingDrops.ids.includes(drop.id) }
+                                            onChange={ () => handleCheckboxChange(drop.id) }
+                                        />
+                                    </td>
                                     <td className="cell">{drop.company.name}</td>
                                     <td className="cell">{drop.container.name}</td>
                                     <td className="cell">{(drop.sea_start_point) ? (
@@ -230,7 +287,7 @@ export function DropsTable() {
                                                 <img src={ changeMarker } alt="изменить" className="actions_img" />
                                             </button>
                                             <button className="actions_btn cancel">
-                                                <img src={ trashcan } alt="удалить" className="actions_img" />
+                                                <img src={ trashcan } alt="удалить" className="actions_img" onClick={ () => handleDeleteDrops(drop.id) } />
                                             </button>
                                             <button className="actions_btn copy">
                                                 <img src={ copying } alt="копировать" className="actions_img" />
