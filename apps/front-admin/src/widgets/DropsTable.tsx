@@ -20,6 +20,7 @@ import { SearchableDropdown } from "@/components/SearchableDropdown";
 import { Point } from "@/interfaces/Points";
 import accessMarks from "@/resources/images/accessMarks.png";
 import cross from "@/resources/images/cross.png";
+import {Route} from "@/interfaces/Routes";
 
 const PAGE_SIZE = 25;
 
@@ -161,9 +162,10 @@ export function DropsTable() {
             }
         } catch (err) { console.error(err); }
     };
-    function handleCancelNewRoute(index: number) {
+    function handleCancelNewDrop(index: number) {
         setAddingDrops(prevDrops => prevDrops.filter((_, i) => i !== index));
     }
+    function handleCpoyDrop(route: Route, index: number) {}
 
     async function handleDeleteDrops(id: number) {
         const deleteDrop = {
@@ -366,7 +368,7 @@ export function DropsTable() {
                                             <button className="actions_btn save" onClick={ () => handleSaveNewRoute(index) }>
                                                 <img src={ accessMarks } alt="сохранить" className="actions_img" />
                                             </button>
-                                            <button className="actions_btn cancel" onClick={ () => handleCancelNewRoute(index) }>
+                                            <button className="actions_btn cancel" onClick={ () => handleCancelNewDrop(index) }>
                                                 <img src={ cross } alt="отменить" className="actions_img" />
                                             </button>
                                         </div>
