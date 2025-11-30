@@ -5,5 +5,9 @@ export interface getDropsResponse {
     count: number
     drops: Drop[],
 }
+export interface addDropResponse{
+    status: string,
+    new_drop: Drop
+}
 
 

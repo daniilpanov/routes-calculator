@@ -20,18 +20,7 @@ export function formatDateForServerFromInput (date: string) {
     if (!year || !month || !day) return "";
     return `${day}.${month}.${year}`;
 }
-export function parseWeirdDate(dateString: string): string {
-    if (!dateString) return "";
 
-    const match = dateString.match(/(\d{2})T\d{2}:\d{2}:\d{2}\.(\d{2})\.(\d{4})/);
-    if (!match) return "";
-
-    const day = match[1].padStart(2, "0");
-    const month = match[2].padStart(2, "0");
-    const year = match[3];
-
-    return `${day}.${month}.${year}`;
-}
 export function parseDateFromTimestampToOutput(dateTimestamp: number) {
     if (!dateTimestamp) return "";
 
@@ -42,3 +31,18 @@ export function parseDateFromTimestampToOutput(dateTimestamp: number) {
 
     return `${day}.${month}.${year}`;
 }
+export function parseDateFromTimestampToInput(dateTimestamp: number) {
+    if (!dateTimestamp) return "";
+
+    const date = new Date(dateTimestamp*1000);
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+
+    return `${year}-${month}-${day}`;
+}
+
+export function parseInputToTimestamp(dateString: string) {
+    return Math.floor(new Date(dateString).getTime() / 1000);
+}
+
