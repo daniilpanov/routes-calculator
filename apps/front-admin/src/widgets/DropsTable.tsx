@@ -4,6 +4,7 @@ import { ROUTES } from "@/constants";
 import { dropsApi } from "@/api/DropsApi";
 import { Drop } from "@/interfaces/Model/Drop";
 import {
+    parseDateFromTimestampToInput,
     parseDateFromTimestampToOutput,
     parseInputToTimestamp,
 } from "@/utils/Date";
@@ -20,7 +21,7 @@ import { SearchableDropdown } from "@/components/SearchableDropdown";
 import { Point } from "@/interfaces/Points";
 import accessMarks from "@/resources/images/accessMarks.png";
 import cross from "@/resources/images/cross.png";
-import {Route} from "@/interfaces/Routes";
+import { Route } from "@/interfaces/Routes";
 
 const PAGE_SIZE = 25;
 
@@ -165,7 +166,22 @@ export function DropsTable() {
     function handleCancelNewDrop(index: number) {
         setAddingDrops(prevDrops => prevDrops.filter((_, i) => i !== index));
     }
-    function handleCpoyDrop(route: Route, index: number) {}
+    function handleCopyDrop(drop: Drop) {
+        const copyDrop: addingDrops = {
+            company_name: drop.company.name,
+            container_name: drop.container.name,
+            sea_start_point_name: drop.sea_start_point,
+            sea_end_point_name: drop.sea_end_point,
+            rail_start_point_name: drop.rail_start_point,
+            rail_end_point_name: drop.rail_end_point,
+            start_date: parseDateFromTimestampToInput(drop.start_date),
+            end_date: parseDateFromTimestampToInput(drop.end_date),
+            price: drop.price,
+            currency: "USD",
+        };
+        console.log(copyDrop);
+        setAddingDrops([ copyDrop, ...addingDrops ]);
+    }
 
     async function handleDeleteDrops(id: number) {
         const deleteDrop = {
@@ -292,7 +308,7 @@ export function DropsTable() {
                                                 <img src={ trashcan } alt="удалить" className="actions_img" onClick={ () => handleDeleteDrops(drop.id) } />
                                             </button>
                                             <button className="actions_btn copy">
-                                                <img src={ copying } alt="копировать" className="actions_img" />
+                                                <img src={ copying } alt="копировать" className="actions_img" onClick={ () => handleCopyDrop(drop) } />
                                             </button>
                                         </>
                                     </td>
@@ -359,6 +375,7 @@ export function DropsTable() {
                                         <input
                                             type="number"
                                             className="input"
+                                            value={ newDrop.price || 0 }
                                             onChange={ e => handleChangeNewDrop(index, "price", e.target.value) }
 
                                         />
