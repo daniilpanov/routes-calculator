@@ -79,9 +79,8 @@ def group_containers_from_db(containers):
     container_typed_models = {}
 
     for inst in containers:
-        container_models[(inst.type.value, inst.size, inst.weight_to)] = inst
-        container_typed_models.setdefault((inst.type.value, inst.size), []).append(inst)
-
+        container_models[(inst.type.value, str(int(inst.size)), str(int(inst.weight_to)))] = inst
+        container_typed_models.setdefault((inst.type.value, str(inst.size)), []).append(inst)
     return container_models, container_typed_models
 
 
@@ -94,8 +93,7 @@ def create_independent_models(services, points, containers):
 
     for _, point in points.iterrows():
         point_models[(point["Country"], point["City"])] = PointModel(  # todo: check parse for spaces
-            country=point["Country"].strip().title() if point["Country"] != "UAE" else point["Country"].strip(),
-            city=point["City"].strip().title()
+            country=point["Country"].strip(), city=point["City"].strip()
         )
 
     container_models, container_typed_models = group_containers(containers)
@@ -215,9 +213,28 @@ async def write_independent_data(services, points, containers, session):
     if services:
         await write_entities(services, session)
     await write_entities(containers, session)
+    print(points)
     count_points = await write_entities(points, session)
     await session.flush()
     return count_points
+
+
+async def _merge_to_db(obj, model, session, lookup_field: str = "name"):
+
+    lookup_value = getattr(obj, lookup_field)
+
+    existing_obj = await session.execute(
+        select(model).where(getattr(model, lookup_field) == lookup_value)
+    )
+    existing_obj = existing_obj.scalar_one_or_none()
+
+    if existing_obj:
+        print(existing_obj)
+        return existing_obj
+    else:
+        print(obj)
+        session.add(obj)
+        return obj
 
 
 async def write_routes(routes, session):

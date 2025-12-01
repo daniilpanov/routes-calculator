@@ -1,8 +1,10 @@
 import io
+from datetime import datetime
 
 import pandas as pd
 import numpy as np
 from fastapi import APIRouter, UploadFile, HTTPException
+from pandas import DataFrame
 from sqlalchemy import select, update, delete
 
 from back_admin.api.data_import.loading_data_to_db import validate_route_data, extract_data, create_independent_models, \
@@ -12,6 +14,183 @@ from back_admin.models import RailRouteModel, SeaRouteModel, ContainerModel
 from back_admin.models.route import BatchModel
 
 router = APIRouter(prefix="/data", tags=["data-admin"])
+
+
+async def parse_pattern_file(input_df: pd.DataFrame, route_type: str, sea_price='FILO') -> pd.DataFrame:
+    df = input_df.copy()
+    
+    port_countries = {
+        'Buenos Aires': 'Argentina', 'Itajaí': 'Brazil', 'Paranagua': 'Brazil',
+        'Rio Grande': 'Brazil', 'Santos': 'Brazil', 'Vitoria': 'Brazil',
+        'Asunción': 'Paraguay', 'Montevideo': 'Uruguay', 'Bahrain': 'Bahrain',
+        'Chittagong': 'Bangladesh', 'Chennai': 'India', 'Cochin': 'India',
+        'Kandla': 'India', 'Kattupalli': 'India', 'Kolkata': 'India',
+        'Nhava Sheva': 'India', 'Tuticorin': 'India', 'Visakhapatnam': 'India',
+        'Umm Qasr (North Port)': 'Iraq', 'Shuwaikh': 'Kuwait', 'Sohar': 'Oman',
+        'Doha (Hamad)': 'Qatar', 'Dammam': 'Saudi Arabia', 'Jeddah': 'Saudi Arabia',
+        'Colombo': 'Sri Lanka', 'Jebel Ali': 'UAE', 'Khalifa': 'UAE',
+        'Damietta': 'Egypt', 'Safiport': 'Egypt', 'Mersin': 'Turkey',
+        'Singapore': 'Singapore', 'Ho Chi Minh': 'Vietnam', 'BUSAN': 'Korea', 'BANGKOK': 'Thailand',
+        'LAEM CHABANG': 'Thailand', 'JAKARTA': 'Indonesia', 'SURABAYA': 'Indonesia', 'SEMARANG': 'Indonesia',
+        'BELAWAN': 'Indonesia', 'PORT KLANG': 'Malaysia', 'YANGON': 'Myanma', 'Incheon': 'Korea',
+        'Mundra': 'India', 'Karachi': 'Pakistan', 'PENANG': 'Malaysia', 'HAIPHONG': 'Vietnam',
+        'Tokyo': 'Japan', 'Yokohama': 'Japan', 'Nagoya': 'Japan', 'Hakata': 'Japan', 'Moji': 'Japan', 'Osaka': 'Japan',
+        'Kobe': 'Japan',
+    }
+    
+    russian_ports = [
+        'Moscow', 'Saint-Petersburg', 'Inya-Vostochnaya', 'Yekaterinburg-Tovarny', 'Yekaterinburg',
+        'Irkutsk', 'Novosibirsk', 'Omsk', 'Chelyabinsk', 'Perm', 'Krasnoyarsk', 'Nizhnekamsk', 'Ulyanovsk',
+        'Tolyatti', 'Rostov-on-Don', 'Samara', 'Krasnodar', 'Kazan', 'Nizhny Novgorod', 'Penza', 'Vostochny',
+        'Baltiysk-Kaliningrad', 'Novorossiysk',
+    ]
+
+    chinese_ports = [
+        'BAJIANG', 'BEIHAI', 'BEIJIAO', 'CHANGSHU', 'CHANGSHA', 'CHONGQING', 'CHANGZHOU',
+        'DAFENG', 'DONGGUAN', 'DAMAIYU', 'FANGCHENG', 'FULING', 'GAOLAN', 'GAOMING',
+        'WAIHAI/GAOSHA', 'HONGWAN', 'HAIKOU', 'HAIMEN', 'HUANGPU', 'HESHAN', 'JIANGYIN',
+        'JIANGYIN, JIANGSU', 'JIUJIANG', 'JIAO XIN', 'KAIPING', 'LANSHAN', 'LELIU',
+        'LUZHOU', 'LIANYUNGANG', 'MAWEI', 'NANCHANG', 'NANJING', 'NANTONG', 'QINZHOU',
+        'QUANZHOU', 'RONGQI', 'RIZHAO', 'SANSHAN', 'SHEKOU', 'QINHUANGDAO', 'SANSHUI (NEW PORT)',
+        'SANRONG/GAOYAO', 'SHANTOU', 'TAICANG', 'TAIZHOU', 'TAISHAN', 'WEIHAI', 'WUHU',
+        'WENZHOU', 'WUHAN', 'WANZHOU', 'XINHUI', 'XIYU', 'YANTAI', 'YANGZHOU', 'YIBIN',
+        'YICHANG', 'YANTIAN', 'YUNFU', 'YUEYANG', 'ZHANJIANG', 'ZHENJIANG', 'ZHANGJIAGANG',
+        'ZHAPU', 'ZHONGSHAN', 'HEFEI', 'WEIFANG', 'XIAOLAN', 'YANGPU', 'Dalian', 'Hong Kong', 'QINGDAO',
+        'SHANGHAI', 'NINGBO', 'XIAMEN', 'Nansha', 'KEELUNG', 'TAICHUNG', 'KAOHSIUNG'
+    ]
+
+    for port in chinese_ports:
+        port_countries[port] = 'China'
+        
+    for port in russian_ports:
+        port_countries[port] ='Russia'
+
+    def get_country(port_name):
+        port_name = str(port_name).strip()
+        if port_name in port_countries:
+            return port_countries[port_name]
+
+        return 'Unknown'
+
+    is_rail: bool = route_type == 'rail'
+    price_field, other_price = '', ''
+    if not is_rail:
+        price_field = sea_price
+        if sea_price == 'FILO':
+            other_price = 'FIFO'
+        else:
+            other_price = 'FILO'
+    else:
+        price_field = 'Price, RUB'
+
+    df['POL FULL NAME'] = df['Пункт отправления']
+    df['POL COUNTRY'] = df['Пункт отправления'].apply(get_country)
+    df['POD FULL NAME'] = df['Пункт прибытия']
+    df['POD COUNTRY'] = df['Пункт прибытия'].apply(get_country)
+    df['Service'] = df['Линия']
+    if not is_rail:
+        df[sea_price] = np.nan
+
+    def format_date(date_str):
+        try:
+            if isinstance(date_str, str):
+                month_replacements = {
+                    'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04',
+                    'May': '05', 'Jun': '06', 'Jul': '07', 'Aug': '08',
+                    'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'
+                }
+
+                for eng_month, num_month in month_replacements.items():
+                    if eng_month in date_str:
+                        date_str = date_str.replace(eng_month, num_month)
+
+                for fmt in ['%d.%m.%Y', '%d-%m-%Y', '%d %m %Y', '%d/%m/%Y']:
+                    try:
+                        return datetime.strptime(date_str.strip(), fmt).strftime('%d.%m.%Y')
+                    except ValueError:
+                        continue
+            return date_str
+        except:
+            return date_str
+
+    date_columns = ['EFFECTIVE FROM', 'EFFECTIVE TO', 'Валидность (Начало)', 'Валидность (Конец)']
+    for col in date_columns:
+        if col in df.columns:
+            df[col] = df[col].apply(format_date)
+
+    result_rows = []
+
+    for _, row in df.iterrows():
+        base_data = {
+            'POL FULL NAME': row['POL FULL NAME'],
+            'POL COUNTRY': row['POL COUNTRY'],
+            'POD FULL NAME': row['POD FULL NAME'],
+            'POD COUNTRY': row['POD COUNTRY'],
+            'Service': row['Service'],
+            'EFFECTIVE FROM': row.get('EFFECTIVE FROM') or row.get('Валидность (Начало)'),
+            'EFFECTIVE TO': row.get('EFFECTIVE TO') or row.get('Валидность (Конец)')
+        }
+
+        # 20dv<24т
+        container_20dv_24 = str(row.get('20dv<24т', '')).strip()
+        if container_20dv_24 and container_20dv_24 != 'nan' and container_20dv_24 != '':
+            result_rows.append({
+                **base_data,
+                'CONTAINER SIZE': '20',
+                'CONTAINER TYPE': 'DC',
+                'Container weight limit': '24',
+                price_field: float(container_20dv_24.replace(',', '.').replace(' ', '')),
+            })
+
+        # 20dv<28т
+        container_20dv_28 = str(row.get('20dv<28т', '')).strip()
+        if container_20dv_28 and container_20dv_28 != 'nan' and container_20dv_28 != '':
+            result_rows.append({
+                **base_data,
+                'CONTAINER SIZE': '20',
+                'CONTAINER TYPE': 'DC',
+                'Container weight limit': '28',
+                price_field: float(container_20dv_28.replace(',', '.').replace(' ', '')),
+            })
+
+        # 40hc
+        container_40hc = str(row.get('40hc', '')).strip()
+        if container_40hc and container_40hc != 'nan' and container_40hc != '':
+            result_rows.append({
+                **base_data,
+                'CONTAINER SIZE': '40',
+                'CONTAINER TYPE': 'HC',
+                'Container weight limit': '28',
+                price_field: float(container_40hc.replace(',', '.').replace(' ', '')),
+            })
+
+        # Guard
+        if is_rail:
+            guard_20dv_24 = str(row.get('Охрана 20dv<24т', 0)).strip()
+            guard_20dv_28 = str(row.get('Охрана 20dv<28т', 0)).strip()
+            guard_40hc = str(row.get('Охрана 40hc', 0)).strip()
+
+            result_rows[0]['Guard'] = float(guard_20dv_24.replace(',', '.').replace(' ', '')) if guard_20dv_24 and guard_20dv_24 != 'nan' else 0
+            result_rows[1]['Guard'] = float(guard_20dv_28.replace(',', '.').replace(' ', '')) if guard_20dv_28 and guard_20dv_28 != 'nan' else 0
+            result_rows[2]['Guard'] = float(guard_40hc.replace(',', '.').replace(' ', '')) if guard_40hc and guard_40hc != 'nan' else 0
+
+    result_df = pd.DataFrame(result_rows)
+
+    column_order = [
+        'POL FULL NAME', 'POL COUNTRY', 'POD FULL NAME', 'POD COUNTRY',
+        'Service', 'CONTAINER SIZE', 'CONTAINER TYPE', 'Container weight limit',
+        price_field, 'EFFECTIVE FROM', 'EFFECTIVE TO'
+    ]
+
+    if other_price == '':
+        column_order.append('Guard')
+    else:
+        column_order.append(other_price)
+
+
+    result_df = result_df.reindex(columns=column_order)
+
+    return result_df
 
 
 @router.post("/import")
@@ -205,7 +384,19 @@ async def dataImport(file: UploadFile,
     if company_name:
         company_col = "Service"
 
-    if file_extension == "csv" or file_extension == "txt":
+    pattern_check = type_data.split(';')
+    if pattern_check[0] == 'pattern':
+        params = (pd.read_excel(io.BytesIO(contents)), route_type,)
+        if pattern_check[1][0] == 'F':
+            temp = (pattern_check[1],)
+            params += temp
+
+        df: DataFrame = await parse_pattern_file(*params)
+
+        count_new_routes, count_new_points, import_batch_id = await process_dataframe(df, company_col, dates_col)
+        processed_sheets = [{"sheet": "Main1", "rows": len(df)}]
+
+    elif file_extension == "csv" or file_extension == "txt":
         df = pd.read_csv(
             io.StringIO(contents.decode('utf-8')),
             index_col=None,
