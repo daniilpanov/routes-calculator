@@ -240,7 +240,7 @@ async def _merge_to_db(obj, model, session, lookup_field: str = "name"):
 async def write_routes(routes, session):
     new_batch_id = BatchModel(create_date=datetime.datetime.now())
     session.add(new_batch_id)
-    await session.flush()
+    await session.commit()
 
     for route in routes:
         route.company = await session.merge(route.company, load=True)

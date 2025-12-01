@@ -20,29 +20,29 @@ async def parse_pattern_file(input_df: pd.DataFrame, route_type: str, sea_price=
     df = input_df.copy()
     
     port_countries = {
-        'Buenos Aires': 'Argentina', 'Itajaí': 'Brazil', 'Paranagua': 'Brazil',
-        'Rio Grande': 'Brazil', 'Santos': 'Brazil', 'Vitoria': 'Brazil',
-        'Asunción': 'Paraguay', 'Montevideo': 'Uruguay', 'Bahrain': 'Bahrain',
-        'Chittagong': 'Bangladesh', 'Chennai': 'India', 'Cochin': 'India',
-        'Kandla': 'India', 'Kattupalli': 'India', 'Kolkata': 'India',
-        'Nhava Sheva': 'India', 'Tuticorin': 'India', 'Visakhapatnam': 'India',
-        'Umm Qasr (North Port)': 'Iraq', 'Shuwaikh': 'Kuwait', 'Sohar': 'Oman',
-        'Doha (Hamad)': 'Qatar', 'Dammam': 'Saudi Arabia', 'Jeddah': 'Saudi Arabia',
-        'Colombo': 'Sri Lanka', 'Jebel Ali': 'UAE', 'Khalifa': 'UAE',
-        'Damietta': 'Egypt', 'Safiport': 'Egypt', 'Mersin': 'Turkey',
-        'Singapore': 'Singapore', 'Ho Chi Minh': 'Vietnam', 'BUSAN': 'Korea', 'BANGKOK': 'Thailand',
+        'BUENOS AIRES': 'Argentina', 'ITAJAI': 'Brazil', 'PARANAGUA': 'Brazil',
+        'RIO GRANDE': 'Brazil', 'SANTOS': 'Brazil', 'VITORIA': 'Brazil',
+        'ASUNCION': 'Paraguay', 'MONTEVIDEO': 'Uruguay', 'BAHRAIN': 'Bahrain',
+        'CHITTAGONG': 'Bangladesh', 'CHENNAI': 'India', 'COCHIN': 'India',
+        'KANDLA': 'India', 'KATTUPALLI': 'India', 'KOLKATA': 'India',
+        'Nhava Sheva': 'India', 'TUTICORIN': 'India', 'VISAKHAPATNAM': 'India',
+        'UMM QASR (NORTH PORT)': 'Iraq', 'SHUWAIKH': 'Kuwait', 'SOHAR': 'Oman',
+        'DOHA (HAMAD)': 'Qatar', 'DAMMAM': 'Saudi Arabia', 'JEDDAH': 'Saudi Arabia',
+        'COLOMBO': 'Sri Lanka', 'JEBEL ALI': 'UAE', 'KHALIFA': 'UAE',
+        'DAMIETTA': 'Egypt', 'SAFIPORT': 'Egypt', 'MERSIN': 'Turkey',
+        'SINGAPORE': 'Singapore', 'HO CHI MINH': 'Vietnam', 'BUSAN': 'Korea', 'BANGKOK': 'Thailand',
         'LAEM CHABANG': 'Thailand', 'JAKARTA': 'Indonesia', 'SURABAYA': 'Indonesia', 'SEMARANG': 'Indonesia',
-        'BELAWAN': 'Indonesia', 'PORT KLANG': 'Malaysia', 'YANGON': 'Myanma', 'Incheon': 'Korea',
-        'Mundra': 'India', 'Karachi': 'Pakistan', 'PENANG': 'Malaysia', 'HAIPHONG': 'Vietnam',
-        'Tokyo': 'Japan', 'Yokohama': 'Japan', 'Nagoya': 'Japan', 'Hakata': 'Japan', 'Moji': 'Japan', 'Osaka': 'Japan',
-        'Kobe': 'Japan',
+        'BELAWAN': 'Indonesia', 'PORT KLANG': 'Malaysia', 'YANGON': 'Myanma', 'INCHEON': 'Korea',
+        'MUNDRA': 'India', 'KARACHI': 'Pakistan', 'PENANG': 'Malaysia', 'HAIPHONG': 'Vietnam',
+        'TOKYO': 'Japan', 'YOKOHAMA': 'Japan', 'NAGOYA': 'Japan', 'HAKATA': 'Japan', 'MOJI': 'Japan', 'OSAKA': 'Japan',
+        'KOBE': 'Japan',
     }
     
     russian_ports = [
-        'Moscow', 'Saint-Petersburg', 'Inya-Vostochnaya', 'Yekaterinburg-Tovarny', 'Yekaterinburg',
-        'Irkutsk', 'Novosibirsk', 'Omsk', 'Chelyabinsk', 'Perm', 'Krasnoyarsk', 'Nizhnekamsk', 'Ulyanovsk',
-        'Tolyatti', 'Rostov-on-Don', 'Samara', 'Krasnodar', 'Kazan', 'Nizhny Novgorod', 'Penza', 'Vostochny',
-        'Baltiysk-Kaliningrad', 'Novorossiysk',
+        'MOSCOW', 'SAINT-PETERSBURG', 'INYA-VOSTOCHNAYA', 'YEKATERINBURG-TOVARNY', 'YEKATERINBURG',
+        'IRKUTSK', 'NOVOSIBIRSK', 'OMSK', 'CHELYABINSK', 'PERM', 'KRASNOYARSK', 'NIZHNEKAMSK', 'ULYANOVSK',
+        'TOLYATTI', 'ROSTOV-ON-DON', 'SAMARA', 'KRASNODARH', 'KAZAN', 'NIZHNY NOVGOROD', 'PENZA', 'VOSTOCHNY',
+        'BALTIYSK-KALININGRAD', 'NOVOROSSIYSK',
     ]
 
     chinese_ports = [
@@ -55,22 +55,29 @@ async def parse_pattern_file(input_df: pd.DataFrame, route_type: str, sea_price=
         'SANRONG/GAOYAO', 'SHANTOU', 'TAICANG', 'TAIZHOU', 'TAISHAN', 'WEIHAI', 'WUHU',
         'WENZHOU', 'WUHAN', 'WANZHOU', 'XINHUI', 'XIYU', 'YANTAI', 'YANGZHOU', 'YIBIN',
         'YICHANG', 'YANTIAN', 'YUNFU', 'YUEYANG', 'ZHANJIANG', 'ZHENJIANG', 'ZHANGJIAGANG',
-        'ZHAPU', 'ZHONGSHAN', 'HEFEI', 'WEIFANG', 'XIAOLAN', 'YANGPU', 'Dalian', 'Hong Kong', 'QINGDAO',
-        'SHANGHAI', 'NINGBO', 'XIAMEN', 'Nansha', 'KEELUNG', 'TAICHUNG', 'KAOHSIUNG'
+        'ZHAPU', 'ZHONGSHAN', 'HEFEI', 'WEIFANG', 'XIAOLAN', 'YANGPU', 'DALIAN', 'HONG KONG', 'QINGDAO',
+        'SHANGHAI', 'NINGBO', 'XIAMEN', 'NANSHA', 'KEELUNG', 'TAICHUNG', 'KAOHSIUNG'
     ]
+
+    def get_upper(port: str):
+        return port.upper().strip()
+
+    df['POD FULL NAME'] = df['Пункт прибытия'].apply(get_upper)
+    df['POL FULL NAME'] = df['Пункт отправления'].apply(get_upper)
 
     for port in chinese_ports:
         port_countries[port] = 'China'
         
     for port in russian_ports:
-        port_countries[port] ='Russia'
+        port_countries[port] = 'Russia'
 
     def get_country(port_name):
-        port_name = str(port_name).strip()
+        port_name = str(port_name)
         if port_name in port_countries:
-            return port_countries[port_name]
+            return port_countries[port_name].strip()
 
         return 'Unknown'
+
 
     is_rail: bool = route_type == 'rail'
     price_field, other_price = '', ''
@@ -83,9 +90,7 @@ async def parse_pattern_file(input_df: pd.DataFrame, route_type: str, sea_price=
     else:
         price_field = 'Price, RUB'
 
-    df['POL FULL NAME'] = df['Пункт отправления']
     df['POL COUNTRY'] = df['Пункт отправления'].apply(get_country)
-    df['POD FULL NAME'] = df['Пункт прибытия']
     df['POD COUNTRY'] = df['Пункт прибытия'].apply(get_country)
     df['Service'] = df['Линия']
     if not is_rail:
