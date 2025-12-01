@@ -28,7 +28,7 @@ class SeaRouteModel(Base):
     __table_args__ = (UniqueConstraint(*uid),)
 
     id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
-    batch_id: Mapped[int | None] = mapped_column(ForeignKey("batches.id"))
+    batch_id: Mapped[int | None] = mapped_column(ForeignKey("batches.id"), nullable=True)
     company_id: Mapped[int] = mapped_column(ForeignKey("companies.id"))
     container_id: Mapped[int] = mapped_column(ForeignKey("containers.id"))
     start_point_id: Mapped[int] = mapped_column(ForeignKey("points.id"))
@@ -67,7 +67,7 @@ class RailRouteModel(Base):
     __table_args__ = (UniqueConstraint(*uid),)
 
     id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
-    batch_id: Mapped[int | None] = mapped_column(ForeignKey("batches.id"))
+    batch_id: Mapped[int | None] = mapped_column(ForeignKey("batches.id"), nullable=True)
     company_id: Mapped[int] = mapped_column(ForeignKey("companies.id"))
     container_id: Mapped[int] = mapped_column(ForeignKey("containers.id"))
     start_point_id: Mapped[int] = mapped_column(ForeignKey("points.id"))
@@ -76,7 +76,6 @@ class RailRouteModel(Base):
     effective_to: Mapped[datetime.date] = mapped_column(DateTime(timezone=False))
 
     price: Mapped[float] = mapped_column()
-    drop: Mapped[float] = mapped_column()
     guard: Mapped[float | None] = mapped_column(nullable=True, default=None)
 
     start_point: Mapped[PointModel] = relationship(
