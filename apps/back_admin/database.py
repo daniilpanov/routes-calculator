@@ -68,7 +68,7 @@ class Database:
         if not self._sessionmaker:
             raise Exception("No sessionmaker")
 
-        async with self._sessionmaker() as session:
+        async with self._sessionmaker(autoflush=False) as session:
             try:
                 yield session
                 await session.commit()
