@@ -20,6 +20,7 @@ import { containersApi } from "@/api/ContainersApi";
 import { routesApi } from "@/api/RoutesApi";
 import { NavLink } from "react-router-dom";
 import { ROUTES } from "@/constants";
+import arrow_right from "@/resources/svg/arrow_right.svg";
 
 const PAGE_SIZE = 25;
 
@@ -454,25 +455,30 @@ export function RoutesTable() {
             <div className="heading_div"><h1>Управление маршрутами</h1></div>
 
             <div className="control_panel_div">
-                <button className="control_btn" onClick={ () => setIsModalOpen(true) }>Создать точку</button>
-                <button onClick={ handleAddRoute } className="control_btn">Создать маршрут</button>
-                <button
-                    className="control_btn"
-                    onClick={ handleDeleteSelectedRoutes }
-                    disabled={ selectedRouteIds.length === 0 }
-                >
-                    Удалить выбранные
-                </button>
-                {availableFilterFields.length > 0 && (
-                    <button className="control_btn" onClick={ handleAddFilter }>
-                        + Добавить фильтр
+                <div className="d-f fd-r g-10 fg-1">
+                    <button className="control_btn" onClick={ () => setIsModalOpen(true) }>Создать точку</button>
+                    <button onClick={ handleAddRoute } className="control_btn">Создать маршрут</button>
+                    <button
+                        className="control_btn"
+                        onClick={ handleDeleteSelectedRoutes }
+                        disabled={ selectedRouteIds.length === 0 }
+                    >
+                        Удалить выбранные
                     </button>
-                )}
+                    {availableFilterFields.length > 0 && (
+                        <button className="control_btn" onClick={ handleAddFilter }>
+                            + Добавить фильтр
+                        </button>
+                    )}
 
-                <button className="control_btn" onClick={ handleApplyFilters }>
-                    <img src={ magnifier } alt="Поиск" className="actions_img" />
-                </button>
-                <NavLink to={ ROUTES.DROPS_MANAGEMENT } className="control_btn">Таблица drop</NavLink>
+                    <button className="control_btn" onClick={ handleApplyFilters }>
+                        <img src={ magnifier } alt="Поиск" className="actions_img" />
+                    </button>
+                </div>
+                <NavLink to={ ROUTES.DROPS_MANAGEMENT } className="control_btn">
+                    Таблица drop off
+                    <img src={ arrow_right } alt="arrow_right" className="icon" />
+                </NavLink>
             </div>
 
             <div className="filter_div">

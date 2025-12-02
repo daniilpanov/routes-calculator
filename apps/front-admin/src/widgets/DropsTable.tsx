@@ -3,6 +3,8 @@ import { NavLink } from "react-router-dom";
 import { ROUTES } from "@/constants";
 import { dropsApi } from "@/api/DropsApi";
 import { Drop } from "@/interfaces/Model/Drop";
+import arrow_right from "@/resources/svg/arrow_right.svg";
+
 import {
     parseDateFromTimestampToInput,
     parseDateFromTimestampToOutput,
@@ -315,17 +317,22 @@ export function DropsTable() {
     };
     return (
         <div className="page_div">
-            <div className="heading_div"><h1>Управление drop'ами</h1></div>
+            <div className="heading_div"><h1>Управление drop off</h1></div>
             <div className="control_panel_div">
-                <NavLink to={ ROUTES.ROUTES_MANAGEMENT } className="control_btn">Таблица маршрутов</NavLink>
-                <button className="control_btn" onClick={ addDrop }>Создать drop</button>
-                <button
-                    className="control_btn"
-                    onClick={ handleDeleteSelectedDrops }
-                    disabled={ deletingDrops.ids.length === 0 }
-                >
-                    Удалить выбранные
-                </button>
+                <div className="d-f fd-r g-10 fg-1">
+                    <button className="control_btn" onClick={ addDrop }>Создать drop</button>
+                    <button
+                        className="control_btn"
+                        onClick={ handleDeleteSelectedDrops }
+                        disabled={ deletingDrops.ids.length === 0 }
+                    >
+                        Удалить выбранные
+                    </button>
+                </div>
+                <NavLink to={ ROUTES.ROUTES_MANAGEMENT } className="control_btn jc-c">
+                    Таблица маршрутов
+                    <img src={ arrow_right } alt="arrow_right" className="icon" />
+                </NavLink>
             </div>
             <div className="table_div">
                 <table>
