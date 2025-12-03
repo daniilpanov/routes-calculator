@@ -1,11 +1,13 @@
-import FormInput from "@/components/form/FormInput";
-import FormSubmit from "@/components/form/FormSubmit";
-import "@/resources/scss/login_style.scss";
+import { useState, ChangeEvent, FormEvent } from "react";
+import { useNavigate } from "react-router-dom";
+
+import "@/resources/scss/widgets/Login.scss";
+
 import { ROUTES } from "@/constants";
 import { ILoginCredentials } from "@/interfaces/Auth";
 import { login } from "@/services/Auth";
-import { useNavigate } from "react-router-dom";
-import { useState, ChangeEvent, FormEvent } from "react";
+import FormInput from "@/components/form/FormInput";
+import FormSubmit from "@/components/form/FormSubmit";
 
 
 export default function LoginForm() {
