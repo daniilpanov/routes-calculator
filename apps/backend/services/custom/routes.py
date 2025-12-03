@@ -4,7 +4,7 @@ import datetime
 from backend.database import database
 from backend.mapper_decorator import apply_mapper
 from sqlalchemy import select
-from sqlalchemy.orm import aliased, joinedload
+from sqlalchemy.orm import joinedload
 
 from .mappers.routes import map_routes
 from .models import DropModel, RailRouteModel, SeaRouteModel
@@ -16,6 +16,55 @@ async def _execute_query(q):
     return result.all()
 
 
+def build_usual_query(route_class, date, start_point_id, end_point_id, container_ids):
+    return (  # noqa: ECE001
+        select(route_class)
+        .where(
+            (route_class.effective_from <= date)
+            & (route_class.effective_to >= date)
+            & (route_class.start_point_id == start_point_id)
+            & (route_class.end_point_id == end_point_id)
+            & route_class.container_id.in_(container_ids)
+        )
+        .options(
+            joinedload(route_class.start_point),
+            joinedload(route_class.end_point),
+            joinedload(route_class.company),
+            joinedload(route_class.container),
+        )
+    )
+
+
+def build_cross_query(date, start_point_id, end_point_id, container_ids, with_drop: bool = True):
+    return (  # noqa: ECE001
+        (select(SeaRouteModel, RailRouteModel, DropModel) if with_drop else select(SeaRouteModel, RailRouteModel))
+        .where(
+            (SeaRouteModel.effective_from <= date)
+            & (SeaRouteModel.effective_to >= date)
+            & (RailRouteModel.effective_from <= date)
+            & (RailRouteModel.effective_to >= date)
+            & (SeaRouteModel.start_point_id == start_point_id)
+            & (RailRouteModel.end_point_id == end_point_id)
+            & SeaRouteModel.container_id.in_(container_ids)
+        )
+        .join(
+            RailRouteModel,
+            (SeaRouteModel.end_point_id == RailRouteModel.start_point_id)
+            & (SeaRouteModel.container_id == RailRouteModel.container_id),
+        )
+        .options(
+            joinedload(SeaRouteModel.start_point),
+            joinedload(SeaRouteModel.end_point),
+            joinedload(SeaRouteModel.company),
+            joinedload(SeaRouteModel.container),
+            joinedload(RailRouteModel.start_point),
+            joinedload(RailRouteModel.end_point),
+            joinedload(RailRouteModel.company),
+            joinedload(RailRouteModel.container),
+        )
+    )
+
+
 @apply_mapper(map_routes)
 async def find_all_paths(
     date: datetime.date,
@@ -23,111 +72,76 @@ async def find_all_paths(
     end_point_id: int,
     container_ids: list[int],
 ) -> list[dict]:
-    sea = aliased(SeaRouteModel)
-    rail = aliased(RailRouteModel)
-    drop = aliased(DropModel)
+    query_rail = build_usual_query(RailRouteModel, date, start_point_id, end_point_id, container_ids)
+    query_sea = build_usual_query(SeaRouteModel, date, start_point_id, end_point_id, container_ids)
 
-    query_rail = (  # noqa: ECE001
-        select(rail, drop)
-        .where(
-            (rail.effective_from <= date)
-            & (rail.effective_to >= date)
-            & (rail.start_point_id == start_point_id)
-            & (rail.end_point_id == end_point_id)
-            & rail.container_id.in_(container_ids)
-        )
-        .outerjoin(
-            drop,
-            (rail.start_point_id == drop.rail_start_point_id)
-            & (rail.end_point_id == drop.rail_end_point_id)
-            & (rail.company_id == drop.company_id)
-            & (rail.container_id == drop.container_id)
-            & (drop.sea_start_point_id == None)  # noqa: E711
-            & (drop.sea_end_point_id == None),  # noqa: E711
-        )
-        .options(
-            joinedload(rail.start_point),
-            joinedload(rail.end_point),
-            joinedload(rail.company),
-            joinedload(rail.container),
-        )
+    query_sea_rail_drop_all = build_cross_query(  # noqa: ECE001
+        date,
+        start_point_id,
+        end_point_id,
+        container_ids,
+    ).join(
+        DropModel,
+        (RailRouteModel.start_point_id == DropModel.rail_start_point_id)
+        & (RailRouteModel.end_point_id == DropModel.rail_end_point_id)
+        & (RailRouteModel.company_id == DropModel.company_id)
+        & (RailRouteModel.container_id == DropModel.container_id)
+        & (SeaRouteModel.start_point_id == DropModel.sea_start_point_id)
+        & (SeaRouteModel.end_point_id == DropModel.sea_end_point_id)
     )
-    query_sea = (  # noqa: ECE001
-        select(sea, drop)
-        .where(
-            (sea.effective_from <= date)
-            & (sea.effective_to >= date)
-            & (sea.start_point_id == start_point_id)
-            & (sea.end_point_id == end_point_id)
-            & sea.container_id.in_(container_ids)
-        )
-        .outerjoin(
-            drop,
-            (drop.rail_start_point_id == None)  # noqa: E711
-            & (drop.rail_end_point_id == None)  # noqa: E711
-            & (sea.start_point_id == drop.sea_start_point_id)
-            & (sea.end_point_id == drop.sea_end_point_id)
-            & (sea.company_id == drop.company_id)
-            & (sea.container_id == drop.container_id),
-        )
-        .options(
-            joinedload(sea.start_point),
-            joinedload(sea.end_point),
-            joinedload(sea.company),
-            joinedload(sea.container),
-        )
+    query_sea_rail_drop_rail = build_cross_query(  # noqa: ECE001
+        date,
+        start_point_id,
+        end_point_id,
+        container_ids,
+    ).join(
+        DropModel,
+        (RailRouteModel.start_point_id == DropModel.rail_start_point_id)
+        & (RailRouteModel.end_point_id == DropModel.rail_end_point_id)
+        & (RailRouteModel.company_id == DropModel.company_id)
+        & (RailRouteModel.container_id == DropModel.container_id)
+        & (DropModel.sea_start_point_id == None)  # noqa: E711
+        & (DropModel.sea_end_point_id == None)  # noqa: E711
     )
-    query_sea_rail = (  # noqa: ECE001
-        select(sea, rail, drop)
-        .where(
-            (sea.effective_from <= date)
-            & (sea.effective_to >= date)
-            & (rail.effective_from <= date)
-            & (rail.effective_to >= date)
-            & (sea.start_point_id == start_point_id)
-            & (rail.end_point_id == end_point_id)
-            & sea.container_id.in_(container_ids)
-        )
-        .join(
-            rail,
-            (sea.end_point_id == rail.start_point_id)
-            & (sea.container_id == rail.container_id),
-        )
-        .outerjoin(
-            drop,
-            (rail.start_point_id == drop.rail_start_point_id)
-            & (rail.end_point_id == drop.rail_end_point_id)
-            & (rail.company_id == drop.company_id)
-            & (rail.container_id == drop.container_id)
-            & (sea.start_point_id == drop.sea_start_point_id)
-            & (sea.end_point_id == drop.sea_end_point_id)
-            & (sea.company_id == drop.company_id)
-            & (sea.container_id == sea.container_id),
-        )
-        .options(
-            joinedload(sea.start_point),
-            joinedload(sea.end_point),
-            joinedload(sea.company),
-            joinedload(sea.container),
-            joinedload(rail.start_point),
-            joinedload(rail.end_point),
-            joinedload(rail.company),
-            joinedload(rail.container),
-        )
+    query_sea_rail_drop_sea = build_cross_query(  # noqa: ECE001
+        date,
+        start_point_id,
+        end_point_id,
+        container_ids,
+    ).join(
+        DropModel,
+        (SeaRouteModel.start_point_id == DropModel.sea_start_point_id)
+        & (SeaRouteModel.end_point_id == DropModel.sea_end_point_id)
+        & (SeaRouteModel.company_id == DropModel.company_id)
+        & (SeaRouteModel.container_id == DropModel.container_id)
+        & (DropModel.rail_start_point_id == None)  # noqa: E711
+        & (DropModel.rail_end_point_id == None)  # noqa: E711
     )
+    query_sea_rail_no_drop = build_cross_query(date, start_point_id, end_point_id, container_ids, False)
 
     all_queries = [
         query_rail,
         query_sea,
-        query_sea_rail,
+        query_sea_rail_drop_all,
+        query_sea_rail_drop_rail,
+        query_sea_rail_drop_sea,
+        query_sea_rail_no_drop,
     ]
 
     coroutines = [_execute_query(query) for query in all_queries]
     results = await asyncio.gather(*coroutines, return_exceptions=True)
+
     flat_result: list[dict] = []
+    segment_ids_set = set()
 
     for r in results:
         if r and not isinstance(r, BaseException):
-            flat_result.extend(r)
+            for route in r:
+                route_without_drop = route[:-1] if isinstance(route[-1], DropModel) else route
+
+                ids = (segment.id for segment in route_without_drop)
+                if ids not in segment_ids_set:
+                    segment_ids_set.add(ids)
+                    flat_result.append(route)
 
     return flat_result

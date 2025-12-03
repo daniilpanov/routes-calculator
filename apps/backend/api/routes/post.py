@@ -26,6 +26,7 @@ async def _get_routes(
 @router.post("/calculate")
 async def calculate(request: CalculateFormRequest):
     routes = []
+
     if "FESCO" in request.destinationId:
         routes.extend(
             await _get_routes(
@@ -37,16 +38,19 @@ async def calculate(request: CalculateFormRequest):
                 request.containerType,
             )
         )
-    for service in request.destinationId:
-        if service not in request.departureId:
-            continue
 
+    points = set()
+    for service in request.destinationId:
+        if service in request.departureId:
+            points.add((request.departureId[service], request.destinationId[service]))
+
+    for departureId, destinationId in points:
         routes.extend(
             await _get_routes(
                 custom,
                 request.dispatchDate,
-                request.departureId[service],
-                request.destinationId[service],
+                departureId,
+                destinationId,
                 request.cargoWeight,
                 request.containerType,
             )
@@ -54,14 +58,14 @@ async def calculate(request: CalculateFormRequest):
 
     one_service_routes = []
     multi_service_routes = []
-    print(routes)
+
     for route_and_drop in routes:
         if len(route_and_drop) > 1:
             route, drop = route_and_drop
         else:
             route = route_and_drop[0]
             drop = None
-        print(route, drop)
+
         initial_company = route[0]["company"]
         for segment in route[1:]:
             if segment["company"] != initial_company:

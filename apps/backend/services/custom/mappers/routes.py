@@ -1,3 +1,6 @@
+from typing import Any
+
+from ..models import DropModel
 from .containers import _map_container
 
 
@@ -31,20 +34,25 @@ def _map_segment(
 
 
 def _map_route(route_and_drop):
-    *segments, drop = route_and_drop
-    res = []
-    _types = []
+    segments = route_and_drop
+    drop = None
+    if isinstance(segments[-1], DropModel) or not segments[-1]:
+        drop = segments[-1]
+        segments = segments[:-1]
 
-    for segment in segments:
+    res: list[Any] = [None] * len(segments)
+    _types: list[str | None] = [None] * len(segments)
+
+    for i, segment in enumerate(segments):
         if getattr(segment, "filo", None):
-            _types.append("sea")
-            res.append(_map_segment(segment, "filo", "USD", "sea", {}, "FI", "LO"))
+            _types[i] = "sea"
+            res[i] = _map_segment(segment, "filo", "USD", "sea", {}, "FI", "LO")
         elif getattr(segment, "fifo", None):
-            _types.append("sea")
-            res.append(_map_segment(segment, "fifo", "USD", "sea", {}, "FI", "FOR"))
+            _types[i] = "sea"
+            res[i] = _map_segment(segment, "fifo", "USD", "sea", {}, "FI", "FOR")
         else:
-            _types.append("rail")
-            res.append(
+            _types[i] = "rail"
+            res[i] = (
                 _map_segment(
                     segment,
                     "price",
