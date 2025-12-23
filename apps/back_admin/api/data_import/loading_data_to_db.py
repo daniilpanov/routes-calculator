@@ -213,28 +213,9 @@ async def write_independent_data(services, points, containers, session):
     if services:
         await write_entities(services, session)
     await write_entities(containers, session)
-    print(points)
     count_points = await write_entities(points, session)
     await session.flush()
     return count_points
-
-
-async def _merge_to_db(obj, model, session, lookup_field: str = "name"):
-
-    lookup_value = getattr(obj, lookup_field)
-
-    existing_obj = await session.execute(
-        select(model).where(getattr(model, lookup_field) == lookup_value)
-    )
-    existing_obj = existing_obj.scalar_one_or_none()
-
-    if existing_obj:
-        print(existing_obj)
-        return existing_obj
-    else:
-        print(obj)
-        session.add(obj)
-        return obj
 
 
 async def write_routes(routes, session):

@@ -10,10 +10,43 @@ from sqlalchemy import select, update, delete
 from back_admin.api.data_import.loading_data_to_db import validate_route_data, extract_data, create_independent_models, \
     group_containers_from_db, create_routes, write_independent_data, write_routes, parse_date
 from back_admin.database import database
-from back_admin.models import RailRouteModel, SeaRouteModel, ContainerModel
+from back_admin.models import RailRouteModel, SeaRouteModel, ContainerModel, PointModel
 from back_admin.models.route import BatchModel
 
 router = APIRouter(prefix="/data", tags=["data-admin"])
+
+
+@router.post("/load_points")
+async def load_points_by_file(file: UploadFile):
+    contents = await file.read()
+    df = pd.read_csv(io.BytesIO(contents), sep=";")
+    load_count: int = 0
+
+    async with database.session() as session:
+        for _, point in df.iterrows():
+            try:
+                new_point = PointModel(
+                    city=point["city"].strip().upper(),
+                    country=point["country"].strip(),
+                    RU_city=point["RU_city"].strip(),
+                    RU_country=point["RU_country"].strip(),
+                )
+
+                await session.merge(new_point)
+                load_count += 1
+            except Exception as e:
+                return HTTPException(
+                    status_code=500,
+                    detail=str(e),
+                )
+            await session.flush()
+        await session.commit()
+
+    return {
+        "status": "OK",
+        "input": len(df),
+        "load": load_count,
+    }
 
 
 async def parse_pattern_file(input_df: pd.DataFrame, route_type: str, sea_price='FILO') -> pd.DataFrame:
@@ -198,6 +231,83 @@ async def parse_pattern_file(input_df: pd.DataFrame, route_type: str, sea_price=
     return result_df
 
 
+async def process_dataframe(_df: pd.DataFrame, _company_col, _dates_col, _r_type, _type_data):
+    validate_route_data(_df, _company_col, _dates_col)
+
+    services, points, containers = extract_data(_df, _company_col)
+    services, points, containers, typed_containers = create_independent_models(
+        services, points, containers
+    )
+
+    async with database.session() as session:
+        db_containers = (await session.execute(select(ContainerModel))).scalars().all()
+
+    db_containers, db_typed_containers = group_containers_from_db(db_containers)
+    containers = {**containers, **db_containers}
+    typed_containers = {**typed_containers, **db_typed_containers}
+
+    _additional_data = None
+    if _r_type != "sea" and _type_data:
+        _additional_data = _type_data.split(";")
+        if _additional_data[0] == "column":  # todo: finalize 5th item
+            route_type_col = "ROUTE TYPE" if _additional_data[1] == "" else _additional_data[1]
+
+    if _r_type == "rail":
+        prices = {"Price, RUB": "price", "Guard": "guard"}
+        if not _additional_data:
+            _additional_data = ["drop", "Drop, $"]
+            _df[_additional_data[1]] = 0
+
+        if _additional_data:
+            if _additional_data[0] == "drop":  # Drop = Drop, $
+                prices[_additional_data[1]] = "drop"
+
+            if _additional_data[0] == "only drop":  # todo: make into point check
+                prices = {_additional_data[2]: "drop"}
+
+        routes = create_routes(
+            _df,
+            RailRouteModel,
+            prices,
+            ["Price, RUB"],
+            services,
+            points,
+            containers,
+            typed_containers,
+            _company_col if _company_col else None,
+            _dates_col if _dates_col else None,
+        )
+
+    elif _r_type == "sea":
+        routes = create_routes(
+            _df,
+            SeaRouteModel,
+            {"FILO": "filo", "FIFO": "fifo"},
+            ["FIFO", "FILO"],
+            services,
+            points,
+            containers,
+            typed_containers,
+            _company_col if _company_col else None,
+            _dates_col if _dates_col else None,
+        )
+
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown route type '{_r_type}'"
+        )
+
+    this_batch_id = 0
+
+    async with database.session() as session:
+        count_points = await write_independent_data(services, points, containers, session)
+        this_batch_id = await write_routes(routes, session)
+        await session.commit()
+
+    return len(routes), count_points, this_batch_id
+
+
 @router.post("/import")
 async def dataImport(file: UploadFile,
                      route_type: str,
@@ -206,81 +316,7 @@ async def dataImport(file: UploadFile,
                      company_name: str | None = None,
                      dates_col: str | None = None,
                      dates: str | None = None):
-    async def process_dataframe(_df: pd.DataFrame, _company_col, _dates_col):
-        validate_route_data(_df, _company_col, _dates_col)
 
-        services, points, containers = extract_data(_df, _company_col)
-        services, points, containers, typed_containers = create_independent_models(
-            services, points, containers
-        )
-
-        async with database.session() as session:
-            db_containers = (await session.execute(select(ContainerModel))).scalars().all()
-
-        db_containers, db_typed_containers = group_containers_from_db(db_containers)
-        containers = {**containers, **db_containers}
-        typed_containers = {**typed_containers, **db_typed_containers}
-
-        _additional_data = None
-        if route_type != "sea" and type_data:
-            _additional_data = type_data.split(";")
-            if _additional_data[0] == "column":  # todo: finalize 5th item
-                route_type_col = "ROUTE TYPE" if _additional_data[1] == "" else _additional_data[1]
-
-        if route_type == "rail":
-            prices = {"Price, RUB": "price", "Guard": "guard"}
-            if not _additional_data:
-                _additional_data = ["drop", "Drop, $"]
-                _df[_additional_data[1]] = 0
-
-            if _additional_data:
-                if _additional_data[0] == "drop":  # Drop = Drop, $
-                    prices[_additional_data[1]] = "drop"
-
-                if _additional_data[0] == "only drop":  # todo: make into point check
-                    prices = {_additional_data[2]: "drop"}
-
-            routes = create_routes(
-                _df,
-                RailRouteModel,
-                prices,
-                ["Price, RUB"],
-                services,
-                points,
-                containers,
-                typed_containers,
-                _company_col if _company_col else None,
-                _dates_col if _dates_col else None,
-            )
-
-        elif route_type == "sea":
-            routes = create_routes(
-                _df,
-                SeaRouteModel,
-                {"FILO": "filo", "FIFO": "fifo"},
-                ["FIFO", "FILO"],
-                services,
-                points,
-                containers,
-                typed_containers,
-                _company_col if _company_col else None,
-                _dates_col if _dates_col else None,
-            )
-
-        else:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Unknown route type '{route_type}'"
-            )
-
-        this_batch_id = 0
-
-        async with database.session() as session:
-            count_points = await write_independent_data(services, points, containers, session)
-            this_batch_id = await write_routes(routes, session)
-            await session.commit()
-
-        return len(routes), count_points, this_batch_id
 
     def combine_excel_sheets(excel_file: pd.ExcelFile,
                              dates_col: str | None = None,
@@ -398,8 +434,8 @@ async def dataImport(file: UploadFile,
 
         df: DataFrame = await parse_pattern_file(*params)
 
-        count_new_routes, count_new_points, import_batch_id = await process_dataframe(df, company_col, dates_col)
-        processed_sheets = [{"sheet": "Main1", "rows": len(df)}]
+        count_new_routes, count_new_points, import_batch_id = await process_dataframe(df, company_col, dates_col, route_type, type_data)
+        processed_sheets = [{"sheet": "Main", "rows": len(df)}]
 
     elif file_extension == "csv" or file_extension == "txt":
         df = pd.read_csv(
@@ -417,7 +453,7 @@ async def dataImport(file: UploadFile,
         if company_name:
             df[company_col] = company_name
 
-        count_new_routes, count_new_points, import_batch_id = await process_dataframe(df, company_col, dates_col)
+        count_new_routes, count_new_points, import_batch_id = await process_dataframe(df, company_col, dates_col, route_type, type_data)
         processed_sheets = [{"sheet": "main", "rows": len(df)}]
 
     elif file_extension == "xlsx":
@@ -432,7 +468,7 @@ async def dataImport(file: UploadFile,
             route_type=route_type
         )
 
-        count_new_routes, count_new_points, import_batch_id = await process_dataframe(combined_df, company_col, dates_col)
+        count_new_routes, count_new_points, import_batch_id = await process_dataframe(combined_df, company_col, dates_col, route_type, type_data)
 
         for sheet_info in processed_sheets:
             if sheet_info["status"] == "processed":
