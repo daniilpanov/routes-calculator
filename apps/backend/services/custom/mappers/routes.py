@@ -15,6 +15,7 @@ def _map_segment(route):
         "endPointCountry": route.end_point.RU_country,
         "endPointName": route.end_point.RU_city,
         "prices": [],
+        "comment": route.comment,
     }
 
     for price in route.prices:

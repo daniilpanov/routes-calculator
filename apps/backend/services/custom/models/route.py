@@ -71,6 +71,8 @@ class RouteModel(Base):
     end_point_id: Mapped[int] = mapped_column(ForeignKey("points.id"))
     effective_from: Mapped[datetime.date] = mapped_column(DateTime(timezone=False))
     effective_to: Mapped[datetime.date] = mapped_column(DateTime(timezone=False))
+    comment: Mapped[str | None] = mapped_column(String(255), nullable=True, default=None)
+
     type: Mapped[RouteTypeEnum] = mapped_column(  # noqa: A003
         Enum(
             RouteTypeEnum,
