@@ -1,36 +1,84 @@
 import datetime
+import enum
 
 from backend.database import Base
-from sqlalchemy import DateTime, ForeignKey, String, UniqueConstraint
+from sqlalchemy import DateTime, Enum, ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from . import CompanyModel, ContainerModel
 from .point import PointModel
 
 
-class SeaRouteModel(Base):
+class RouteTypeEnum(enum.Enum):
+    SEA = "sea"
+    RAIL = "rail"
+    SEA_RAIL = "sea_rail"
+
+
+class PriceTypeEnum(enum.Enum):
+    FIFOR = "FIFO"
+    FILO = "FILO"
+    FOBFOR = "FOR"
+    MIXED = "MIXED"
+
+
+class PriceModel(Base):
+    uid = (
+        "route_id",
+        "container_id",
+        "type",
+    )
+
+    __tablename__ = "prices"
+    __table_args__ = (UniqueConstraint(*uid),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
+    value: Mapped[float | None] = mapped_column(nullable=True, default=None)
+    currency: Mapped[str] = mapped_column(String(10))
+    conversation_percents: Mapped[float] = mapped_column(default=0)
+
+    type: Mapped[PriceTypeEnum] = mapped_column(  # noqa: A003
+        Enum(
+            PriceTypeEnum,
+            create_constraint=True,
+            check_constraint=True,
+            validate_strings=True,
+        )
+    )
+
+    route_id: Mapped[int] = mapped_column(ForeignKey("routes.id"))
+    container_id: Mapped[int] = mapped_column(ForeignKey("containers.id"))
+
+    container: Mapped[ContainerModel] = relationship()
+    route: Mapped['RouteModel'] = relationship("RouteModel", back_populates="prices")
+
+
+class RouteModel(Base):
     uid = (
         "company_id",
-        "container_id",
         "start_point_id",
         "end_point_id",
         "effective_from",
         "effective_to",
     )
 
-    __tablename__ = "sea_routes"
+    __tablename__ = "routes"
     __table_args__ = (UniqueConstraint(*uid),)
 
     id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
     company_id: Mapped[int] = mapped_column(ForeignKey("companies.id"))
-    container_id: Mapped[int] = mapped_column(ForeignKey("containers.id"))
     start_point_id: Mapped[int] = mapped_column(ForeignKey("points.id"))
     end_point_id: Mapped[int] = mapped_column(ForeignKey("points.id"))
     effective_from: Mapped[datetime.date] = mapped_column(DateTime(timezone=False))
     effective_to: Mapped[datetime.date] = mapped_column(DateTime(timezone=False))
-
-    fifo: Mapped[float | None] = mapped_column()
-    filo: Mapped[float | None] = mapped_column()
+    type: Mapped[RouteTypeEnum] = mapped_column(  # noqa: A003
+        Enum(
+            RouteTypeEnum,
+            create_constraint=True,
+            check_constraint=True,
+            validate_strings=True,
+        )
+    )
 
     start_point: Mapped[PointModel] = relationship(
         PointModel, foreign_keys=[start_point_id]
@@ -39,45 +87,7 @@ class SeaRouteModel(Base):
         PointModel, foreign_keys=[end_point_id]
     )
     company: Mapped[CompanyModel] = relationship()
-    container: Mapped[ContainerModel] = relationship()
-
-    @property
-    def price(self):
-        return self.filo or self.fifo
-
-
-class RailRouteModel(Base):
-    uid = (
-        "company_id",
-        "container_id",
-        "start_point_id",
-        "end_point_id",
-        "effective_from",
-        "effective_to",
-    )
-
-    __tablename__ = "rail_routes"
-    __table_args__ = (UniqueConstraint(*uid),)
-
-    id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
-    company_id: Mapped[int] = mapped_column(ForeignKey("companies.id"))
-    container_id: Mapped[int] = mapped_column(ForeignKey("containers.id"))
-    start_point_id: Mapped[int] = mapped_column(ForeignKey("points.id"))
-    end_point_id: Mapped[int] = mapped_column(ForeignKey("points.id"))
-    effective_from: Mapped[datetime.date] = mapped_column(DateTime(timezone=False))
-    effective_to: Mapped[datetime.date] = mapped_column(DateTime(timezone=False))
-
-    price: Mapped[float] = mapped_column()
-    guard: Mapped[float | None] = mapped_column()
-
-    start_point: Mapped[PointModel] = relationship(
-        PointModel, foreign_keys=[start_point_id]
-    )
-    end_point: Mapped[PointModel] = relationship(
-        PointModel, foreign_keys=[end_point_id]
-    )
-    company: Mapped[CompanyModel] = relationship()
-    container: Mapped[ContainerModel] = relationship()
+    prices: Mapped[list[PriceModel]] = relationship("PriceModel", back_populates="route")
 
 
 class DropModel(Base):
