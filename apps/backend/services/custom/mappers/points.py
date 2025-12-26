@@ -1,7 +1,8 @@
-def _map_point(point):
+def _map_point(item):
+    point, company = item
     return {
         "id": point.id,
-        "company": point.company_name,
+        "company": company,
         "country": point.RU_country,
         "name": point.RU_city,
     }
