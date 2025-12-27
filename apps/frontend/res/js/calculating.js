@@ -52,6 +52,62 @@ setupAutocomplete('departure', 'departureList', departures, 'departureId', async
 });
 setupAutocomplete('destination', 'destinationList', destinations, 'destinationId');
 
+function _renderComment(text) {
+    return text ? `<blockquote><p>Комментарий: <i>${text}</i></p></blockquote>` : "";
+}
+
+function _renderOnePriceOfSegment(priceVariant) {
+    const roundedPrice = Math.round((priceVariant.value + Number.EPSILON) * 100) / 100;
+    return `<div class="col-md">
+        <div class="segment--price-variant" data-bs-price="${roundedPrice}" data-bs-currency="${priceVariant.currency}">
+            <div class="mb-2">Условия: ${priceVariant.cond}</div>
+            <div class="mb-2">${priceVariant.container.name}</div>
+            <div class="text-muted">${roundedPrice} ${priceVariant.currency}</div>
+        </div>
+    </div>`;
+}
+
+function _renderMultiPrice(icon, segment, mixed) {
+    return `
+        <div class="align-items-center my-2 result-segment" data-bs-price="${mixed ? 'X' : 'M'}">
+            <div class="route-icon">${icon} &emsp; ${segment.company}</div>
+            <div class="mb-2">Ставка действует: ${new Date(segment.effectiveFrom).toLocaleDateString()} — ${new Date(segment.effectiveTo).toLocaleDateString()}</div>
+            <div class="mb-3 row">
+                ${segment.prices.map(_renderOnePriceOfSegment).join('\n')}
+            </div>
+            <div>
+                <div>
+                    <strong>${segment.startPointCountry.toUpperCase()}, ${segment.startPointName}</strong>
+                     →
+                     <strong>${segment.endPointCountry.toUpperCase()}, ${segment.endPointName}</strong>
+                 </div>
+            </div>
+            ${_renderComment(segment.comment)}
+        </div>
+    `;
+}
+
+function _renderSinglePrice(icon, segment) {
+    const roundedPrice = Math.round((segment.price + Number.EPSILON) * 100) / 100;
+    return `
+        <div class="align-items-center my-2 result-segment" data-bs-price="${roundedPrice}" data-bs-currency="${segment.currency}">
+            <div class="route-icon">${icon} &emsp; ${segment.company}</div>
+            <div class="mb-2">${segment.beginCond ? `Условия: ${segment.beginCond} - ${segment.finishCond}` : ''}</div>
+            <div class="mb-2">Ставка действует: ${new Date(segment.effectiveFrom).toLocaleDateString()} — ${new Date(segment.effectiveTo).toLocaleDateString()}</div>
+            <div class="mb-3">Контейнер: ${segment.container.name}</div>
+            <div>
+                <div>
+                    <strong>${segment.startPointCountry.toUpperCase()}, ${segment.startPointName}</strong>
+                     →
+                    <strong>${segment.endPointCountry.toUpperCase()}, ${segment.endPointName}</strong>
+                 </div>
+                <div class="text-muted">${roundedPrice} ${segment.currency}</div>
+            </div>
+            ${_renderComment(segment.comment)}
+        </div>
+    `;
+}
+
 async function calculateAndRender(icons) {
     const payload = {
         dispatchDate: dispatchDateInput.value,
@@ -91,26 +147,10 @@ async function calculateAndRender(icons) {
             segmentsEl.className = 'segments';
 
             segmentsEl.innerHTML = route.map(segment => {
-                let svg = icons[segment.type] || '';
-
-                const roundedPrice = Math.round((segment.price + Number.EPSILON) * 100) / 100;
-                return `
-                    <div class="align-items-center my-2 result-segment" data-bs-price="${roundedPrice}" data-bs-currency="${segment.currency}">
-                        <div class="route-icon">${svg} &emsp; ${segment.company}</div>
-                        <div class="mb-2">${segment.beginCond ? `Условия: ${segment.beginCond} - ${segment.finishCond}` : ''}</div>
-                        <div class="mb-2">Ставка действует: ${new Date(segment.effectiveFrom).toLocaleDateString()} — ${new Date(segment.effectiveTo).toLocaleDateString()}</div>
-                        <div class="mb-3">Контейнер: ${segment.container.name}</div>
-                        <div>
-                            <div>
-                                <strong>${segment.startPointCountry.toUpperCase()}, ${segment.startPointName}</strong>
-                                 →
-                                 <strong>${segment.endPointCountry.toUpperCase()}, ${segment.endPointName}</strong>
-                             </div>
-                            <div class="text-muted">${roundedPrice} ${segment.currency}</div>
-                        </div>
-                    </div>
-                `;
+                const icon = segment.type === "SEA_RAIL" ? "Море+ЖД" : icons[segment.type.toLowerCase()] || segment.type;
+                return segment.price ? _renderSinglePrice(icon, segment) : _renderMultiPrice(icon, segment, segment.type === "SEA_RAIL");
             }).join('<div class="text-center mb-3 col-md-2">↓</div>');
+
             routeEl.appendChild(segmentsEl);
 
             let dropEl = document.createElement('div');

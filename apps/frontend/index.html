@@ -45,6 +45,13 @@
             vertical-align: middle;
             margin: 0 .5rem;
         }
+
+        .segment--price-variant {
+            padding: 1rem;
+            margin: 1rem;
+            border-radius: 0.25rem;
+            border: 1px solid black;
+        }
     </style>
 </head>
 <body>
@@ -180,25 +187,65 @@
                 elements.push(result);
                 result.remove();
 
-                let sumPrice = 0;
+                let minSumPrice = 0, maxSumPrice = 0, sumPrice = 0;
                 for (const item of result.querySelectorAll(".segments .result-segment")) {
                     const price = item.getAttribute("data-bs-price");
-                    const currency = item.getAttribute("data-bs-currency");
-                    sumPrice += updateResultRates(Number.parseFloat(price), currency, selectedCurrency);
+                    if (price !== "M" && price !== "X") {
+                        const currency = item.getAttribute("data-bs-currency");
+                        const incrementation = updateResultRates(Number.parseFloat(price), currency, selectedCurrency);
+                        minSumPrice += incrementation;
+                        maxSumPrice += incrementation;
+                        continue;
+                    }
+
+                    const priceVariantEls = item.getElementsByClassName("segment--price-variant");
+                    const globalSum = price === "X";
+                    let minimal = -1, maximal = -1;
+
+                    for (const priceVariantEl of priceVariantEls) {
+                        const priceVariant = priceVariantEl.getAttribute("data-bs-price");
+                        const currencyVariant = priceVariantEl.getAttribute("data-bs-currency");
+                        if (!priceVariant || !currencyVariant)
+                            continue;
+
+                        const priceVariantConverted = updateResultRates(Number.parseFloat(priceVariant), currencyVariant, selectedCurrency);
+                        if (globalSum) {
+                            sumPrice += priceVariantConverted;
+                            continue;
+                        }
+
+                        if (minimal === -1 || minimal > priceVariantConverted)
+                            minimal = priceVariantConverted;
+                        if (maximal === -1 || maximal < priceVariantConverted)
+                            maximal = priceVariantConverted;
+                    }
+                    minSumPrice += minimal;
+                    maxSumPrice += maximal;
                 }
 
                 const dropEl = result.getElementsByClassName('drop-off')[0];
                 if (dropEl) {
                     const currency = dropEl.getElementsByClassName('drop-off-currency')[0]?.getAttribute('data-bs-currency');
                     const price = dropEl.getElementsByClassName('drop-off-price')[0]?.textContent;
-                    if (currency && price)
-                        sumPrice += updateResultRates(Number.parseFloat(price), currency, selectedCurrency);
+                    if (currency && price) {
+                        minSumPrice += updateResultRates(Number.parseFloat(price), currency, selectedCurrency);
+                        maxSumPrice += updateResultRates(Number.parseFloat(price), currency, selectedCurrency);
+                    }
                 }
 
-                const price = Math.round((sumPrice + Number.EPSILON) * 100) / 100;
+                const minPrice = Math.round((minSumPrice + Number.EPSILON) * 100) / 100;
+                const maxPrice = Math.round((maxSumPrice + Number.EPSILON) * 100) / 100;
+                sumPrice = Math.round((sumPrice + Number.EPSILON) * 100) / 100;
+
                 keys.push(i++);
-                values.push(price);
-                sumPriceEl.innerHTML = `Суммарная стоимость: ${numberWithSpaces(price)} ${selectedCurrency}`;
+                values.push(sumPrice || minPrice);
+
+                sumPriceEl.innerHTML = "Суммарная стоимость: ";
+                sumPriceEl.innerHTML += numberWithSpaces(sumPrice || minPrice);
+                if (minPrice !== maxPrice)
+                    sumPriceEl.innerHTML += " - " + numberWithSpaces(maxPrice);
+
+                sumPriceEl.innerHTML += ` ${selectedCurrency}`;
             }
 
             keys.sort((a, b) => values[a] - values[b]);
