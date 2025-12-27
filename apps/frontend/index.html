@@ -192,8 +192,7 @@
                     const price = item.getAttribute("data-bs-price");
                     if (price !== "M" && price !== "X") {
                         const currency = item.getAttribute("data-bs-currency");
-                        const conversation = Number.parseFloat(item.getAttribute("data-bs-conversation-percents") ?? 0) / 100 * (currency !== selectedCurrency);
-                        const incrementation = updateResultRates(Number.parseFloat(price), currency, selectedCurrency) * (1 + conversation);
+                        const incrementation = updateResultRates(Number.parseFloat(price), currency, selectedCurrency);
                         minSumPrice += incrementation;
                         maxSumPrice += incrementation;
                         continue;
@@ -209,8 +208,7 @@
                         if (!priceVariant || !currencyVariant)
                             continue;
 
-                        const conversation = Number.parseFloat(priceVariantEl.getAttribute("data-bs-conversation-percents") ?? 0) / 100 * (currencyVariant !== selectedCurrency);
-                        const priceVariantConverted = updateResultRates(Number.parseFloat(priceVariant), currencyVariant, selectedCurrency) * (1 + conversation);
+                        const priceVariantConverted = updateResultRates(Number.parseFloat(priceVariant), currencyVariant, selectedCurrency);
                         if (globalSum) {
                             sumPrice += priceVariantConverted;
                             continue;
