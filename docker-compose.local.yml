@@ -9,6 +9,9 @@ services:
   auth:
     volumes:
       - "./apps/:/apps/:ro"
+  backadmin:
+    volumes:
+      - "./apps/:/apps/:ro"
 
   ### FRONT
   adminfrontbuilder:
@@ -35,6 +38,8 @@ services:
       calculator:
         condition: service_started
       auth:
+        condition: service_started
+      backadmin:
         condition: service_started
       adminfrontbuilder:
         condition: service_completed_successfully
