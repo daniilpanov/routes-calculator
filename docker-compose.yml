@@ -112,6 +112,29 @@ services:
       - "0.0.0.0"
       - "--port"
       - "8081"
+  backadmin:
+    image: danielgreen1806/calculator-python-apps:${DOCKER_PROD_IMAGES_TAG}
+    build:
+      target: "python-apps"
+    env_file:
+      - ".env"
+    restart: always
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges
+    user: 1000:1000
+    expose:
+      - 8082
+    networks:
+      db:
+      reverseproxy:
+    command:
+      - "back_admin.main:app"
+      - "--host"
+      - "0.0.0.0"
+      - "--port"
+      - "8082"
 
   ### PROXY
   reverseproxy:
@@ -124,6 +147,8 @@ services:
       calculator:
         condition: service_started
       auth:
+        condition: service_started
+      backadmin:
         condition: service_started
     restart: always
     cap_drop:
