@@ -35,6 +35,16 @@ services:
       - "--port"
       - "8081"
       - "--reload"
+  backadmin:
+    volumes:
+      - "./apps/:/apps/:ro"
+    command:
+      - "back_admin.main:app"
+      - "--host"
+      - "0.0.0.0"
+      - "--port"
+      - "8082"
+      - "--reload"
 
   ### FRONT
   adminfront:
@@ -71,6 +81,8 @@ services:
       calculator:
         condition: service_started
       auth:
+        condition: service_started
+      backadmin:
         condition: service_started
       adminfront:
         condition: service_started
