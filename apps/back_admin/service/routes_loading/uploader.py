@@ -321,6 +321,7 @@ async def load_routes(db_session, routes_and_drop):
         drop.sea_end_point.city if drop.sea_end_point else None,
         drop.rail_start_point.city if drop.rail_start_point else None,
         drop.rail_end_point.city if drop.rail_end_point else None,
+        drop.container.name,
         drop.company.name,
     ) for drop in existing_drops}
 
@@ -331,6 +332,7 @@ async def load_routes(db_session, routes_and_drop):
                 drop.sea_end_point.city if drop.sea_end_point else None,
                 drop.rail_start_point.city if drop.rail_start_point else None,
                 drop.rail_end_point.city if drop.rail_end_point else None,
+                drop.container.name,
                 drop.company.name,
             )
 
