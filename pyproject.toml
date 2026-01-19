@@ -31,6 +31,8 @@ fastapi = "*"
 jinja2 = "*"
 fastapi_another_jwt_auth = "*"
 uvicorn = { extras = ["standard"], version = "*" }
+gspread = "^6.2.1"
+gspread-dataframe = "^4.0.0"
 
 [tool.poetry.group.dev.dependencies]
 black = {version = "*", python = "^3.12"}
