@@ -19,3 +19,10 @@ class Settings(BaseSettings):
 
     DB_CHARSET: str = "utf8mb4"
     DB_COLLATE: str = "utf8mb4_unicode_ci"
+
+    GSHEETS_URL: str
+    ROUTES_WS: str
+    POINTS_WS: str
+
+    GOOGLE_SERVICE_ACCOUNT_FILE_PATH: str = "back_admin/resources/google_service_account.json"
+    DEFAULT_UPLOADER_FIELDS_CONFIG_PATH: str = "back_admin/resources/uploader_fields_config.json"
