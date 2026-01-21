@@ -80,6 +80,8 @@ services:
       - 8082
     networks:
       local:
+    volumes:
+      - "./apps/back_admin/resources/:/app/back_admin/resources/:r"
     command:
       - "--host"
       - "0.0.0.0"
