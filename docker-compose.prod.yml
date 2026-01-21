@@ -89,12 +89,5 @@ services:
     ports:
       - "${APP_PORT}:80"
 
-  ### WATCHTOWER
-  watchtower:
-    image: containrrr/watchtower:latest
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    command: --interval 180 --cleanup
-
 networks:
   local:
