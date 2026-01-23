@@ -56,18 +56,29 @@ function _renderComment(text) {
     return text ? `<blockquote><p>Комментарий: <i>${text}</i></p></blockquote>` : "";
 }
 
-function _renderOnePriceOfSegment(priceVariant) {
+function _renderOnePriceOfSegment(priceVariant, selectedCurrency) {
     const roundedPrice = Math.round((priceVariant.value + Number.EPSILON) * 100) / 100;
+    const needConversationPercents = priceVariant.conversation_percents
+        && selectedCurrency !== priceVariant.currency
+        && ["RUB", "РУБ"].indexOf(priceVariant.currency) === -1;
+
+    const [ attrInsertion, contentInsertion, sumPriceInsertion ] = (
+        () => needConversationPercents ? [
+            `data-bs-conversation-percents="${priceVariant.conversation_percents}"`,
+            ` + ${priceVariant.conversation_percents}% конвертация`,
+        ] : ["", ""]
+    )();
+
     return `<div class="col-md">
-        <div class="segment--price-variant" data-bs-price="${roundedPrice}" data-bs-currency="${priceVariant.currency}">
+        <div class="segment--price-variant" data-bs-price="${roundedPrice}" data-bs-currency="${priceVariant.currency}"${attrInsertion}>
             <div class="mb-2">Условия: ${priceVariant.cond}</div>
             <div class="mb-2">${priceVariant.container.name}</div>
-            <div class="text-muted">${roundedPrice} ${priceVariant.currency}</div>
+            <div class="text-muted">${roundedPrice} ${priceVariant.currency}${contentInsertion}</div>
         </div>
     </div>`;
 }
 
-function _renderMultiPrice(icon, segment, isMixed) {
+function _renderMultiPrice(icon, segment, isMixed, selectedCurrency) {
     return `
         <div class="align-items-center my-2 result-segment" data-bs-price="${isMixed ? 'X' : 'M'}">
             <div class="route-icon">${icon} &emsp; ${segment.company}</div>
@@ -78,7 +89,7 @@ function _renderMultiPrice(icon, segment, isMixed) {
             <div class="mb-3 row">
                 ${
                     segment.prices
-                        .map(priceVariant => _renderOnePriceOfSegment(priceVariant))
+                        .map(priceVariant => _renderOnePriceOfSegment(priceVariant, selectedCurrency))
                         .join('\n')
                 }
             </div>
@@ -115,7 +126,7 @@ function _renderSinglePrice(icon, segment) {
     `;
 }
 
-async function calculateAndRender(icons) {
+async function calculateAndRender(icons, selectedCurrency) {
     const payload = {
         dispatchDate: dispatchDateInput.value,
         departureId: JSON.parse(departureHiddenInput.value),
@@ -161,7 +172,7 @@ async function calculateAndRender(icons) {
 
                     return segment.price
                         ? _renderSinglePrice(icon, segment)
-                        : _renderMultiPrice(icon, segment, segment.type === "SEA_RAIL");
+                        : _renderMultiPrice(icon, segment, segment.type === "SEA_RAIL", selectedCurrency);
                 })
                 .join('<div class="text-center mb-3 col-md-2">↓</div>');
 
