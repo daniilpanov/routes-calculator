@@ -59,10 +59,10 @@ function _renderComment(text) {
 function _renderOnePriceOfSegment(priceVariant) {
     const roundedPrice = Math.round((priceVariant.value + Number.EPSILON) * 100) / 100;
     return `<div class="col-md">
-        <div class="segment--price-variant" data-bs-price="${roundedPrice}" data-bs-currency="${priceVariant.currency}">
+        <div class="segment--price-variant" data-bs-price="${roundedPrice}" data-bs-currency="${priceVariant.currency}" data-bs-conversation-percents="${priceVariant.conversation_percents}">
             <div class="mb-2">Условия: ${priceVariant.cond}</div>
             <div class="mb-2">${priceVariant.container.name}</div>
-            <div class="text-muted">${roundedPrice} ${priceVariant.currency}</div>
+            <div class="text-muted">${roundedPrice} ${priceVariant.currency}${priceVariant.conversation_percents ? " + " + priceVariant.conversation_percents + "% conv." : ""}</div>
         </div>
     </div>`;
 }
@@ -90,7 +90,7 @@ function _renderMultiPrice(icon, segment, mixed) {
 function _renderSinglePrice(icon, segment) {
     const roundedPrice = Math.round((segment.price + Number.EPSILON) * 100) / 100;
     return `
-        <div class="align-items-center my-2 result-segment" data-bs-price="${roundedPrice}" data-bs-currency="${segment.currency}">
+        <div class="align-items-center my-2 result-segment" data-bs-price="${roundedPrice}" data-bs-currency="${segment.currency}" data-bs-conversation-percents="${priceVariant.conversation_percents}">
             <div class="route-icon">${icon} &emsp; ${segment.company}</div>
             <div class="mb-2">${segment.beginCond ? `Условия: ${segment.beginCond} - ${segment.finishCond}` : ''}</div>
             <div class="mb-2">Ставка действует: ${new Date(segment.effectiveFrom).toLocaleDateString()} — ${new Date(segment.effectiveTo).toLocaleDateString()}</div>
@@ -101,7 +101,7 @@ function _renderSinglePrice(icon, segment) {
                      →
                     <strong>${segment.endPointCountry.toUpperCase()}, ${segment.endPointName}</strong>
                  </div>
-                <div class="text-muted">${roundedPrice} ${segment.currency}</div>
+                <div class="text-muted">${roundedPrice} ${segment.currency}${priceVariant.conversation_percents ? " + " + priceVariant.conversation_percents + "% conv." : ""}</div>
             </div>
             ${_renderComment(segment.comment)}
         </div>
