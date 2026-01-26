@@ -4,32 +4,29 @@ from ..models import DropModel
 from .containers import _map_container
 
 
-def _map_segment(
-    route, price, currency, _type, services, begin_cond=None, finish_cond=None
-):
+def _map_segment(route):
     item = {
         "company": route.company.name,
-        "type": _type,
+        "type": route.type.name,
         "effectiveFrom": route.effective_from,
         "effectiveTo": route.effective_to,
         "startPointCountry": route.start_point.RU_country,
         "startPointName": route.start_point.RU_city,
         "endPointCountry": route.end_point.RU_country,
         "endPointName": route.end_point.RU_city,
-        "container": _map_container(route.container),
-        "price": getattr(route, price),
-        "currency": currency,
-        "services": {
-            k: {"price": getattr(route, k), "currency": c} for k, c in services.items()
-        },
+        "prices": [],
+        "comment": route.comment,
     }
-    if begin_cond is not None:
-        item.update(
-            {
-                "beginCond": begin_cond,
-                "finishCond": finish_cond,
-            }
-        )
+
+    for price in route.prices:
+        item["prices"].append({
+            "container": _map_container(price.container),
+            "value": price.value,
+            "currency": price.currency,
+            "conversation_percents": price.conversation_percents,
+            "cond": price.type,
+        })
+
     return item
 
 
@@ -41,26 +38,14 @@ def _map_route(route_and_drop):
         segments = segments[:-1]
 
     res: list[Any] = [None] * len(segments)
-    _types: list[str | None] = [None] * len(segments)
+    skipped_count = 0
 
     for i, segment in enumerate(segments):
-        if getattr(segment, "filo", None):
-            _types[i] = "sea"
-            res[i] = _map_segment(segment, "filo", "USD", "sea", {}, "FI", "LO")
-        elif getattr(segment, "fifo", None):
-            _types[i] = "sea"
-            res[i] = _map_segment(segment, "fifo", "USD", "sea", {}, "FI", "FOR")
+        mapped_segment = _map_segment(segment)
+        if mapped_segment:
+            res[i - skipped_count] = mapped_segment
         else:
-            _types[i] = "rail"
-            res[i] = (
-                _map_segment(
-                    segment,
-                    "price",
-                    "RUB",
-                    "rail",
-                    {"guard": "RUB"},
-                )
-            )
+            skipped_count += 1
 
     return (res, {"price": drop.price, "currency": drop.currency}) if drop else (res, None)
 

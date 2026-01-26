@@ -1,7 +1,7 @@
 let rates = {};
 
 async function updateRates() {
-    rates = await fetch('/api/rates/').then(res => res.json());;
+    rates = await fetch('/api/rates/').then(res => res.json());
     document.getElementById('USD-rates').innerHTML = rates.USD + ' ₽';
     document.getElementById('EUR-rates').innerHTML = rates.EUR + ' ₽';
     rates.RUB = 1;
@@ -10,5 +10,10 @@ async function updateRates() {
 }
 
 function updateResultRates(price, oldCurrency, newCurrency) {
+    if (oldCurrency.toUpperCase() === "РУБ")
+        oldCurrency = "RUB";
+    if (newCurrency.toUpperCase() === "РУБ")
+        newCurrency = "RUB";
+
     return price / rates[newCurrency] * rates[oldCurrency];
 }

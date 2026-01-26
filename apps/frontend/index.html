@@ -45,6 +45,13 @@
             vertical-align: middle;
             margin: 0 .5rem;
         }
+
+        .segment--price-variant {
+            padding: 1rem;
+            margin: 1rem;
+            border-radius: 0.25rem;
+            border: 1px solid black;
+        }
     </style>
 </head>
 <body>
@@ -180,25 +187,112 @@
                 elements.push(result);
                 result.remove();
 
-                let sumPrice = 0;
+                let minSumPrice = 0, maxSumPrice = 0, sumPrice = 0;
+                let minSumPriceWithConv = 0, maxSumPriceWithConv = 0, sumPriceWithConv = 0;
+                let conversationFound = false;
                 for (const item of result.querySelectorAll(".segments .result-segment")) {
                     const price = item.getAttribute("data-bs-price");
-                    const currency = item.getAttribute("data-bs-currency");
-                    sumPrice += updateResultRates(Number.parseFloat(price), currency, selectedCurrency);
+                    if (price !== "M" && price !== "X") {
+                        const currency = item.getAttribute("data-bs-currency");
+                        const conversation = Number.parseFloat(item.getAttribute("data-bs-conversation-percents") ?? 0)
+                            / 100
+                            * (currency !== selectedCurrency);
+
+                        if (conversation)
+                            conversationFound = true;
+
+                        const incrementation = updateResultRates(Number.parseFloat(price), currency, selectedCurrency);
+                        const incrementationWithConv = incrementation * (1 + conversation);
+
+                        minSumPrice += incrementation;
+                        maxSumPrice += incrementation;
+
+                        minSumPriceWithConv += incrementationWithConv;
+                        maxSumPriceWithConv += incrementationWithConv;
+                        continue;
+                    }
+
+                    const priceVariantEls = item.getElementsByClassName("segment--price-variant");
+                    const globalSum = price === "X";
+                    let minimal = -1, maximal = -1;
+                    let minimalWithConv = -1, maximalWithConv = -1;
+
+                    for (const priceVariantEl of priceVariantEls) {
+                        const priceVariant = priceVariantEl.getAttribute("data-bs-price");
+                        const currencyVariant = priceVariantEl.getAttribute("data-bs-currency");
+                        if (!priceVariant || !currencyVariant)
+                            continue;
+
+                        const conversation = Number.parseFloat(priceVariantEl.getAttribute("data-bs-conversation-percents") ?? 0)
+                            / 100
+                            * (currencyVariant !== selectedCurrency);
+                        const priceVariantParsed = updateResultRates(
+                            Number.parseFloat(priceVariant),
+                            currencyVariant,
+                            selectedCurrency,
+                        );
+                        const priceVariantParsedWithConv = priceVariantParsed * (1 + conversation);
+
+                        if (globalSum) {
+                            sumPrice += priceVariantParsed;
+                            sumPriceWithConv += priceVariantParsedWithConv;
+                            continue;
+                        }
+
+                        if (minimal === -1 || minimal > priceVariantParsedWithConv) {
+                            minimal = priceVariantParsed;
+                            minimalWithConv = priceVariantParsedWithConv;
+                        }
+                        if (maximal === -1 || maximal < priceVariantParsedWithConv) {
+                            maximal = priceVariantParsed;
+                            maximalWithConv = priceVariantParsedWithConv;
+                        }
+                    }
+
+                    minSumPrice += minimal;
+                    maxSumPrice += maximal;
+
+                    minSumPriceWithConv += minimalWithConv;
+                    maxSumPriceWithConv += maximalWithConv;
                 }
 
                 const dropEl = result.getElementsByClassName('drop-off')[0];
                 if (dropEl) {
                     const currency = dropEl.getElementsByClassName('drop-off-currency')[0]?.getAttribute('data-bs-currency');
                     const price = dropEl.getElementsByClassName('drop-off-price')[0]?.textContent;
-                    if (currency && price)
-                        sumPrice += updateResultRates(Number.parseFloat(price), currency, selectedCurrency);
+                    if (currency && price) {
+                        const dropPrice = updateResultRates(Number.parseFloat(price), currency, selectedCurrency);
+                        minSumPrice += dropPrice;
+                        maxSumPrice += dropPrice;
+                        minSumPriceWithConv += dropPrice;
+                        maxSumPriceWithConv += dropPrice;
+                    }
                 }
 
-                const price = Math.round((sumPrice + Number.EPSILON) * 100) / 100;
+                const minPrice = Math.round((minSumPrice + Number.EPSILON) * 100) / 100;
+                const maxPrice = Math.round((maxSumPrice + Number.EPSILON) * 100) / 100;
+                sumPrice = Math.round((sumPrice + Number.EPSILON) * 100) / 100;
+
+                const minPriceWithConv = Math.round((minSumPriceWithConv + Number.EPSILON) * 100) / 100;
+                const maxPriceWithConv = Math.round((maxSumPriceWithConv + Number.EPSILON) * 100) / 100;
+                sumPriceWithConv = Math.round((sumPriceWithConv + Number.EPSILON) * 100) / 100;
+
                 keys.push(i++);
-                values.push(price);
-                sumPriceEl.innerHTML = `Суммарная стоимость: ${numberWithSpaces(price)} ${selectedCurrency}`;
+                values.push(sumPriceWithConv || minPriceWithConv);
+
+                sumPriceEl.innerHTML = "Суммарная стоимость: ";
+                sumPriceEl.innerHTML += numberWithSpaces(sumPrice || minPrice);
+                if (minPrice !== maxPrice)
+                    sumPriceEl.innerHTML += " - " + numberWithSpaces(maxPrice);
+
+                sumPriceEl.innerHTML += ` ${selectedCurrency}`;
+
+                sumPriceEl.innerHTML += "<br>С учётом конвертации:";
+                sumPriceEl.innerHTML += numberWithSpaces(sumPriceWithConv || minPriceWithConv);
+                if (minPriceWithConv !== maxPriceWithConv)
+                    sumPriceEl.innerHTML += " - " + numberWithSpaces(maxPriceWithConv);
+
+                sumPriceEl.innerHTML += ` ${selectedCurrency}`;
             }
 
             keys.sort((a, b) => values[a] - values[b]);
@@ -264,8 +358,11 @@
         const calculateButton = document.getElementById('calculate');
         calculateButton.disabled = true;
 
-        calculateAndRender(icons)
-            .catch(e => showGlobalAlert(`Error: ${e.message}`))
+        calculateAndRender(icons, selectedCurrency)
+            .catch(e => {
+                showGlobalAlert(`Error: ${e.message}`)
+                throw e;
+            })
             .finally(() => calculateButton.disabled = false);
     });
 </script>

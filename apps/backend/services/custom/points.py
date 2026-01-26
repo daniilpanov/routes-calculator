@@ -6,10 +6,10 @@ from backend.mapper_decorator import apply_mapper
 from sqlalchemy import select
 
 from .mappers.points import map_points
-from .models import CompanyModel, PointModel, RailRouteModel, SeaRouteModel
+from .models import CompanyModel, PointModel, RouteModel
 
 
-def _build_stmt(date, route_class, id_field):
+def _build_stmt(date, id_field):
     return (  # noqa: ECE001
         select(
             PointModel,
@@ -17,10 +17,10 @@ def _build_stmt(date, route_class, id_field):
         )
         .distinct()
         .join(
-            route_class,
-            (getattr(route_class, id_field) == PointModel.id)
-            & (route_class.effective_from <= date)
-            & (route_class.effective_to >= date),
+            RouteModel,
+            (getattr(RouteModel, id_field) == PointModel.id)
+            & (RouteModel.effective_from <= date)
+            & (RouteModel.effective_to >= date),
         )
         .join(CompanyModel)
     )
@@ -29,13 +29,10 @@ def _build_stmt(date, route_class, id_field):
 @apply_mapper(map_points)
 async def get_points(date: datetime.date, _=None, *, id_field):
     async with database.session() as session:
-        stmt_from_rail = _build_stmt(date, RailRouteModel, id_field)
-        stmt_from_sea = _build_stmt(date, SeaRouteModel, id_field)
+        stmt = _build_stmt(date, id_field)
+        response = await session.execute(stmt)
 
-        stmt = stmt_from_rail.union(stmt_from_sea)
-        result = await session.execute(stmt)
-
-    return result.all()
+    return response.all()
 
 
 get_departure_points_by_date = partial(get_points, id_field="start_point_id")
