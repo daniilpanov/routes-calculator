@@ -98,6 +98,7 @@ class DropModel(Base):
         "sea_end_point_id",
         "rail_start_point_id",
         "rail_end_point_id",
+        "container_id",
         "company_id",
     )
 
