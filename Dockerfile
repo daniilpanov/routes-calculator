@@ -25,6 +25,24 @@ COPY ./apps/ ./
 ENTRYPOINT ["python3", "-m", "uvicorn"]
 
 
+FROM node:alpine AS frontend
+
+USER "node"
+
+WORKDIR "/app"
+# install
+COPY ./apps/new-frontend/package.json ./package.json
+COPY ./apps/new-frontend/package-lock.json ./package-lock.json
+RUN ["npm", "ci"]
+# run
+COPY ./apps/new-frontend/ ./
+ENTRYPOINT ["npm"]
+
+
+FROM frontend AS frontend-builder
+RUN ["npm", "run", "build"]
+
+
 FROM node:alpine AS frontadmin
 
 USER "node"
@@ -51,6 +69,6 @@ FROM nginx:alpine AS reverseproxy
 COPY ./config/nginx/conf/mime.types /etc/nginx/conf.d/mime.types
 COPY config/nginx/conf/nginx.conf.template /etc/nginx/templates/default.conf.template
 # frontend
-COPY ./apps/frontend/ /www/frontend/
+COPY --from=frontend-builder /app/dist/ /www/frontend/
 # admin frontend
 COPY --from=frontadmin-builder /app/dist/ /www/admin/

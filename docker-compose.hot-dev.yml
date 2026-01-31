@@ -37,6 +37,35 @@ services:
       - "--reload"
 
   ### FRONT
+  frontend:
+    build:
+      target: "frontend"
+    environment:
+      - PORT=${ADMIN_FRONT_PORT}
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges
+    user: "node"
+    volumes:
+      - "./apps/new-frontend/public:/app/public:ro"
+      - "./apps/new-frontend/src:/app/src:ro"
+      - "./apps/new-frontend/index.html:/app/index.html:ro"
+      - "./apps/new-frontend/tsconfig.json:/app/tsconfig.json:ro"
+      - "./apps/new-frontend/tsconfig.app.json:/app/tsconfig.app.json:ro"
+      - "./apps/new-frontend/tsconfig.node.json:/app/tsconfig.node.json:ro"
+      - "./apps/new-frontend/eslint.config.ts:/app/eslint.config.ts:ro"
+      - "./apps/new-frontend/vite.config.ts:/app/vite.config.ts:ro"
+      - "./apps/new-frontend/env.d.ts:/app/end.d.ts:ro"
+      - "./apps/new-frontend/package.json:/app/package.json:ro"
+    expose:
+      - ${FRONTEND_PORT}
+    ports:
+      - "${FRONTEND_PORT}:${FRONTEND_PORT}"
+    networks:
+      reverseproxy:
+    command: ["run", "dev"]
+
   adminfront:
     build:
       target: "frontadmin"
@@ -72,9 +101,10 @@ services:
         condition: service_started
       auth:
         condition: service_started
+      frontend:
+        condition: service_started
       adminfront:
         condition: service_started
     volumes:
       - "./config/nginx/conf/nginx-dev.conf.template:/etc/nginx/templates/default.conf.template:ro"
       - "./config/nginx/conf/mime.types:/etc/nginx/conf.d/mime.types:ro"
-      - "./apps/frontend/:/www/frontend/:ro"
