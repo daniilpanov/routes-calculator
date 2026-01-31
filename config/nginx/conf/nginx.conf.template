@@ -28,6 +28,11 @@ server {
         try_files $uri $uri/ /index.html /404.html;
     }
 
+    location /old {
+        alias /www/old-frontend;
+        index index.html;
+    }
+
     location / {
         if ($http_referer ~* "/admin/api/user/") {
             return 308 $scheme://$http_host/admin/api/user$request_uri;
@@ -37,6 +42,9 @@ server {
         }
         if ($http_referer ~* "/api/") {
             return 308 $scheme://$http_host/api$request_uri;
+        }
+        if ($http_referer ~* "/old/") {
+            return 308 $scheme://$http_host/old$request_uri;
         }
 
         root /www/frontend;

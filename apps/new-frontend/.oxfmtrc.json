@@ -1,0 +1,16 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "semi": true,
+  "singleQuote": false,
+  "insertFinalNewline": true,
+  "trailingComma": "es5",
+  "tabWidth": 4,
+  "overrides": [
+    {
+      "files": ["**/*.json"],
+      "options": {
+        "tabWidth": 2
+      }
+    }
+  ]
+}
