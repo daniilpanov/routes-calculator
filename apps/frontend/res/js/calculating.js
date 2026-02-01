@@ -198,7 +198,7 @@ async function calculateAndRender(icons, selectedCurrency) {
                 dropEl.appendChild(priceSpan);
                 dropEl.appendChild(document.createTextNode(' стоимость drop off'));
             } else
-                dropEl.innerHTML = 'без drop off';
+                dropEl.innerHTML = 'drop off включен';
 
             routeEl.appendChild(dropEl);
 
