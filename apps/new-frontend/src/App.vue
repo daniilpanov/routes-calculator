@@ -1,11 +1,12 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import DropdownSelect from "@/components/DropdownSelect.vue";
+</script>
 
 <template>
-    <h1>You did it!</h1>
-    <p>
-        Visit <a href="https://vuejs.org/" target="_blank" rel="noopener">vuejs.org</a> to read the
-        documentation
-    </p>
+    <DropdownSelect>
+        <div>OK</div>
+        <div>123</div>
+    </DropdownSelect>
 </template>
 
 <style scoped></style>
