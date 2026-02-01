@@ -171,6 +171,7 @@
 
     function updateResults(selectedCurrency) {
         const resultWrappers = [document.getElementById('results-direct'), document.getElementById('results-other')];
+        const needConversation = selectedCurrency === "RUB";
 
         for (const resultsEl of resultWrappers) {
             let i = 0;
@@ -196,7 +197,7 @@
                         const currency = item.getAttribute("data-bs-currency");
                         const conversation = Number.parseFloat(item.getAttribute("data-bs-conversation-percents") ?? 0)
                             / 100
-                            * (currency !== selectedCurrency);
+                            * (needConversation && currency !== selectedCurrency);
 
                         if (conversation)
                             conversationFound = true;
@@ -225,7 +226,7 @@
 
                         const conversation = Number.parseFloat(priceVariantEl.getAttribute("data-bs-conversation-percents") ?? 0)
                             / 100
-                            * (currencyVariant !== selectedCurrency);
+                            * (needConversation && currencyVariant !== selectedCurrency);
                         const priceVariantParsed = updateResultRates(
                             Number.parseFloat(priceVariant),
                             currencyVariant,
