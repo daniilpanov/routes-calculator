@@ -281,22 +281,23 @@
                 keys.push(i++);
                 values.push(sumPriceWithConv || minPriceWithConv);
 
-                sumPriceEl.innerHTML = "Суммарная стоимость: ";
-                sumPriceEl.innerHTML += numberWithSpaces(sumPrice || minPrice);
+                let sumPriceElContent = "<div class='row'><div class='col-md-7'>Суммарная стоимость: </div><div class='col-md-5'><b>";
+                sumPriceElContent += numberWithSpaces(sumPrice || minPrice);
                 if (minPrice !== maxPrice)
-                    sumPriceEl.innerHTML += " - " + numberWithSpaces(maxPrice);
+                    sumPriceElContent += " - " + numberWithSpaces(maxPrice);
 
-                sumPriceEl.innerHTML += ` ${selectedCurrency}`;
+                sumPriceElContent += ` ${selectedCurrency}</b></div></div>`;
 
-                if (!needConversation)
-                    continue;
+                if (needConversation) {
+                    sumPriceElContent += "<div class='row'><div class='col-md-7'>Оплата в рублях по курсу ЦБ на дату выставления счёта: </div><div class='col-md-5'><b>";
+                    sumPriceElContent += numberWithSpaces(sumPriceWithConv || minPriceWithConv);
+                    if (minPriceWithConv !== maxPriceWithConv)
+                        sumPriceElContent += " - " + numberWithSpaces(maxPriceWithConv);
 
-                sumPriceEl.innerHTML += "<br>Оплата в рублях по курсу ЦБ на дату выставления счёта:";
-                sumPriceEl.innerHTML += numberWithSpaces(sumPriceWithConv || minPriceWithConv);
-                if (minPriceWithConv !== maxPriceWithConv)
-                    sumPriceEl.innerHTML += " - " + numberWithSpaces(maxPriceWithConv);
+                    sumPriceElContent += ` ${selectedCurrency}</b></div></div>`;
+                }
 
-                sumPriceEl.innerHTML += ` ${selectedCurrency}`;
+                sumPriceEl.innerHTML = sumPriceElContent;
             }
 
             keys.sort((a, b) => values[a] - values[b]);
