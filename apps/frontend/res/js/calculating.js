@@ -59,6 +59,7 @@ function _renderComment(text) {
 function _renderOnePriceOfSegment(priceVariant, selectedCurrency) {
     const roundedPrice = Math.round((priceVariant.value + Number.EPSILON) * 100) / 100;
     const needConversationPercents = priceVariant.conversation_percents
+        && selectedCurrency === "RUB"
         && selectedCurrency !== priceVariant.currency
         && ["RUB", "РУБ"].indexOf(priceVariant.currency) === -1;
 
