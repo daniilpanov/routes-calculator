@@ -41,6 +41,7 @@ async def find_all_paths(
     departure_id: str,
     destination_id: str,
     wte_ids: list[str],
+    _: bool = False,
 ):
     async with aiohttp.ClientSession() as session:
         coroutines = [

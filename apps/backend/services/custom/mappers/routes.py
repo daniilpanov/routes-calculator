@@ -5,7 +5,7 @@ from .containers import _map_container
 
 
 def _map_segment(route):
-    item = {
+    return {
         "company": route.company.name,
         "type": route.type.name,
         "effectiveFrom": route.effective_from,
@@ -24,11 +24,9 @@ def _map_segment(route):
         } for price in route.prices],
     }
 
-    return item
 
-
-def _map_route(route_and_drop):
-    segments = route_and_drop
+def _map_route(route_and_drop_and_datecheck):
+    segments, may_route_be_invalid = route_and_drop_and_datecheck
     drop = None
     if isinstance(segments[-1], DropModel) or not segments[-1]:
         drop = segments[-1]
@@ -44,8 +42,11 @@ def _map_route(route_and_drop):
         else:
             skipped_count += 1
 
-    return (res, {"price": drop.price, "currency": drop.currency}) if drop else (res, None)
+    return (
+        (res, {"price": drop.price, "currency": drop.currency}, may_route_be_invalid)
+        if drop else (res, None, may_route_be_invalid)
+    )
 
 
-def map_routes(routes_and_drops):
-    return map(_map_route, routes_and_drops)
+def map_routes(routes_and_drops_and_datecheck):
+    return map(_map_route, routes_and_drops_and_datecheck)
