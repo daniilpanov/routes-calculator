@@ -56,16 +56,15 @@ function _renderComment(text) {
     return text ? `<blockquote><p>Комментарий: <i>${text}</i></p></blockquote>` : "";
 }
 
-function _renderOnePriceOfSegment(priceVariant, selectedCurrency) {
+function _renderOnePriceOfSegment(priceVariant) {
     const roundedPrice = Math.round((priceVariant.value + Number.EPSILON) * 100) / 100;
     const needConversationPercents = priceVariant.conversation_percents
-        && selectedCurrency !== priceVariant.currency
         && ["RUB", "РУБ"].indexOf(priceVariant.currency) === -1;
 
-    const [ attrInsertion, contentInsertion, sumPriceInsertion ] = (
+    const [ attrInsertion, contentInsertion ] = (
         () => needConversationPercents ? [
             `data-bs-conversation-percents="${priceVariant.conversation_percents}"`,
-            ` + ${priceVariant.conversation_percents}% конвертация`,
+            ` + ${priceVariant.conversation_percents}% конвертация в РУБ`,
         ] : ["", ""]
     )();
 
