@@ -14,18 +14,15 @@ def _map_segment(route):
         "startPointName": route.start_point.RU_city,
         "endPointCountry": route.end_point.RU_country,
         "endPointName": route.end_point.RU_city,
-        "prices": [],
         "comment": route.comment,
-    }
-
-    for price in route.prices:
-        item["prices"].append({
+        "prices": [{
             "container": _map_container(price.container),
             "value": price.value,
             "currency": price.currency,
             "conversation_percents": price.conversation_percents,
             "cond": price.type,
-        })
+        } for price in route.prices],
+    }
 
     return item
 
