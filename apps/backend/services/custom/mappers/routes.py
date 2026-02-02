@@ -27,8 +27,8 @@ def _map_segment(route):
     }
 
 
-def _map_route(route_and_drop: list[Base]):
-    segments = route_and_drop
+def _map_route(route_and_drop_and_datecheck: tuple[list[Base], bool]):
+    segments, may_route_be_invalid = route_and_drop_and_datecheck
     drop: DropModel | None = None
     if isinstance(segments[-1], DropModel) or not segments[-1]:
         drop = segments[-1]
@@ -44,8 +44,11 @@ def _map_route(route_and_drop: list[Base]):
         else:
             skipped_count += 1
 
-    return (res, {"price": drop.price, "currency": drop.currency}) if drop else (res, None)
+    return (
+        (res, {"price": drop.price, "currency": drop.currency}, may_route_be_invalid)
+        if drop else (res, None, may_route_be_invalid)
+    )
 
 
-def map_routes(routes_and_drops: list[list[Base]]):
-    return map(_map_route, routes_and_drops)
+def map_routes(routes_and_drops_and_datecheck: list[tuple[list[Base], bool]]):
+    return map(_map_route, routes_and_drops_and_datecheck)
