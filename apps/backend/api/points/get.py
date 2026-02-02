@@ -32,7 +32,7 @@ async def all_departure_by_date(date: datetime.date):
     # from FESCO
     await _add_data(prepared_from, fesco.get_departure_points_by_date(date))
     # from CUSTOM
-    await _add_data(prepared_from, custom.get_departure_points_by_date(date))
+    await _add_data(prepared_from, custom.get_departure_points())
 
     result = {}
     for loc, data in prepared_from.items():
@@ -53,7 +53,7 @@ async def all_destination_by_date(date: datetime.date, departure_point_id: str):
         )
     # from CUSTOM
     for _id in departure_ids.values():
-        await _add_data(prepared_to, custom.get_destination_points_by_date(date, _id))
+        await _add_data(prepared_to, custom.get_destination_points())
 
     result = {}
     for loc, data in prepared_to.items():
