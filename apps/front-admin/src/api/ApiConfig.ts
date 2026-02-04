@@ -5,4 +5,27 @@ export const API_ENDPOINTS = {
         REFRESH: "/admin/api/user/token/refresh",
         ME: "/admin/api/user/me",
     },
+    ROUTES: {
+        GET: "/admin/api/routes/",
+        CREATE: "/admin/api/routes/add",
+        DELETE: "/admin/api/routes/delete",
+        EDIT: "/admin/api/routes/edit",
+    },
+    POINTS: {
+        SEARCH: "/admin/api/points/{point_name}/",
+        GET: "/admin/api/points",
+        ADD: "/admin/api/points/add",
+    },
+    CONTAINERS: {
+        GET: "/admin/api/container/",
+    },
+    COMPANIES: {
+        GET: "/admin/api/company/",
+    },
+    DROPS: {
+        GET: "/admin/api/drop/",
+        ADD: "/admin/api/drop/",
+        DELETE: "/admin/api/drop/",
+        EDIT: "/admin/api/drop/",
+    },
 };

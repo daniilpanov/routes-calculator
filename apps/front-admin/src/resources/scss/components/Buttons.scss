@@ -1,0 +1,40 @@
+@import "../variables";
+
+.control_btn{
+  margin-top: 5px;
+  background: rgba(255, 255, 255, .9);
+  padding: 0 15px;
+  display: flex;
+  color: #444;
+  font-size: 15px;
+  height: 40px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 5px;
+  text-decoration: none;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.3s;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.05);
+  }
+
+  &.accept {
+    &:hover {
+      background: rgb(0, 255, 146);
+    }
+  }
+  &.cancel {
+    &:hover {
+      background: rgba(225, 0, 0, 0.53);
+    }
+  }
+  &.edit {
+    &:hover {
+      background: rgb(255, 210, 0);
+    }
+  }
+}
+
+

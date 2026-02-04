@@ -20,6 +20,19 @@ COPY ./apps/auth/ ./auth/
 ENTRYPOINT ["python3", "-m", "uvicorn", "auth.main:app"]
 
 
+FROM python:3.12.11 AS backadmin
+
+WORKDIR "/app"
+# install
+COPY ./requirements.txt ./
+RUN ["python3", "-m", "pip", "install", "--no-deps", "--no-cache-dir", "-r", "requirements.txt"]
+
+WORKDIR "/app"
+# run
+COPY ./apps/back_admin/ ./back_admin/
+ENTRYPOINT ["python3", "-m", "uvicorn", "back_admin.main:app"]
+
+
 FROM node:alpine AS frontadmin
 
 ENV VITE_PUBLIC_URL=/admin

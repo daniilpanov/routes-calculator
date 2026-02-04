@@ -12,21 +12,23 @@
   }
 }
 
-.sidebar {
-  position: relative;
-  max-width: 15dvw;
+.sidebar, .sidebar-relative {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 15dvw;
   height: 100dvh;
   background: variables.$base_background;
   border-right: 1px solid variables.$base_background;
   overflow-y: auto;
+  z-index: 1;
 
   @media (max-width: 1000px) {
-    max-width: 25dvw;
+    width: 25dvw;
   }
 
   @media (max-width: variables.$mobile_max_width) {
     position: fixed;
-    max-width: 100dvw;
     width: 100dvw;
     left: -100dvw;
     transition: left .5s ease-in-out;
@@ -41,6 +43,10 @@
       right: 10px;
     }
   }
+}
+
+.sidebar-relative {
+  position: relative;
 }
 
 .logo-wrapper {
