@@ -8,7 +8,6 @@ const cargoWeightInput = document.getElementById('cargoWeight');
 const containerTypeInput = document.getElementById('containerType');
 
 dispatchDateInput.valueAsDate = dispatchDateInput.valueAsDate || new Date();
-dispatchDateInput.min = dispatchDateInput.min || dispatchDateInput.value;
 
 const departures = { data: {} };
 
