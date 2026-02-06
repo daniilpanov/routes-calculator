@@ -1,4 +1,5 @@
 const dispatchDateInput = document.getElementById('dispatchDate');
+const showAllRoutesCheckbox = document.getElementById('showAllRoutes');
 const departureInput = document.getElementById('departure');
 const destinationInput = document.getElementById('destination');
 const departureHiddenInput = document.getElementById('departureId');
@@ -7,7 +8,6 @@ const cargoWeightInput = document.getElementById('cargoWeight');
 const containerTypeInput = document.getElementById('containerType');
 
 dispatchDateInput.valueAsDate = dispatchDateInput.valueAsDate || new Date();
-dispatchDateInput.min = dispatchDateInput.min || dispatchDateInput.value;
 
 const departures = { data: {} };
 
@@ -59,6 +59,7 @@ function _renderComment(text) {
 function _renderOnePriceOfSegment(priceVariant, selectedCurrency) {
     const roundedPrice = Math.round((priceVariant.value + Number.EPSILON) * 100) / 100;
     const needConversationPercents = priceVariant.conversation_percents
+        && selectedCurrency === "RUB"
         && selectedCurrency !== priceVariant.currency
         && ["RUB", "РУБ"].indexOf(priceVariant.currency) === -1;
 
@@ -129,6 +130,7 @@ function _renderSinglePrice(icon, segment) {
 async function calculateAndRender(icons, selectedCurrency) {
     const payload = {
         dispatchDate: dispatchDateInput.value,
+        onlyInSelectedDateRange: !showAllRoutesCheckbox.checked ?? false,
         departureId: JSON.parse(departureHiddenInput.value),
         destinationId: JSON.parse(destinationHiddenInput.value),
         cargoWeight: cargoWeightInput.value,
@@ -157,9 +159,20 @@ async function calculateAndRender(icons, selectedCurrency) {
         const container = wrappers[i];
         container.innerHTML = '';
 
-        data.forEach(([route, drop]) => {
+        data.forEach(([route, drop, mayRouteBeInvalid]) => {
             const routeEl = document.createElement('div');
             routeEl.className = 'p-3 mb-4 border rounded shadow-sm result-item';
+
+            if (mayRouteBeInvalid) {
+                routeEl.innerHTML = `
+                <div class="alert alert-warning d-flex align-items-center" role="alert">
+                  <svg class="bi flex-shrink-0 me-2" width="24" height="24" role="img" aria-label="Warning:"><use xlink:href="#exclamation-triangle-fill"/></svg>
+                  <div>
+                    Маршрут может быть неактуален
+                  </div>
+                </div>
+                `;
+            }
 
             const segmentsEl = document.createElement('div');
             segmentsEl.className = 'segments';
@@ -183,7 +196,7 @@ async function calculateAndRender(icons, selectedCurrency) {
             let dropEl = document.createElement('div');
             dropEl.className = 'drop-off';
 
-            if (drop) {
+            if (drop?.price) {
                 const priceSpan = document.createElement('span');
                 priceSpan.className = 'drop-off-price';
                 priceSpan.innerHTML = drop.price;
