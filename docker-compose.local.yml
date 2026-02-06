@@ -85,6 +85,24 @@ services:
       - "0.0.0.0"
       - "--port"
       - "8081"
+  backadmin:
+    build:
+      dockerfile: "local.Dockerfile"
+      target: "calculator"
+    env_file:
+      - ".env"
+    volumes:
+      - "./apps/back_admin/:/app/back_admin/:r"
+    expose:
+      - 8082
+    networks:
+      local:
+    command:
+      - "back_admin.main:app"
+      - "--host"
+      - "0.0.0.0"
+      - "--port"
+      - "8082"
 
   ### FRONT
   adminfrontbuilder:
@@ -106,6 +124,8 @@ services:
       calculator:
         condition: service_started
       auth:
+        condition: service_started
+      backadmin:
         condition: service_started
       adminfrontbuilder:
         condition: service_completed_successfully

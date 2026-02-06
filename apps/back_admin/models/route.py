@@ -1,7 +1,7 @@
 import datetime
 import enum
 
-from backend.database import Base
+from back_admin.database import Base
 from sqlalchemy import DateTime, Enum, ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
