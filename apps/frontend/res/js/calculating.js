@@ -194,7 +194,7 @@ async function calculateAndRender(icons, selectedCurrency) {
             let dropEl = document.createElement('div');
             dropEl.className = 'drop-off';
 
-            if (drop) {
+            if (drop?.price) {
                 const priceSpan = document.createElement('span');
                 priceSpan.className = 'drop-off-price';
                 priceSpan.innerHTML = drop.price;
