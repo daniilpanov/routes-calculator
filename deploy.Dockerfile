@@ -1,4 +1,4 @@
-FROM python:3.12.11 AS backend
+FROM python:3.12-slim AS backend
 
 WORKDIR "/app"
 # install
@@ -9,7 +9,7 @@ COPY ./apps/backend/ ./backend/
 ENTRYPOINT ["python3", "-m", "uvicorn", "backend.main:app"]
 
 
-FROM python:3.12.11 AS auth
+FROM python:3.12-slim AS auth
 
 WORKDIR "/app"
 # install

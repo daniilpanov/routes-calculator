@@ -1,4 +1,4 @@
-FROM python:3.12.11 AS calculator
+FROM python:3.12-slim AS calculator
 
 # install
 COPY ./requirements.txt ./
