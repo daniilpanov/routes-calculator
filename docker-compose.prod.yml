@@ -8,8 +8,8 @@ services:
       MYSQL_PASSWORD: "${DB_PASS}"
       MYSQL_DATABASE: "${DB_NAME}"
     volumes:
-      - "./database/backups/:/backup:rw"
-      - "./database/mariadb-data/:/var/lib/mysql/:rw"
+      - "./config/database/backups/:/backup:rw"
+      - "./config/database/mariadb-data/:/var/lib/mysql/:rw"
     expose:
       - 3306
     ports:
