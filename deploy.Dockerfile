@@ -1,30 +1,20 @@
-FROM python:3.12-slim AS backend
+FROM python:3.12-slim AS python-apps
 
-WORKDIR "/app"
-# install
+# install requirements
 COPY ./requirements.txt ./
 RUN ["python3", "-m", "pip", "install", "--no-deps", "--no-cache-dir", "-r", "requirements.txt"]
+
+WORKDIR "/apps"
 # run
-COPY ./apps/backend/ ./backend/
-ENTRYPOINT ["python3", "-m", "uvicorn", "backend.main:app"]
-
-
-FROM python:3.12-slim AS auth
-
-WORKDIR "/app"
-# install
-COPY ./requirements.txt ./
-RUN ["python3", "-m", "pip", "install", "--no-deps", "--no-cache-dir", "-r", "requirements.txt"]
-# run
-COPY ./apps/auth/ ./auth/
-ENTRYPOINT ["python3", "-m", "uvicorn", "auth.main:app"]
+COPY ./apps/ ./
+ENTRYPOINT ["python3", "-m", "uvicorn"]
 
 
 FROM node:alpine AS frontadmin
 
 ENV VITE_PUBLIC_URL=/admin
 WORKDIR "/app"
-# install
+# install dependencies
 COPY ./apps/front-admin/package.json ./
 COPY ./apps/front-admin/package-lock.json ./
 RUN ["npm", "ci"]

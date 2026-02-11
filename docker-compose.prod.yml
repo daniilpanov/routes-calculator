@@ -47,7 +47,7 @@ services:
 
   ### BACK
   calculator:
-    image: danielgreen1806/calculator-backend:${DOCKER_PROD_IMAGES_TAG}
+    image: danielgreen1806/calculator-python-apps:${DOCKER_PROD_IMAGES_TAG}
     env_file:
       - ".env"
     expose:
@@ -55,12 +55,13 @@ services:
     networks:
       local:
     command:
+      - "backend.main:app"
       - "--host"
       - "0.0.0.0"
       - "--port"
       - "8080"
   auth:
-    image: danielgreen1806/auth-backend:${DOCKER_PROD_IMAGES_TAG}
+    image: danielgreen1806/calculator-python-apps:${DOCKER_PROD_IMAGES_TAG}
     env_file:
       - ".env"
     expose:
@@ -68,6 +69,7 @@ services:
     networks:
       local:
     command:
+      - "auth.main:app"
       - "--host"
       - "0.0.0.0"
       - "--port"
