@@ -57,7 +57,7 @@ services:
     ports:
       - "${ADMIN_FRONT_PORT}:${ADMIN_FRONT_PORT}"
     networks:
-      local:
+      reverseproxy:
     command: ["start"]
 
   ### PROXY

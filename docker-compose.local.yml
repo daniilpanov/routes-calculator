@@ -19,8 +19,6 @@ services:
       - REACT_ROUTING_MAIN_SITE=/
     volumes:
       - "./apps/front-admin/:/app:rw"
-    networks:
-      local:
     command:
       - "npm"
       - "run"
