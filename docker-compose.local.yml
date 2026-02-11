@@ -1,9 +1,7 @@
 services:
   ### DATABASE
   database:
-    build:
-      dockerfile: "local.Dockerfile"
-      target: "database"
+    image: mariadb:latest
     environment:
       MARIADB_RANDOM_ROOT_PASSWORD: 1
       MARIADB_USER: "${DB_USER}"
@@ -16,6 +14,7 @@ services:
       - 3306
     networks:
       local:
+    entrypoint: [ "docker-entrypoint.sh", "mariadbd" ]
     healthcheck:
       test: >
         sh -c '
@@ -33,9 +32,7 @@ services:
   dbadmin:
     depends_on:
       - database
-    build:
-      dockerfile: "local.Dockerfile"
-      target: "dbadmin"
+    image: phpmyadmin:latest
     expose:
       - 80
     ports:
@@ -51,8 +48,7 @@ services:
     depends_on:
       - database
     build:
-      dockerfile: "local.Dockerfile"
-      target: "calculator"
+      target: "python-apps"
     env_file:
       - ".env"
     volumes:
@@ -69,8 +65,7 @@ services:
       - "8080"
   auth:
     build:
-      dockerfile: "local.Dockerfile"
-      target: "calculator"
+      target: "python-apps"
     env_file:
       - ".env"
     volumes:
@@ -89,8 +84,7 @@ services:
   ### FRONT
   adminfrontbuilder:
     build:
-      dockerfile: "local.Dockerfile"
-      target: "frontadmin"
+      target: "frontadmin-builder"
     environment:
       - VITE_PUBLIC_URL=/admin
       - REACT_ROUTING_MAIN_SITE=/
@@ -98,7 +92,10 @@ services:
       - "./apps/front-admin/:/app:rw"
     networks:
       local:
-    command: ["run", "build"]
+    command:
+      - "npm"
+      - "run"
+      - "build"
 
   ### PROXY
   reverseproxy:
@@ -110,11 +107,10 @@ services:
       adminfrontbuilder:
         condition: service_completed_successfully
     build:
-      dockerfile: "local.Dockerfile"
       target: "reverseproxy"
     restart: unless-stopped
     volumes:
-      - "./config/nginx/conf/nginx-prod.conf.template:/etc/nginx/templates/default.conf.template:ro"
+      - "./config/nginx/conf/nginx.conf.template:/etc/nginx/templates/default.conf.template:ro"
       - "./config/nginx/conf/mime.types:/etc/nginx/conf.d/mime.types:ro"
       - "./apps/frontend/:/www/frontend/:ro"
       - "./apps/front-admin/dist/:/www/admin/:ro"

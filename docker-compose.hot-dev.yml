@@ -1,9 +1,7 @@
 services:
   ### DATABASE
   database:
-    build:
-      dockerfile: "local.Dockerfile"
-      target: "database"
+    image: mariadb:latest
     environment:
       MARIADB_RANDOM_ROOT_PASSWORD: 1
       MARIADB_USER: "${DB_USER}"
@@ -34,9 +32,7 @@ services:
   dbadmin:
     depends_on:
       - database
-    build:
-      dockerfile: "local.Dockerfile"
-      target: "dbadmin"
+    image: phpmyadmin:latest
     expose:
       - 80
     ports:
@@ -54,12 +50,11 @@ services:
     depends_on:
       - database
     build:
-      dockerfile: "local.Dockerfile"
-      target: "calculator"
+      target: "python-apps"
     env_file:
       - ".env"
     volumes:
-      - "./apps/backend/:/app/backend/:r"
+      - "./apps/:/apps/:ro"
     expose:
       - 8080
     networks:
@@ -73,12 +68,11 @@ services:
       - "--reload"
   auth:
     build:
-      dockerfile: "local.Dockerfile"
-      target: "calculator"
+      target: "python-apps"
     env_file:
       - ".env"
     volumes:
-      - "./apps/auth/:/app/auth/:r"
+      - "./apps/:/apps/:ro"
     expose:
       - 8081
     networks:
@@ -94,7 +88,6 @@ services:
   ### FRONT
   adminfront:
     build:
-      dockerfile: "local.Dockerfile"
       target: "frontadmin"
     environment:
       - DANGEROUSLY_DISABLE_HOST_CHECK=true
@@ -126,7 +119,6 @@ services:
       adminfront:
         condition: service_started
     build:
-      dockerfile: "local.Dockerfile"
       target: "reverseproxy"
     env_file:
       - ".env"

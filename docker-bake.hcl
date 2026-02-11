@@ -8,23 +8,23 @@ group "default" {
 
 target "python-apps" {
   context = "."
-  dockerfile = "deploy.Dockerfile"
+  dockerfile = "Dockerfile"
   target = "python-apps"
   tags = ["danielgreen1806/calculator-python-apps:${TAG}"]
 }
 
-target "frontadmin" {
+target "frontadmin-builder" {
   context = "."
-  dockerfile = "deploy.Dockerfile"
-  target = "frontadmin"
+  dockerfile = "Dockerfile"
+  target = "frontadmin-builder"
 }
 
 target "reverseproxy" {
   context = "."
-  dockerfile = "deploy.Dockerfile"
+  dockerfile = "Dockerfile"
   target = "reverseproxy"
   tags = ["danielgreen1806/calculator-reverseproxy:${TAG}"]
   contexts = {
-    frontadmin = "target:frontadmin"
+    frontadmin-builder = "target:frontadmin-builder"
   }
 }

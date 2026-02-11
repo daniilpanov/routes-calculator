@@ -12,14 +12,19 @@ ENTRYPOINT ["python3", "-m", "uvicorn"]
 
 FROM node:alpine AS frontadmin
 
-ENV VITE_PUBLIC_URL=/admin
 WORKDIR "/app"
-# install dependencies
-COPY ./apps/front-admin/package.json ./
-COPY ./apps/front-admin/package-lock.json ./
+# install
+COPY ./apps/front-admin/package.json ./package.json
+COPY ./apps/front-admin/package-lock.json ./package-lock.json
 RUN ["npm", "ci"]
-# build
-COPY ./apps/front-admin/ .
+# run
+COPY ./apps/front-admin/ ./
+ENTRYPOINT ["npm"]
+
+
+FROM frontadmin AS frontadmin-builder
+
+ENV VITE_PUBLIC_URL=/admin
 RUN ["npm", "run", "build"]
 
 
@@ -27,8 +32,8 @@ FROM nginx:alpine AS reverseproxy
 
 # config
 COPY ./config/nginx/conf/mime.types /etc/nginx/conf.d/mime.types
-COPY ./config/nginx/conf/nginx-prod.conf.template /etc/nginx/templates/default.conf.template
+COPY config/nginx/conf/nginx.conf.template /etc/nginx/templates/default.conf.template
 # frontend
 COPY ./apps/frontend/ /www/frontend/
 # admin frontend
-COPY --from=frontadmin /app/dist/ /www/admin/
+COPY --from=frontadmin-builder /app/dist/ /www/admin/
