@@ -12,8 +12,6 @@ services:
       - "./config/database/mariadb-data/:/var/lib/mysql/:rw"
     expose:
       - 3306
-    ports:
-      - "3306:3306"
     networks:
       local:
     healthcheck:
@@ -30,6 +28,7 @@ services:
         '
       interval: 30m
       retries: 3
+      start_period: 1m
 
   dbadmin:
     depends_on:
@@ -48,6 +47,8 @@ services:
   ### BACK
   calculator:
     image: danielgreen1806/calculator-python-apps:${DOCKER_PROD_IMAGES_TAG}
+    build:
+      target: "python-apps"
     env_file:
       - ".env"
     expose:
@@ -62,6 +63,8 @@ services:
       - "8080"
   auth:
     image: danielgreen1806/calculator-python-apps:${DOCKER_PROD_IMAGES_TAG}
+    build:
+      target: "python-apps"
     env_file:
       - ".env"
     expose:
@@ -83,6 +86,8 @@ services:
       auth:
         condition: service_started
     image: danielgreen1806/calculator-reverseproxy:${DOCKER_PROD_IMAGES_TAG}
+    build:
+      target: "reverseproxy"
     env_file:
       - ".env"
     restart: unless-stopped

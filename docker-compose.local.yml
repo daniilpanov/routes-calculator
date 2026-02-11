@@ -1,84 +1,14 @@
-services:
-  ### DATABASE
-  database:
-    image: mariadb:latest
-    environment:
-      MYSQL_RANDOM_ROOT_PASSWORD: 1
-      MYSQL_USER: "${DB_USER}"
-      MYSQL_PASSWORD: "${DB_PASS}"
-      MYSQL_DATABASE: "${DB_NAME}"
-    volumes:
-      - "./config/database/backups/:/backup:rw"
-      - "./config/database/mariadb-data/:/var/lib/mysql/:rw"
-    expose:
-      - 3306
-    networks:
-      local:
-    healthcheck:
-      test: >
-        sh -c '
-        mariadb-dump -u$${MYSQL_USER} -p$${MYSQL_PASSWORD} $${MYSQL_DATABASE} > /backup/last_dump.sql 2>/backup/dump_error.log;
-        if [ $$? -eq 0 ]; then
-        gzip /backup/last_dump.sql -c > /backup/$$(date -I)-dump.gz;
-        rm /backup/last_dump.sql;
-        exit 0;
-        else
-        exit 1;
-        fi
-        '
-      interval: 30m
-      retries: 3
-  dbadmin:
-    depends_on:
-      - database
-    image: phpmyadmin:latest
-    expose:
-      - 80
-    ports:
-      - "${ADMINER_PORT}:80"
-    networks:
-      local:
-    environment:
-      PMA_HOST: "${DB_HOST}"
-      PMA_PORT: 3306
+include:
+  - docker-compose.yml
 
+services:
   ### BACK
   calculator:
-    depends_on:
-      - database
-    build:
-      target: "python-apps"
-    env_file:
-      - ".env"
     volumes:
-      - "./apps/backend/:/app/backend/:r"
-    expose:
-      - 8080
-    networks:
-      local:
-    command:
-      - "backend.main:app"
-      - "--host"
-      - "0.0.0.0"
-      - "--port"
-      - "8080"
+      - "./apps/:/apps/:ro"
   auth:
-    build:
-      target: "python-apps"
-    env_file:
-      - ".env"
     volumes:
-      - "./apps/auth/:/app/auth/:r"
-    expose:
-      - 8081
-    networks:
-      local:
-    command:
-      - "auth.main:app"
-      - "--host"
-      - "0.0.0.0"
-      - "--port"
-      - "8081"
+      - "./apps/:/apps/:ro"
 
   ### FRONT
   adminfrontbuilder:
@@ -105,18 +35,8 @@ services:
         condition: service_started
       adminfrontbuilder:
         condition: service_completed_successfully
-    build:
-      target: "reverseproxy"
-    restart: unless-stopped
     volumes:
       - "./config/nginx/conf/nginx.conf.template:/etc/nginx/templates/default.conf.template:ro"
       - "./config/nginx/conf/mime.types:/etc/nginx/conf.d/mime.types:ro"
       - "./apps/frontend/:/www/frontend/:ro"
       - "./apps/front-admin/dist/:/www/admin/:ro"
-    networks:
-      local:
-    ports:
-      - "${APP_PORT}:80"
-
-networks:
-  local:
