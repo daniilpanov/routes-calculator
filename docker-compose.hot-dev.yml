@@ -14,7 +14,6 @@ services:
       - 3306
     networks:
       local:
-    entrypoint: [ "docker-entrypoint.sh", "mariadbd" ]
     healthcheck:
       test: >
         sh -c '
