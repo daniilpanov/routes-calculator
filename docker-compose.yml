@@ -10,6 +10,7 @@ services:
     volumes:
       - "./config/database/backups/:/backup:rw"
       - "./config/database/mariadb-data/:/var/lib/mysql/:rw"
+    restart: always
     expose:
       - 3306
     networks:
@@ -37,6 +38,7 @@ services:
       PMA_PORT: 3306
     depends_on:
       - database
+    restart: always
     expose:
       - 80
     ports:
@@ -51,6 +53,7 @@ services:
       target: "python-apps"
     env_file:
       - ".env"
+    restart: always
     expose:
       - 8080
     networks:
@@ -68,6 +71,7 @@ services:
       target: "python-apps"
     env_file:
       - ".env"
+    restart: always
     expose:
       - 8081
     networks:
@@ -92,7 +96,7 @@ services:
         condition: service_started
       auth:
         condition: service_started
-    restart: unless-stopped
+    restart: always
     networks:
       reverseproxy:
     ports:
