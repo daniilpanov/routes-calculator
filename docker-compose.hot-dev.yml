@@ -45,6 +45,11 @@ services:
       - PORT=${ADMIN_FRONT_PORT}
       - VITE_PUBLIC_URL=/admin
       - REACT_ROUTING_MAIN_SITE=/
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges
+    user: "node"
     volumes:
       - "./apps/front-admin/public:/app/public:ro"
       - "./apps/front-admin/src:/app/src:ro"

@@ -17,6 +17,11 @@ services:
     environment:
       - VITE_PUBLIC_URL=/admin
       - REACT_ROUTING_MAIN_SITE=/
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges
+    user: "node"
     volumes:
       - "./apps/front-admin/:/app:rw"
     command:

@@ -11,6 +11,18 @@ services:
       - "./config/database/backups/:/backup:rw"
       - "./config/database/mariadb-data/:/var/lib/mysql/:rw"
     restart: always
+    cap_drop:
+      - ALL
+    cap_add:
+      - DAC_OVERRIDE
+      - SETUID
+      - SETGID
+      - CHOWN
+      - FOWNER
+      - SYS_NICE
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges
     expose:
       - 3306
     networks:
@@ -39,6 +51,11 @@ services:
     depends_on:
       - database
     restart: always
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges
+    user: 33:33  # Apache UID:GID
     expose:
       - 80
     ports:
@@ -56,6 +73,11 @@ services:
     depends_on:
       - database
     restart: always
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges
+    user: 1000:1000
     expose:
       - 8080
     networks:
@@ -74,6 +96,11 @@ services:
     env_file:
       - ".env"
     restart: always
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges
+    user: 1000:1000
     expose:
       - 8081
     networks:
@@ -99,6 +126,14 @@ services:
       auth:
         condition: service_started
     restart: always
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+    security_opt:
+      - no-new-privileges
     networks:
       reverseproxy:
     ports:
