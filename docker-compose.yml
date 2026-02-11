@@ -31,18 +31,18 @@ services:
       start_period: 1m
 
   dbadmin:
+    image: phpmyadmin:latest
+    environment:
+      PMA_HOST: "${DB_HOST}"
+      PMA_PORT: 3306
     depends_on:
       - database
-    image: phpmyadmin:latest
     expose:
       - 80
     ports:
       - "${ADMINER_PORT}:80"
     networks:
       db:
-    environment:
-      PMA_HOST: "${DB_HOST}"
-      PMA_PORT: 3306
 
   ### BACK
   calculator:
@@ -82,16 +82,16 @@ services:
 
   ### PROXY
   reverseproxy:
-    depends_on:
-      calculator:
-        condition: service_started
-      auth:
-        condition: service_started
     image: danielgreen1806/calculator-reverseproxy:${DOCKER_PROD_IMAGES_TAG}
     build:
       target: "reverseproxy"
     env_file:
       - ".env"
+    depends_on:
+      calculator:
+        condition: service_started
+      auth:
+        condition: service_started
     restart: unless-stopped
     networks:
       reverseproxy:
