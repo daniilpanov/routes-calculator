@@ -3,10 +3,10 @@ services:
   database:
     image: mariadb:latest
     environment:
-      MARIADB_RANDOM_ROOT_PASSWORD: 1
-      MARIADB_USER: "${DB_USER}"
-      MARIADB_PASSWORD: "${DB_PASS}"
-      MARIADB_DATABASE: "${DB_NAME}"
+      MYSQL_RANDOM_ROOT_PASSWORD: 1
+      MYSQL_USER: "${DB_USER}"
+      MYSQL_PASSWORD: "${DB_PASS}"
+      MYSQL_DATABASE: "${DB_NAME}"
     volumes:
       - "./database/backups/:/backup:rw"
       - "./database/mariadb-data/:/var/lib/mysql/:rw"
@@ -19,7 +19,7 @@ services:
     healthcheck:
       test: >
         sh -c '
-        mariadb-dump -u$${MARIADB_USER} -p$${MARIADB_PASSWORD} $${MARIADB_DATABASE} > /backup/last_dump.sql 2>/backup/dump_error.log;
+        mariadb-dump -u$${MYSQL_USER} -p$${MYSQL_PASSWORD} $${MYSQL_DATABASE} > /backup/last_dump.sql 2>/backup/dump_error.log;
         if [ $$? -eq 0 ]; then
         gzip /backup/last_dump.sql -c > /backup/$$(date -I)-dump.gz;
         rm /backup/last_dump.sql;
