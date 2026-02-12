@@ -229,9 +229,13 @@ def process_results(
 
             routes: list[RouteModel] = row[:-1] if isinstance(row[-1], DropModel) else row
 
-            ids = tuple(segment.id for segment in routes)
+            uids = tuple((
+                segment.company_id,
+                segment.start_point_id,
+                segment.end_point_id,
+            ) for segment in routes)
 
-            if ids in seen_ids:
+            if uids in seen_ids:
                 continue
 
             may_route_be_invalid = False
@@ -240,7 +244,7 @@ def process_results(
                     may_route_be_invalid = True
                     break
 
-            seen_ids.add(ids)
+            seen_ids.add(uids)
             flat_result.append((row, may_route_be_invalid))
 
     return flat_result
