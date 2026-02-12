@@ -1,0 +1,65 @@
+services:
+  ### DATABASE
+  database:
+    extends:
+      service: database
+      file: docker-compose.yml
+    volumes:
+      - "./config/database/backups/:/backup:rw"
+      - "./config/database/dev-version/:/docker-entrypoint-initdb.d:ro"
+  dbadmin:
+    extends:
+      service: dbadmin
+      file: docker-compose.yml
+    environment:
+      PMA_HOST: "${DB_HOST}"
+      PMA_PORT: 3306
+      PMA_USER: "${DB_USER}"
+      PMA_PASSWORD: "${DB_PASS}"
+
+  ### BACK
+  calculator:
+    extends:
+      service: calculator
+      file: docker-compose.yml
+    volumes:
+      - "./apps/:/apps/:ro"
+    command:
+      - "backend.main:app"
+      - "--host"
+      - "0.0.0.0"
+      - "--port"
+      - "8080"
+      - "--reload"
+  auth:
+    extends:
+      service: auth
+      file: docker-compose.yml
+    volumes:
+      - "./apps/:/apps/:ro"
+    command:
+      - "auth.main:app"
+      - "--host"
+      - "0.0.0.0"
+      - "--port"
+      - "8081"
+      - "--reload"
+
+  ### PROXY
+  reverseproxy:
+    extends:
+      service: reverseproxy
+      file: docker-compose.yml
+    depends_on:
+      calculator:
+        condition: service_started
+      auth:
+        condition: service_started
+    volumes:
+      - "./config/nginx/conf/nginx-dev-backend.conf.template:/etc/nginx/templates/default.conf.template:ro"
+      - "./config/nginx/conf/mime.types:/etc/nginx/conf.d/mime.types:ro"
+      - "./apps/frontend/:/www/frontend/:ro"
+
+networks:
+  reverseproxy:
+  db:
