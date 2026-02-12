@@ -1,7 +1,7 @@
 import asyncio
 import datetime
 
-from backend.database import database
+from backend.database import Base, database
 from backend.mapper_decorator import apply_mapper
 from sqlalchemy import and_, select
 from sqlalchemy.orm import aliased, contains_eager, joinedload
@@ -16,7 +16,13 @@ async def _execute_query(q):
     return result.all()
 
 
-def build_usual_query(route_type, date, start_point_id, end_point_id, container_ids):
+def build_usual_query(
+    route_type: RouteTypeEnum,
+    date: datetime.date,
+    start_point_id: int,
+    end_point_id: int,
+    container_ids: list[int],
+):
     return (  # noqa: ECE001
         select(RouteModel)
         .where(
@@ -40,7 +46,12 @@ def build_usual_query(route_type, date, start_point_id, end_point_id, container_
     )
 
 
-def build_mixed_with_drop_query(date, start_point_id, end_point_id, container_ids):
+def build_mixed_with_drop_query(
+    date: datetime.date,
+    start_point_id: int,
+    end_point_id: int,
+    container_ids: list[int],
+):
     return (  # noqa: ECE001
         select(RouteModel)
         .where(
@@ -88,7 +99,7 @@ def build_base_sea_rail_query(
     date: datetime.date,
     start_point_id: int,
     end_point_id: int,
-    container_ids: list[int]
+    container_ids: list[int],
 ) -> tuple:
     SeaRoute, RailRoute, SeaPrice, RailPrice = _create_aliases()
 
@@ -132,7 +143,7 @@ def create_sea_rail_queries(
     date: datetime.date,
     start_point_id: int,
     end_point_id: int,
-    container_ids: list[int]
+    container_ids: list[int],
 ) -> list:
     base_query, SeaRoute, RailRoute, SeaPrice, RailPrice = build_base_sea_rail_query(
         date, start_point_id, end_point_id, container_ids
@@ -179,7 +190,9 @@ def create_sea_rail_queries(
     return [query_all_drop, query_rail_drop, query_sea_drop, query_no_drop]
 
 
-def process_results(results: list) -> list:
+def process_results(
+    results: list[list[list[Base]] | BaseException],
+) -> list[list[Base]]:
     flat_result: list = []
     seen_ids: set[tuple[int, ...]] = set()
 
@@ -191,7 +204,7 @@ def process_results(results: list) -> list:
 
         for row in result:
             has_drop = isinstance(row[-1], DropModel) if row else False
-            routes = row[:-1] if has_drop else row
+            routes: list[RouteModel] = row[:-1] if has_drop else row
 
             ids = tuple(segment.id for segment in routes)
 
@@ -208,7 +221,7 @@ async def find_all_paths(
     start_point_id: int,
     end_point_id: int,
     container_ids: list[int],
-) -> list[dict]:
+) -> list[list[Base]]:
     query_rail = build_usual_query(
         RouteTypeEnum.RAIL, date, start_point_id, end_point_id, container_ids
     )
