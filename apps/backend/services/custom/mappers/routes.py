@@ -1,11 +1,13 @@
 from typing import Any
 
+from backend.database import Base
+
 from ..models import DropModel
 from .containers import _map_container
 
 
 def _map_segment(route):
-    item = {
+    return {
         "company": route.company.name,
         "type": route.type.name,
         "effectiveFrom": route.effective_from,
@@ -24,12 +26,10 @@ def _map_segment(route):
         } for price in route.prices],
     }
 
-    return item
 
-
-def _map_route(route_and_drop):
+def _map_route(route_and_drop: list[Base]):
     segments = route_and_drop
-    drop = None
+    drop: DropModel | None = None
     if isinstance(segments[-1], DropModel) or not segments[-1]:
         drop = segments[-1]
         segments = segments[:-1]
@@ -47,5 +47,5 @@ def _map_route(route_and_drop):
     return (res, {"price": drop.price, "currency": drop.currency}) if drop else (res, None)
 
 
-def map_routes(routes_and_drops):
+def map_routes(routes_and_drops: list[list[Base]]):
     return map(_map_route, routes_and_drops)
