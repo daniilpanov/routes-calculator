@@ -3,20 +3,52 @@ exclude =
   .git,
   __pycache__,
   .venv,
+
 statistics = True
 max-line-length = 120
 max-complexity = 10
+
+extend-immutable-calls =
+  Depends,
+  Form,
+  Query,
+  Path,
+  Header,
+  Cookie,
+  Body,
+  File,
+  Security,
+  Field,
+  field,
+  Optional,
+  Union,
+  fastapi.Depends,
+  fastapi.Form,
+  fastapi.Query,
+  fastapi.Path,
+  fastapi.Header,
+  fastapi.Cookie,
+  fastapi.Body,
+  fastapi.File,
+  fastapi.Security,
+  fastapi.params.Depends,
+  fastapi.params.Form,
+  fastapi.params.Query,
+  fastapi.params.Path,
+  fastapi.params.Header,
+  fastapi.params.Cookie,
+  fastapi.params.Body,
+  fastapi.params.File,
+  fastapi.params.Security,
+  pydantic.Field,
+  dataclasses.field,
+  typing.Optional,
+  typing.Union,
+
 ignore =
-  PIE783
-  PIE785
   PIE786
   PIE798
   PIE803
-  B009
-  B010
-  B008
-  B024
-  E402
   F401
   T201
   W503
