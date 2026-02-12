@@ -1,5 +1,4 @@
 files: '.*\.(py|toml|html|yaml|yml)$'
-exclude: '(^app/tasks/__init__\.py$|^compose/notebook/config.py$)'
 repos:
   # pre-commit
   - repo: https://github.com/pre-commit/pre-commit-hooks
