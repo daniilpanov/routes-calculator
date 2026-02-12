@@ -3,35 +3,28 @@ variable "TAG" {
 }
 
 group "default" {
-  targets = ["backend", "auth", "reverseproxy"]
+  targets = ["python-apps", "reverseproxy"]
 }
 
-target "backend" {
+target "python-apps" {
   context = "."
-  dockerfile = "deploy.Dockerfile"
-  target = "backend"
-  tags = ["danielgreen1806/calculator-backend:${TAG}"]
+  dockerfile = "Dockerfile"
+  target = "python-apps"
+  tags = ["danielgreen1806/calculator-python-apps:${TAG}"]
 }
 
-target "auth" {
+target "frontadmin-builder" {
   context = "."
-  dockerfile = "deploy.Dockerfile"
-  target = "auth"
-  tags = ["danielgreen1806/auth-backend:${TAG}"]
-}
-
-target "frontadmin" {
-  context = "."
-  dockerfile = "deploy.Dockerfile"
-  target = "frontadmin"
+  dockerfile = "Dockerfile"
+  target = "frontadmin-builder"
 }
 
 target "reverseproxy" {
   context = "."
-  dockerfile = "deploy.Dockerfile"
+  dockerfile = "Dockerfile"
   target = "reverseproxy"
   tags = ["danielgreen1806/calculator-reverseproxy:${TAG}"]
   contexts = {
-    frontadmin = "target:frontadmin"
+    frontadmin-builder = "target:frontadmin-builder"
   }
 }

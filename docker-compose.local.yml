@@ -1,104 +1,33 @@
-services:
-  ### DATABASE
-  database:
-    build:
-      dockerfile: "local.Dockerfile"
-      target: "database"
-    environment:
-      MARIADB_RANDOM_ROOT_PASSWORD: 1
-      MARIADB_USER: "${DB_USER}"
-      MARIADB_PASSWORD: "${DB_PASS}"
-      MARIADB_DATABASE: "${DB_NAME}"
-    volumes:
-      - "./config/database/backups/:/backup:rw"
-      - "./config/database/mariadb-data/:/var/lib/mysql/:rw"
-    expose:
-      - 3306
-    networks:
-      local:
-    healthcheck:
-      test: >
-        sh -c '
-        mariadb-dump -u$${MARIADB_USER} -p$${MARIADB_PASSWORD} $${MARIADB_DATABASE} > /backup/last_dump.sql 2>/backup/dump_error.log;
-        if [ $$? -eq 0 ]; then
-        gzip /backup/last_dump.sql -c > /backup/$$(date -I)-dump.gz;
-        rm /backup/last_dump.sql;
-        exit 0;
-        else
-        exit 1;
-        fi
-        '
-      interval: 30m
-      retries: 3
-  dbadmin:
-    depends_on:
-      - database
-    build:
-      dockerfile: "local.Dockerfile"
-      target: "dbadmin"
-    expose:
-      - 80
-    ports:
-      - "${ADMINER_PORT}:80"
-    networks:
-      local:
-    environment:
-      PMA_HOST: "${DB_HOST}"
-      PMA_PORT: 3306
+include:
+  - docker-compose.yml
 
+services:
   ### BACK
   calculator:
-    depends_on:
-      - database
-    build:
-      dockerfile: "local.Dockerfile"
-      target: "calculator"
-    env_file:
-      - ".env"
     volumes:
-      - "./apps/backend/:/app/backend/:r"
-    expose:
-      - 8080
-    networks:
-      local:
-    command:
-      - "backend.main:app"
-      - "--host"
-      - "0.0.0.0"
-      - "--port"
-      - "8080"
+      - "./apps/:/apps/:ro"
   auth:
-    build:
-      dockerfile: "local.Dockerfile"
-      target: "calculator"
-    env_file:
-      - ".env"
     volumes:
-      - "./apps/auth/:/app/auth/:r"
-    expose:
-      - 8081
-    networks:
-      local:
-    command:
-      - "auth.main:app"
-      - "--host"
-      - "0.0.0.0"
-      - "--port"
-      - "8081"
+      - "./apps/:/apps/:ro"
 
   ### FRONT
   adminfrontbuilder:
     build:
-      dockerfile: "local.Dockerfile"
-      target: "frontadmin"
+      target: "frontadmin-builder"
     environment:
       - VITE_PUBLIC_URL=/admin
       - REACT_ROUTING_MAIN_SITE=/
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges
+    user: "node"
     volumes:
       - "./apps/front-admin/:/app:rw"
-    networks:
-      local:
-    command: ["run", "build"]
+    command:
+      - "npm"
+      - "run"
+      - "build"
 
   ### PROXY
   reverseproxy:
@@ -109,19 +38,8 @@ services:
         condition: service_started
       adminfrontbuilder:
         condition: service_completed_successfully
-    build:
-      dockerfile: "local.Dockerfile"
-      target: "reverseproxy"
-    restart: unless-stopped
     volumes:
-      - "./config/nginx/conf/nginx-prod.conf.template:/etc/nginx/templates/default.conf.template:ro"
+      - "./config/nginx/conf/nginx.conf.template:/etc/nginx/templates/default.conf.template:ro"
       - "./config/nginx/conf/mime.types:/etc/nginx/conf.d/mime.types:ro"
       - "./apps/frontend/:/www/frontend/:ro"
       - "./apps/front-admin/dist/:/www/admin/:ro"
-    networks:
-      local:
-    ports:
-      - "${APP_PORT}:80"
-
-networks:
-  local:

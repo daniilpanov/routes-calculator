@@ -1,0 +1,144 @@
+services:
+  ### DATABASE
+  database:
+    image: mariadb:latest
+    environment:
+      MYSQL_RANDOM_ROOT_PASSWORD: 1
+      MYSQL_USER: "${DB_USER}"
+      MYSQL_PASSWORD: "${DB_PASS}"
+      MYSQL_DATABASE: "${DB_NAME}"
+    volumes:
+      - "./config/database/backups/:/backup:rw"
+      - "./config/database/mariadb-data/:/var/lib/mysql/:rw"
+    restart: always
+    cap_drop:
+      - ALL
+    cap_add:
+      - DAC_OVERRIDE
+      - SETUID
+      - SETGID
+      - CHOWN
+      - FOWNER
+      - SYS_NICE
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges
+    expose:
+      - 3306
+    networks:
+      db:
+    healthcheck:
+      test: >
+        sh -c '
+        mariadb-dump -u$${MYSQL_USER} -p$${MYSQL_PASSWORD} $${MYSQL_DATABASE} > /backup/last_dump.sql 2>/backup/dump_error.log;
+        if [ $$? -eq 0 ]; then
+        gzip /backup/last_dump.sql -c > /backup/$$(date -I)-dump.gz;
+        rm /backup/last_dump.sql;
+        exit 0;
+        else
+        exit 1;
+        fi
+        '
+      interval: 30m
+      retries: 3
+      start_period: 1m
+
+  dbadmin:
+    image: phpmyadmin:latest
+    environment:
+      PMA_HOST: "${DB_HOST}"
+      PMA_PORT: 3306
+    depends_on:
+      - database
+    restart: always
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges
+    user: 33:33  # Apache UID:GID
+    expose:
+      - 80
+    ports:
+      - "${ADMINER_PORT}:80"
+    networks:
+      db:
+
+  ### BACK
+  calculator:
+    image: danielgreen1806/calculator-python-apps:${DOCKER_PROD_IMAGES_TAG}
+    build:
+      target: "python-apps"
+    env_file:
+      - ".env"
+    depends_on:
+      - database
+    restart: always
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges
+    user: 1000:1000
+    expose:
+      - 8080
+    networks:
+      db:
+      reverseproxy:
+    command:
+      - "backend.main:app"
+      - "--host"
+      - "0.0.0.0"
+      - "--port"
+      - "8080"
+  auth:
+    image: danielgreen1806/calculator-python-apps:${DOCKER_PROD_IMAGES_TAG}
+    build:
+      target: "python-apps"
+    env_file:
+      - ".env"
+    restart: always
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges
+    user: 1000:1000
+    expose:
+      - 8081
+    networks:
+      db:
+      reverseproxy:
+    command:
+      - "auth.main:app"
+      - "--host"
+      - "0.0.0.0"
+      - "--port"
+      - "8081"
+
+  ### PROXY
+  reverseproxy:
+    image: danielgreen1806/calculator-reverseproxy:${DOCKER_PROD_IMAGES_TAG}
+    build:
+      target: "reverseproxy"
+    env_file:
+      - ".env"
+    depends_on:
+      calculator:
+        condition: service_started
+      auth:
+        condition: service_started
+    restart: always
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+    security_opt:
+      - no-new-privileges
+    networks:
+      reverseproxy:
+    ports:
+      - "${APP_PORT}:80"
+
+networks:
+  reverseproxy:
+  db:
