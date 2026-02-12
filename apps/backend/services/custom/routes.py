@@ -275,8 +275,8 @@ async def find_all_paths(
     all_queries = [
         query_rail,
         query_sea,
-        query_mixed,
         query_mixed_with_drop,
+        query_mixed,
     ] + sea_rail_queries
 
     coroutines = [_execute_query(query) for query in all_queries]
