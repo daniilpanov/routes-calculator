@@ -1,9 +1,9 @@
-import os
+from functools import cache
 
-from pydantic import BaseModel
+from pydantic_settings import BaseSettings
 
 
-class Settings(BaseModel):
+class Settings(BaseSettings):
     admin_login: str
     admin_password: str
     jwt_algorithm: str
@@ -18,10 +18,6 @@ class Settings(BaseModel):
     authjwt_cookie_samesite: str = "lax"
 
 
-settings = Settings(
-    admin_login=os.environ["ADMIN_LOGIN"],
-    admin_password=os.environ["ADMIN_PASSWORD"],
-    jwt_algorithm=os.environ["JWT_ALGORITHM"],
-    authjwt_secret_key=os.environ["AUTHJWT_SECRET_KEY"],
-    access_token_expire_minutes=int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 0)),
-)
+@cache
+def get_settings():
+    return Settings()

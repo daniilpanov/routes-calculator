@@ -1,7 +1,7 @@
 import datetime
-import os
 
 import aiohttp
+from backend.config import get_settings
 from backend.mapper_decorator import apply_mapper
 
 from .mappers.points import map_points
@@ -13,7 +13,7 @@ async def get_departure_points_by_date(date: datetime.date):
         resp = await session.get(
             f"https://api.fesco.com/api/v1/lk/calc/fit/from?date={date.isoformat()}",
             headers={
-                "Authorization": "Bearer {}".format(os.environ.get("FESCO_API_KEY")),
+                "Authorization": f"Bearer {get_settings().FESCO_API_KEY}",
                 "X-Lk-Lang": "RU",
             },
         )
@@ -29,7 +29,7 @@ async def get_destination_points_by_date(date: datetime.date, departure_point_id
             f"https://api.fesco.com/api/v1/lk/calc/fit/to"
             f"?date={date.isoformat()}&from={departure_point_id}",
             headers={
-                "Authorization": "Bearer {}".format(os.environ.get("FESCO_API_KEY")),
+                "Authorization": f"Bearer {get_settings().FESCO_API_KEY}",
                 "X-Lk-Lang": "RU",
             },
         )

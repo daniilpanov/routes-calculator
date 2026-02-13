@@ -7,8 +7,9 @@ from fastapi_another_jwt_auth import AuthJWT
 from fastapi_another_jwt_auth.exceptions import AuthJWTException
 from pydantic import BaseModel
 
-from .settings import settings
+from .config import Settings, get_settings
 
+AuthJWT.load_config(get_settings)
 app = FastAPI()
 
 
@@ -17,18 +18,13 @@ class User(BaseModel):
     password: str
 
 
-@AuthJWT.load_config
-def get_config():
-    return settings
-
-
 @app.exception_handler(AuthJWTException)
 def authjwt_exception_handler(request: Request, exc: AuthJWTException):
     return JSONResponse(status_code=exc.status_code, content={"detail": exc.message})
 
 
 @app.post("/login")
-def login(user: User, Authorize: AuthJWT = Depends()):
+def login(user: User, Authorize: AuthJWT = Depends(), settings: Settings = Depends(get_settings)):
     """
     Login using username and password.
     Setting up JWT cookie if login was successful.

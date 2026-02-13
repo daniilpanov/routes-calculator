@@ -1,11 +1,11 @@
 from functools import partial
 
-from backend.database import database
 from backend.mapper_decorator import apply_mapper
+from shared.database import get_database
+from shared.models import CompanyModel, PointModel, RouteModel
 from sqlalchemy import select
 
 from .mappers.points import map_points
-from .models import CompanyModel, PointModel, RouteModel
 
 
 def _build_stmt(id_field):
@@ -25,7 +25,7 @@ def _build_stmt(id_field):
 
 @apply_mapper(map_points)
 async def get_points(*, id_field):
-    async with database.session() as session:
+    async with get_database().session_context() as session:
         stmt = _build_stmt(id_field)
         response = await session.execute(stmt)
 

@@ -1,17 +1,17 @@
 import asyncio
 import datetime
 
-from backend.database import Base, database
 from backend.mapper_decorator import apply_mapper
+from shared.database import Base, get_database
+from shared.models import DropModel, PriceModel, RouteModel, RouteTypeEnum
 from sqlalchemy import and_, desc, select
 from sqlalchemy.orm import aliased, contains_eager, joinedload
 
 from .mappers.routes import map_routes
-from .models import DropModel, PriceModel, RouteModel, RouteTypeEnum
 
 
 async def _execute_query(q):
-    async with database.session() as session:
+    async with get_database().session_context() as session:
         result = (await session.execute(q)).unique()
     return result.all()
 

@@ -1,8 +1,8 @@
 import asyncio
 import datetime
-import os
 
 import aiohttp
+from backend.config import get_settings
 from backend.mapper_decorator import apply_mapper
 
 from .mappers.routes import map_routes
@@ -24,7 +24,7 @@ async def _get_routes(
         ),
         headers={
             "Accept": "application/json",
-            "Authorization": "Bearer {}".format(os.environ.get("FESCO_API_KEY")),
+            "Authorization": f"Bearer {get_settings().FESCO_API_KEY}",
             "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
             "(KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
             "X-Lk-Lang": "RU",
