@@ -1,9 +1,9 @@
 import asyncio
 import datetime
 
-from backend.database import database
+from backend.database import Base, database
 from backend.mapper_decorator import apply_mapper
-from sqlalchemy import and_, select
+from sqlalchemy import and_, desc, select
 from sqlalchemy.orm import aliased, contains_eager, joinedload
 
 from .mappers.routes import map_routes
@@ -16,21 +16,33 @@ async def _execute_query(q):
     return result.all()
 
 
-def build_usual_query(route_type, date, start_point_id, end_point_id, container_ids):
-    return (  # noqa: ECE001
+def build_usual_query(
+    route_type: RouteTypeEnum,
+    date: datetime.date,
+    start_point_id: int,
+    end_point_id: int,
+    container_ids: list[int],
+    only_in_selected_date_range: bool = True,
+):
+    where_clause = (
+        (RouteModel.effective_from <= date)
+        & (RouteModel.start_point_id == start_point_id)
+        & (RouteModel.end_point_id == end_point_id)
+        & (RouteModel.type == route_type)
+    )
+    if only_in_selected_date_range:
+        where_clause &= RouteModel.effective_to >= date
+
+    return (
         select(RouteModel)
-        .where(
-            (RouteModel.effective_from <= date)
-            & (RouteModel.effective_to >= date)
-            & (RouteModel.start_point_id == start_point_id)
-            & (RouteModel.end_point_id == end_point_id)
-            & (RouteModel.type == route_type)
-        )
+        .where(where_clause)
         .join(
             PriceModel,
             (RouteModel.id == PriceModel.route_id)
             & PriceModel.container_id.in_(container_ids)
         )
+        .order_by(desc(RouteModel.effective_to))
+        # note: I tried using 'group by' statement, but it cuts off prices
         .options(
             joinedload(RouteModel.start_point),
             joinedload(RouteModel.end_point),
@@ -40,16 +52,25 @@ def build_usual_query(route_type, date, start_point_id, end_point_id, container_
     )
 
 
-def build_mixed_with_drop_query(date, start_point_id, end_point_id, container_ids):
+def build_mixed_with_drop_query(
+    date: datetime.date,
+    start_point_id: int,
+    end_point_id: int,
+    container_ids: list[int],
+    only_in_selected_date_range: bool = False,
+):
+    where_clause = (
+        (RouteModel.effective_from <= date)
+        & (RouteModel.start_point_id == start_point_id)
+        & (RouteModel.end_point_id == end_point_id)
+        & (RouteModel.type == RouteTypeEnum.SEA_RAIL)
+    )
+    if only_in_selected_date_range:
+        where_clause &= RouteModel.effective_to >= date
+
     return (  # noqa: ECE001
         select(RouteModel)
-        .where(
-            (RouteModel.effective_from <= date)
-            & (RouteModel.effective_to >= date)
-            & (RouteModel.start_point_id == start_point_id)
-            & (RouteModel.end_point_id == end_point_id)
-            & (RouteModel.type == RouteTypeEnum.SEA_RAIL)
-        )
+        .where(where_clause)
         .join(
             PriceModel,
             (RouteModel.id == PriceModel.route_id)
@@ -66,6 +87,8 @@ def build_mixed_with_drop_query(date, start_point_id, end_point_id, container_id
                 DropModel.sea_end_point_id.is_(None)
             )
         )
+        .order_by(desc(RouteModel.effective_to))
+        # note: I tried using 'group by' statement, but it cuts off prices
         .options(
             joinedload(RouteModel.start_point),
             joinedload(RouteModel.end_point),
@@ -88,27 +111,34 @@ def build_base_sea_rail_query(
     date: datetime.date,
     start_point_id: int,
     end_point_id: int,
-    container_ids: list[int]
+    container_ids: list[int],
+    only_in_selected_date_range: bool = False,
 ) -> tuple:
     SeaRoute, RailRoute, SeaPrice, RailPrice = _create_aliases()
+    where_clause = (  # noqa: ECE001
+        (SeaRoute.type == RouteTypeEnum.SEA)
+        & (RailRoute.type == RouteTypeEnum.RAIL)
+        & (SeaRoute.effective_from <= date)
+        & (RailRoute.effective_from <= date)
+        & (SeaRoute.start_point_id == start_point_id)
+        & (RailRoute.end_point_id == end_point_id)
+        & SeaPrice.container_id.in_(container_ids)
+        & RailPrice.container_id.in_(container_ids)
+    )
+    if only_in_selected_date_range:
+        where_clause &= SeaRoute.effective_to >= date
+        where_clause &= RailRoute.effective_to >= date
 
     query = (  # noqa: ECE001
         select(SeaRoute, RailRoute)
-        .where(
-            (SeaRoute.type == RouteTypeEnum.SEA)
-            & (RailRoute.type == RouteTypeEnum.RAIL)
-            & (SeaRoute.effective_from <= date)
-            & (SeaRoute.effective_to >= date)
-            & (RailRoute.effective_from <= date)
-            & (RailRoute.effective_to >= date)
-            & (SeaRoute.start_point_id == start_point_id)
-            & (RailRoute.end_point_id == end_point_id)
-            & SeaPrice.container_id.in_(container_ids)
-            & RailPrice.container_id.in_(container_ids)
-        )
+        .where(where_clause)
         .join(SeaPrice, SeaRoute.id == SeaPrice.route_id)
         .join(RailRoute, SeaRoute.end_point_id == RailRoute.start_point_id)
         .join(RailPrice, RailRoute.id == RailPrice.route_id)
+        .order_by(desc(SeaRoute.effective_to), desc(RailRoute.effective_to))
+        # here could be 'group_by', but it doesn't work correctly with 'joinedload'
+        # so we select unique on the client-side
+        # note: I tried using 'group by' statement, but it cuts off prices
         .options(
             joinedload(SeaRoute.start_point),
             joinedload(SeaRoute.end_point),
@@ -132,10 +162,11 @@ def create_sea_rail_queries(
     date: datetime.date,
     start_point_id: int,
     end_point_id: int,
-    container_ids: list[int]
+    container_ids: list[int],
+    only_in_selected_date_range: bool = False,
 ) -> list:
     base_query, SeaRoute, RailRoute, SeaPrice, RailPrice = build_base_sea_rail_query(
-        date, start_point_id, end_point_id, container_ids
+        date, start_point_id, end_point_id, container_ids, only_in_selected_date_range
     )
 
     query_all_drop = _add_drop_join(
@@ -179,9 +210,12 @@ def create_sea_rail_queries(
     return [query_all_drop, query_rail_drop, query_sea_drop, query_no_drop]
 
 
-def process_results(results: list) -> list:
+def process_results(
+    results: list[list[list[Base]] | BaseException],
+    date: datetime.date,
+) -> list[tuple[list[Base], bool]]:
     flat_result: list = []
-    seen_ids: set[tuple[int, ...]] = set()
+    seen_ids: set[tuple[tuple[int, int, int], ...]] = set()
 
     for result in results:
         if not result or isinstance(result, BaseException):
@@ -190,14 +224,28 @@ def process_results(results: list) -> list:
             continue
 
         for row in result:
-            has_drop = isinstance(row[-1], DropModel) if row else False
-            routes = row[:-1] if has_drop else row
+            if not row:
+                continue
 
-            ids = tuple(segment.id for segment in routes)
+            routes: list[RouteModel] = row[:-1] if isinstance(row[-1], DropModel) else row
 
-            if ids not in seen_ids:
-                seen_ids.add(ids)
-                flat_result.append(row)
+            uids = tuple((
+                segment.company_id,
+                segment.start_point_id,
+                segment.end_point_id,
+            ) for segment in routes)
+
+            if uids in seen_ids:
+                continue
+
+            may_route_be_invalid = False
+            for segment in routes:
+                if segment.effective_to.date() < date:
+                    may_route_be_invalid = True
+                    break
+
+            seen_ids.add(uids)
+            flat_result.append((row, may_route_be_invalid))
 
     return flat_result
 
@@ -208,33 +256,34 @@ async def find_all_paths(
     start_point_id: int,
     end_point_id: int,
     container_ids: list[int],
-) -> list[dict]:
+    only_in_selected_date_range: bool = False,
+) -> list[tuple[list[Base], bool]]:
     query_rail = build_usual_query(
-        RouteTypeEnum.RAIL, date, start_point_id, end_point_id, container_ids
+        RouteTypeEnum.RAIL, date, start_point_id, end_point_id, container_ids, only_in_selected_date_range
     )
     query_sea = build_usual_query(
-        RouteTypeEnum.SEA, date, start_point_id, end_point_id, container_ids
+        RouteTypeEnum.SEA, date, start_point_id, end_point_id, container_ids, only_in_selected_date_range
     )
     query_mixed = build_usual_query(
-        RouteTypeEnum.SEA_RAIL, date, start_point_id, end_point_id, container_ids
+        RouteTypeEnum.SEA_RAIL, date, start_point_id, end_point_id, container_ids, only_in_selected_date_range
     )
 
     query_mixed_with_drop = build_mixed_with_drop_query(
-        date, start_point_id, end_point_id, container_ids
+        date, start_point_id, end_point_id, container_ids, only_in_selected_date_range
     )
 
     sea_rail_queries = create_sea_rail_queries(
-        date, start_point_id, end_point_id, container_ids
+        date, start_point_id, end_point_id, container_ids, only_in_selected_date_range
     )
 
     all_queries = [
         query_rail,
         query_sea,
-        query_mixed,
         query_mixed_with_drop,
+        query_mixed,
     ] + sea_rail_queries
 
     coroutines = [_execute_query(query) for query in all_queries]
     results = await asyncio.gather(*coroutines, return_exceptions=True)
 
-    return process_results(results)
+    return process_results(results, date)
