@@ -52,6 +52,10 @@
             border-radius: 0.25rem;
             border: 1px solid black;
         }
+
+        #extendedCurrencySwitcherWrapper.inactive {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -150,7 +154,18 @@
         <hr>
         <h3>Просуммировать стоимость маршрутов в валюте:</h3>
         <div class="mb-3 position-relative">
-            <label for="currencySwitcher" class="form-label">Валюта</label>
+            <label for="currencySwitcherSelect" class="form-label">Валюта</label>
+            <select class="form-select" id="currencySwitcherSelect" required>
+                <optgroup label="Основные валюты">
+                    <option value="RUB" selected>РУБ</option>
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                    <option value="CNY">CNY</option>
+                </optgroup>
+                <option value="">Other...</option>
+            </select>
+        </div>
+        <div class="mb-3 position-relative inactive" id="extendedCurrencySwitcherWrapper">
             <input type="text" class="form-control" id="currencySwitcher" placeholder="Выберите валюту" autocomplete="off" required>
             <div id="currencySwitcherList" class="autocomplete-items d-none"></div>
         </div>
@@ -182,6 +197,24 @@
 <script src="res/js/calculating.js"></script>
 
 <script>
+    const currenciesSwitcherInputWrapper = document.getElementById("extendedCurrencySwitcherWrapper");
+    const currenciesSwitcherInput = document.getElementById("currencySwitcher");
+
+    document.getElementById("currencySwitcherSelect")?.addEventListener("change", e => {
+        const val = e?.target?.value;
+        if (val === undefined) return;
+
+        currenciesSwitcherInput.value = val;
+        if (val)
+            currenciesSwitcherInputWrapper.classList.add("inactive");
+        else
+            currenciesSwitcherInputWrapper.classList.remove("inactive");
+
+        currenciesSwitcherInput.dispatchEvent(
+            new Event("input", { bubbles: true })
+        );
+    });
+
     function numberWithSpaces(x) {
         const parts = x.toString().split(".");
         parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, " ");
