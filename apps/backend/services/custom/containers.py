@@ -1,16 +1,16 @@
 import datetime
 
-from backend.database import database
 from backend.mapper_decorator import apply_mapper
+from shared.database import get_database
+from shared.models import ContainerModel
 from sqlalchemy import select
 
 from .mappers.containers import map_containers
-from .models.container import ContainerModel
 
 
 @apply_mapper(map_containers)
 async def get_containers(date: datetime.date, departure_id: str, destination_id: str):
-    async with database.session() as session:
+    async with get_database().session_context() as session:
         res = await session.execute(
             select(ContainerModel).order_by(ContainerModel.size)
         )

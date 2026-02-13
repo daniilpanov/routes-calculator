@@ -1,8 +1,9 @@
 import enum
 
-from backend.database import Base
 from sqlalchemy import Enum, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
+
+from ..database import Base
 
 
 class ContainerType(enum.Enum):

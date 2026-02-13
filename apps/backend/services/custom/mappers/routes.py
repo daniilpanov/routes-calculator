@@ -1,8 +1,8 @@
 from typing import Any
 
-from backend.database import Base
+from shared.database import Base
+from shared.models import DropModel
 
-from ..models import DropModel
 from .containers import _map_container
 
 
