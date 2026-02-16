@@ -216,6 +216,15 @@ async function calculateAndRender(icons, selectedCurrency) {
                     dropPriceEl.appendChild(priceSpan);
                     dropPriceEl.appendChild(currencySpan);
                 }
+
+                if (drop.conversation_percents) {
+                    const conversationPercentsEl = document.createElement('span');
+                    conversationPercentsEl.className = 'text-muted drop-off-conversation';
+                    conversationPercentsEl.setAttribute('data-bs-conversation', drop.conversation_percents);
+                    conversationPercentsEl.innerHTML = `+ ${drop.conversation_percents}% конвертация в рубли`;
+                    dropPriceEl.appendChild(document.createTextNode(' '));
+                    dropPriceEl.appendChild(conversationPercentsEl);
+                }
             } else
                 dropPriceEl.innerHTML = '<b>включен</b>';
 
