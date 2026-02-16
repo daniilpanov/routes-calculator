@@ -36,6 +36,7 @@ function updateResultItem(result, selectedCurrency, needConversation, keys, valu
 
     let minSumPrice = 0, maxSumPrice = 0, sumPrice = 0;
     let minSumPriceWithConv = 0, maxSumPriceWithConv = 0, sumPriceWithConv = 0;
+    let globalSum = false;
     for (const item of result.querySelectorAll(".segments .result-segment")) {
         const price = item.getAttribute("data-bs-price");
         if (price !== "M" && price !== "X") {
@@ -50,6 +51,9 @@ function updateResultItem(result, selectedCurrency, needConversation, keys, valu
             continue;
         }
 
+        if (price === "X")
+            globalSum = true;
+
         const {
             minimal,
             maximal,
@@ -59,7 +63,7 @@ function updateResultItem(result, selectedCurrency, needConversation, keys, valu
             segmentSumPriceWithConv,
         } = getMultiSegmentIncrementation(
             item,
-            price === "X",
+            globalSum,
             selectedCurrency,
             needConversation,
         );
@@ -79,11 +83,14 @@ function updateResultItem(result, selectedCurrency, needConversation, keys, valu
 
         minSumPrice += dropPrice;
         maxSumPrice += dropPrice;
-        sumPrice += dropPrice;
 
         minSumPriceWithConv += dropPriceWithConv;
         maxSumPriceWithConv += dropPriceWithConv;
-        sumPriceWithConv += dropPriceWithConv;
+
+        if (globalSum) {
+            sumPrice += dropPrice;
+            sumPriceWithConv += dropPriceWithConv;
+        }
     }
 
     const minPrice = Math.round((minSumPrice + Number.EPSILON) * 100) / 100;
