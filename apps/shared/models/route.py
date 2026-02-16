@@ -103,6 +103,8 @@ class DropModel(Base):
         "rail_end_point_id",
         "container_id",
         "company_id",
+        "effective_from",
+        "effective_to",
     )
 
     __tablename__ = "drop"
