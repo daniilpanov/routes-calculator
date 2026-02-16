@@ -1,6 +1,13 @@
-function setupAutocomplete(inputId, listId, dataObj, hiddenInputId, callbackOnCompleted, callbackOnUncompleted) {
+function setupAutocomplete(
+    inputId,
+    listId,
+    dataObj,
+    hiddenInputId = undefined,
+    callbackOnCompleted = undefined,
+    callbackOnUncompleted = undefined,
+) {
     const input = document.getElementById(inputId);
-    const hiddenInput = hiddenInputId ? document.getElementById(hiddenInputId) : null;
+    const hiddenInput = hiddenInputId ? document.getElementById(hiddenInputId) : undefined;
     const list = document.getElementById(listId);
 
     function autocompleteProcess() {
@@ -11,37 +18,51 @@ function setupAutocomplete(inputId, listId, dataObj, hiddenInputId, callbackOnCo
         const filtered = Object.keys(data).filter(item => item.toLowerCase().includes(val));
         if (!filtered.length) {
             list.classList.add("d-none");
-            if (callbackOnUncompleted) callbackOnUncompleted();
+            if (callbackOnUncompleted)
+                callbackOnUncompleted();
+
             return;
         }
 
         let selectedVal = null;
 
         filtered.forEach(item => {
-            if (item.toLowerCase() === val.toLowerCase()) selectedVal = item;
+            if (item.toLowerCase() === val.toLowerCase())
+                selectedVal = item;
+
             const div = document.createElement("div");
             div.textContent = item;
             div.setAttribute("data-item-id", data[item]);
             div.classList.add("autocomplete-item");
+
             div.addEventListener("mousedown", () => {
                 input.value = item;
                 if (hiddenInput)
                     hiddenInput.value = data[item];
+
                 input.classList.remove("is-invalid");
                 list.classList.add("d-none");
-                if (callbackOnCompleted) callbackOnCompleted(item);
+
+                if (callbackOnCompleted)
+                    callbackOnCompleted(item);
             });
+
             list.appendChild(div);
         });
+
         if (selectedVal) {
             input.value = selectedVal;
             if (hiddenInput)
                 hiddenInput.value = data[selectedVal];
-            if (callbackOnCompleted) callbackOnCompleted(selectedVal);
+
+            if (callbackOnCompleted)
+                callbackOnCompleted(selectedVal);
         } else {
             if (hiddenInput)
                 hiddenInput.value = "";
-            if (callbackOnUncompleted) callbackOnUncompleted();
+
+            if (callbackOnUncompleted)
+                callbackOnUncompleted();
         }
 
         list.classList.remove("d-none");
@@ -50,7 +71,7 @@ function setupAutocomplete(inputId, listId, dataObj, hiddenInputId, callbackOnCo
     input.addEventListener("input", autocompleteProcess);
     input.addEventListener("focus", autocompleteProcess);
 
-    input.addEventListener("blur", () => {
-        setTimeout(() => list.classList.add("d-none"), 50);
-    });
+    input.addEventListener("blur", () =>
+        setTimeout(() => list.classList.add("d-none"), 50)
+    );
 }
