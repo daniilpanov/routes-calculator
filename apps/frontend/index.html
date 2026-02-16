@@ -5,60 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Калькулятор маршрутов | Форма введения маршрута</title>
     <link href="lib/bootstrap5/bootstrap.css" rel="stylesheet">
-    <style>
-        .autocomplete-items {
-            border: 1px solid #ced4da;
-            border-top: none;
-            max-height: 200px;
-            overflow-y: auto;
-            position: absolute;
-            width: 100%;
-            z-index: 1000;
-            background: white;
-        }
-        .autocomplete-item {
-            padding: 8px 12px;
-            cursor: pointer;
-        }
-        .autocomplete-item:hover {
-            background-color: #e9ecef;
-        }
-        .position-relative {
-            position: relative;
-        }
-        .alert-fixed {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            min-width: 300px;
-            z-index: 1050;
-        }
-        .route-icon svg {
-            stroke:#FFA500;
-            fill:transparent;
-        }
-        .header-rates > div {
-            display: table;
-        }
-        .header-rates > div > * {
-            display: table-cell;
-            vertical-align: middle;
-            margin: 0 .5rem;
-        }
-
-        .segment--price-variant {
-            padding: 1rem;
-            margin: 1rem;
-            border-radius: 0.25rem;
-            border: 1px solid black;
-        }
-
-        #extendedCurrencySwitcherWrapper.inactive {
-            display: none;
-        }
-    </style>
+    <link href="css/app.css" rel="stylesheet">
 </head>
 <body>
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+    <symbol id="check-circle-fill" fill="currentColor" viewBox="0 0 16 16">
+        <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+    </symbol>
+    <symbol id="info-fill" fill="currentColor" viewBox="0 0 16 16">
+        <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/>
+    </symbol>
+    <symbol id="exclamation-triangle-fill" fill="currentColor" viewBox="0 0 16 16">
+        <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
+    </symbol>
+</svg>
+
 <header class="bg-light">
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
         <div class="container">
@@ -82,9 +44,7 @@
 
 <main class="container">
     <div class="alert alert-warning d-flex align-items-center" role="alert">
-        <svg class="bi flex-shrink-0 me-2" width="24" height="24" role="img" aria-label="Warning:" xmlns="http://www.w3.org/2000/svg" id="exclamation-triangle-fill" width="16" height="16" fill="currentColor" class="bi bi-exclamation-triangle-fill" viewBox="0 0 16 16">
-            <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5m.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2"/>
-        </svg>
+        <svg class="bi flex-shrink-0 me-2" width="24" height="24" role="img" aria-label="Warning:"><use xlink:href="#exclamation-triangle-fill"></use></svg>
         <div>
             Сервис находится на стадии бета-тестирования. Некоторые функции могут работать нестабильно.
             Пожалуйста, сообщите нам, если заметите ошибку.
@@ -166,7 +126,7 @@
             </select>
         </div>
         <div class="mb-3 position-relative inactive" id="extendedCurrencySwitcherWrapper">
-            <input type="text" class="form-control" id="currencySwitcher" placeholder="Выберите валюту" autocomplete="off" required>
+            <input type="text" class="form-control" value="RUB" id="currencySwitcher" placeholder="Выберите валюту" autocomplete="off" required>
             <div id="currencySwitcherList" class="autocomplete-items d-none"></div>
         </div>
 
@@ -179,255 +139,30 @@
     </div>
 </main>
 
-<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
-    <symbol id="check-circle-fill" fill="currentColor" viewBox="0 0 16 16">
-        <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
-    </symbol>
-    <symbol id="info-fill" fill="currentColor" viewBox="0 0 16 16">
-        <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/>
-    </symbol>
-    <symbol id="exclamation-triangle-fill" fill="currentColor" viewBox="0 0 16 16">
-        <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
-    </symbol>
-</svg>
+<script src="js/api.js"></script>
+<script src="js/store.js"></script>
+<script src="js/components/alerts.js"></script>
+<script src="js/components/autocomplete.js"></script>
+<script src="js/components/result-block.js"></script>
+<script src="js/rates.js"></script>
+<script src="js/calculating.js"></script>
+<script src="js/conversation.js"></script>
 
-<script src="res/js/alerts.js"></script>
-<script src="res/js/rates.js"></script>
-<script src="res/js/autocomplete.js"></script>
-<script src="res/js/calculating.js"></script>
+<script src="js/app.js"></script>
 
 <script>
-    const currenciesSwitcherInputWrapper = document.getElementById("extendedCurrencySwitcherWrapper");
-    const currenciesSwitcherInput = document.getElementById("currencySwitcher");
-
-    document.getElementById("currencySwitcherSelect")?.addEventListener("change", e => {
-        const val = e?.target?.value;
-        if (val === undefined) return;
-
-        currenciesSwitcherInput.value = val;
-        if (val)
-            currenciesSwitcherInputWrapper.classList.add("inactive");
-        else
-            currenciesSwitcherInputWrapper.classList.remove("inactive");
-
-        currenciesSwitcherInput.dispatchEvent(
-            new Event("input", { bubbles: true })
-        );
-    });
-
-    function numberWithSpaces(x) {
-        const parts = x.toString().split(".");
-        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-        return parts.join(".");
-    }
-
-    function updateResults(selectedCurrency) {
-        const resultWrappers = [document.getElementById('results-direct'), document.getElementById('results-other')];
-        const needConversation = selectedCurrency === "RUB";
-
-        for (const resultsEl of resultWrappers) {
-            let i = 0;
-            const keys = [];
-            const values = [];
-            const elements = [];
-            const results = [...resultsEl.getElementsByClassName("result-item")];
-
-            for (const result of results) {
-                const sumPriceEl = result.getElementsByClassName("sum-price")[0];
-                if (!sumPriceEl)
-                    continue;
-
-                elements.push(result);
-                result.remove();
-
-                let minSumPrice = 0, maxSumPrice = 0, sumPrice = 0;
-                let minSumPriceWithConv = 0, maxSumPriceWithConv = 0, sumPriceWithConv = 0;
-                let conversationFound = false;
-                for (const item of result.querySelectorAll(".segments .result-segment")) {
-                    const price = item.getAttribute("data-bs-price");
-                    if (price !== "M" && price !== "X") {
-                        const currency = item.getAttribute("data-bs-currency");
-                        const conversation = Number.parseFloat(item.getAttribute("data-bs-conversation-percents") ?? 0)
-                            / 100
-                            * (needConversation && currency !== selectedCurrency);
-
-                        if (conversation)
-                            conversationFound = true;
-
-                        const incrementation = updateResultRates(Number.parseFloat(price), currency, selectedCurrency);
-                        const incrementationWithConv = incrementation * (1 + conversation);
-
-                        minSumPrice += incrementation;
-                        maxSumPrice += incrementation;
-
-                        minSumPriceWithConv += incrementationWithConv;
-                        maxSumPriceWithConv += incrementationWithConv;
-                        continue;
-                    }
-
-                    const priceVariantEls = item.getElementsByClassName("segment--price-variant");
-                    const globalSum = price === "X";
-                    let minimal = -1, maximal = -1;
-                    let minimalWithConv = -1, maximalWithConv = -1;
-
-                    for (const priceVariantEl of priceVariantEls) {
-                        const priceVariant = priceVariantEl.getAttribute("data-bs-price");
-                        const currencyVariant = priceVariantEl.getAttribute("data-bs-currency");
-                        if (!priceVariant || !currencyVariant)
-                            continue;
-
-                        const conversation = Number.parseFloat(priceVariantEl.getAttribute("data-bs-conversation-percents") ?? 0)
-                            / 100
-                            * (needConversation && currencyVariant !== selectedCurrency);
-                        const priceVariantParsed = updateResultRates(
-                            Number.parseFloat(priceVariant),
-                            currencyVariant,
-                            selectedCurrency,
-                        );
-                        const priceVariantParsedWithConv = priceVariantParsed * (1 + conversation);
-
-                        if (globalSum) {
-                            sumPrice += priceVariantParsed;
-                            sumPriceWithConv += priceVariantParsedWithConv;
-                            continue;
-                        }
-
-                        if (minimal === -1 || minimal > priceVariantParsedWithConv) {
-                            minimal = priceVariantParsed;
-                            minimalWithConv = priceVariantParsedWithConv;
-                        }
-                        if (maximal === -1 || maximal < priceVariantParsedWithConv) {
-                            maximal = priceVariantParsed;
-                            maximalWithConv = priceVariantParsedWithConv;
-                        }
-                    }
-
-                    minSumPrice += minimal;
-                    maxSumPrice += maximal;
-
-                    minSumPriceWithConv += minimalWithConv;
-                    maxSumPriceWithConv += maximalWithConv;
-                }
-
-                const dropEl = result.getElementsByClassName('drop-off')[0];
-                if (dropEl) {
-                    const currency = dropEl.getElementsByClassName('drop-off-currency')[0]?.getAttribute('data-bs-currency');
-                    const price = dropEl.getElementsByClassName('drop-off-price')[0]?.textContent;
-                    if (currency && price) {
-                        const dropPrice = updateResultRates(Number.parseFloat(price), currency, selectedCurrency);
-                        minSumPrice += dropPrice;
-                        maxSumPrice += dropPrice;
-                        sumPrice += dropPrice;
-
-                        const conversationPercents = dropEl.getElementsByClassName('drop-off-conversation')[0]
-                            ?.getAttribute('data-bs-conversation') ?? 0;
-                        const dropPriceWithConv = dropPrice * (1 + Number(conversationPercents) / 100);
-                        minSumPriceWithConv += dropPriceWithConv;
-                        maxSumPriceWithConv += dropPriceWithConv;
-                        sumPriceWithConv += dropPriceWithConv;
-                    }
-                }
-
-                const minPrice = Math.round((minSumPrice + Number.EPSILON) * 100) / 100;
-                const maxPrice = Math.round((maxSumPrice + Number.EPSILON) * 100) / 100;
-                sumPrice = Math.round((sumPrice + Number.EPSILON) * 100) / 100;
-
-                const minPriceWithConv = Math.round((minSumPriceWithConv + Number.EPSILON) * 100) / 100;
-                const maxPriceWithConv = Math.round((maxSumPriceWithConv + Number.EPSILON) * 100) / 100;
-                sumPriceWithConv = Math.round((sumPriceWithConv + Number.EPSILON) * 100) / 100;
-
-                keys.push(i++);
-                values.push(sumPriceWithConv || minPriceWithConv);
-
-                let sumPriceElContent = "<div class='row'><div class='col-md-7'>Суммарная стоимость: </div><div class='col-md-5'><b>";
-                sumPriceElContent += numberWithSpaces(sumPrice || minPrice);
-                if (minPrice !== maxPrice)
-                    sumPriceElContent += " - " + numberWithSpaces(maxPrice);
-
-                sumPriceElContent += ` ${selectedCurrency}</b></div></div>`;
-
-                if (needConversation) {
-                    sumPriceElContent += "<div class='row'><div class='col-md-7'>Оплата в рублях по курсу ЦБ на дату выставления счёта: </div><div class='col-md-5'><b>";
-                    sumPriceElContent += numberWithSpaces(sumPriceWithConv || minPriceWithConv);
-                    if (minPriceWithConv !== maxPriceWithConv)
-                        sumPriceElContent += " - " + numberWithSpaces(maxPriceWithConv);
-
-                    sumPriceElContent += ` ${selectedCurrency}</b></div></div>`;
-                }
-
-                sumPriceEl.innerHTML = sumPriceElContent;
-            }
-
-            keys.sort((a, b) => values[a] - values[b]);
-
-            for (const key of keys)
-                resultsEl.appendChild(results[key]);
-        }
-    }
-
-    updateRates().then(rates => {
-        const currencySelect = document.getElementById('currencySwitcherList');
-        for (const rate in rates) {
-            const optionEl = document.createElement('option');
-            optionEl.value = rate;
-            currencySelect.appendChild(optionEl);
-        }
-
-        let mappedRates = {};
-        for (const rate in rates)
-            mappedRates[rate] = rate;
-
-        setupAutocomplete('currencySwitcher', 'currencySwitcherList', { data: mappedRates }, null, updateResults);
-        document.getElementById('currencySwitcher').value = 'RUB';
-    });
-
-    updateDepartures();
-
-    const icons = {};
-
-    fetch('/res/img/route-icons/sea.svg').then(res => res.text()).then(svg => icons.sea = svg);
-    fetch('/res/img/route-icons/rail.svg').then(res => res.text()).then(svg => icons.rail = svg);
-    fetch('/res/img/route-icons/truck.svg').then(res => res.text()).then(svg => icons.truck = svg);
-
-    document.getElementById('calcForm').addEventListener('submit', function (e) {
-        if (!this.checkValidity()) {
-            // стандартная браузерная валидация
-            return;
-        }
-
-        e.preventDefault();
-
-        if (!departureHiddenInput.value || !destinationHiddenInput.value) {
-            showGlobalAlert("Пожалуйста, выберите один из вариантов пункта А и пункта Б.");
-            if (!departureHiddenInput.value) departureInput.classList.add('is-invalid');
-            if (!destinationHiddenInput.value) destinationInput.classList.add('is-invalid');
-            return;
-        }
-        const selectedCurrency = document.getElementById('currencySwitcher').value;
-        if (!selectedCurrency || selectedCurrency.trim() === '') {
-            showGlobalAlert("Пожалуйста, выберите валюту.");
-            document.getElementById('currencySwitcher').classList.add('is-invalid');
-            return;
-        }
-        if (!rates || !rates[selectedCurrency]) {
-            showGlobalAlert(`Валюта "${selectedCurrency}" не найдена.`);
-            document.getElementById('currencySwitcher').classList.add('is-invalid');
-            return;
-        }
-
-        departureInput.classList.remove('is-invalid');
-        destinationInput.classList.remove('is-invalid');
-
-        const calculateButton = document.getElementById('calculate');
-        calculateButton.disabled = true;
-
-        calculateAndRender(icons, selectedCurrency)
-            .catch(e => {
-                showGlobalAlert(`Error: ${e.message}`)
-                throw e;
-            })
-            .finally(() => calculateButton.disabled = false);
-    });
+    new App(
+        document.getElementById("currencySwitcher"),
+        document.getElementById("extendedCurrencySwitcherWrapper"),
+        document.getElementById("dispatchDate"),
+        document.getElementById("showAllRoutes"),
+        document.getElementById("departure"),
+        document.getElementById("destination"),
+        document.getElementById("departureId"),
+        document.getElementById("destinationId"),
+        document.getElementById("cargoWeight"),
+        document.getElementById("containerType"),
+    ).setup();
 </script>
 
 <script src="lib/bootstrap5/bootstrap.bundle.js"></script>
