@@ -24,11 +24,11 @@ def build_usual_query(
     container_ids: list[int],
     only_in_selected_date_range: bool = True,
 ):
-    where_clause = (
-        (RouteModel.effective_from <= date)
-        & (RouteModel.start_point_id == start_point_id)
-        & (RouteModel.end_point_id == end_point_id)
-        & (RouteModel.type == route_type)
+    where_clause = and_(
+        RouteModel.effective_from <= date,
+        RouteModel.start_point_id == start_point_id,
+        RouteModel.end_point_id == end_point_id,
+        RouteModel.type == route_type,
     )
     if only_in_selected_date_range:
         where_clause &= RouteModel.effective_to >= date
@@ -38,8 +38,10 @@ def build_usual_query(
         .where(where_clause)
         .join(
             PriceModel,
-            (RouteModel.id == PriceModel.route_id)
-            & PriceModel.container_id.in_(container_ids)
+            and_(
+                RouteModel.id == PriceModel.route_id,
+                PriceModel.container_id.in_(container_ids),
+            ),
         )
         .order_by(desc(RouteModel.effective_to))
         # note: I tried using 'group by' statement, but it cuts off prices
@@ -59,11 +61,11 @@ def build_mixed_with_drop_query(
     container_ids: list[int],
     only_in_selected_date_range: bool = False,
 ):
-    where_clause = (
-        (RouteModel.effective_from <= date)
-        & (RouteModel.start_point_id == start_point_id)
-        & (RouteModel.end_point_id == end_point_id)
-        & (RouteModel.type == RouteTypeEnum.SEA_RAIL)
+    where_clause = and_(
+        RouteModel.effective_from <= date,
+        RouteModel.start_point_id == start_point_id,
+        RouteModel.end_point_id == end_point_id,
+        RouteModel.type == RouteTypeEnum.SEA_RAIL,
     )
     if only_in_selected_date_range:
         where_clause &= RouteModel.effective_to >= date
@@ -73,8 +75,10 @@ def build_mixed_with_drop_query(
         .where(where_clause)
         .join(
             PriceModel,
-            (RouteModel.id == PriceModel.route_id)
-            & PriceModel.container_id.in_(container_ids)
+            and_(
+                RouteModel.id == PriceModel.route_id,
+                PriceModel.container_id.in_(container_ids),
+            ),
         )
         .join(
             DropModel,
@@ -84,8 +88,8 @@ def build_mixed_with_drop_query(
                 RouteModel.company_id == DropModel.company_id,
                 PriceModel.container_id == DropModel.container_id,
                 DropModel.rail_start_point_id.is_(None),
-                DropModel.sea_end_point_id.is_(None)
-            )
+                DropModel.sea_end_point_id.is_(None),
+            ),
         )
         .order_by(desc(RouteModel.effective_to))
         # note: I tried using 'group by' statement, but it cuts off prices
@@ -115,15 +119,15 @@ def build_base_sea_rail_query(
     only_in_selected_date_range: bool = False,
 ) -> tuple:
     SeaRoute, RailRoute, SeaPrice, RailPrice = _create_aliases()
-    where_clause = (  # noqa: ECE001
-        (SeaRoute.type == RouteTypeEnum.SEA)
-        & (RailRoute.type == RouteTypeEnum.RAIL)
-        & (SeaRoute.effective_from <= date)
-        & (RailRoute.effective_from <= date)
-        & (SeaRoute.start_point_id == start_point_id)
-        & (RailRoute.end_point_id == end_point_id)
-        & SeaPrice.container_id.in_(container_ids)
-        & RailPrice.container_id.in_(container_ids)
+    where_clause = and_(
+        SeaRoute.type == RouteTypeEnum.SEA,
+        RailRoute.type == RouteTypeEnum.RAIL,
+        SeaRoute.effective_from <= date,
+        RailRoute.effective_from <= date,
+        SeaRoute.start_point_id == start_point_id,
+        RailRoute.end_point_id == end_point_id,
+        SeaPrice.container_id.in_(container_ids),
+        RailPrice.container_id.in_(container_ids),
     )
     if only_in_selected_date_range:
         where_clause &= SeaRoute.effective_to >= date
@@ -177,8 +181,8 @@ def create_sea_rail_queries(
             RailRoute.company_id == DropModel.company_id,
             RailPrice.container_id == DropModel.container_id,
             SeaRoute.start_point_id == DropModel.sea_start_point_id,
-            SeaRoute.end_point_id == DropModel.sea_end_point_id
-        )
+            SeaRoute.end_point_id == DropModel.sea_end_point_id,
+        ),
     )
 
     query_rail_drop = _add_drop_join(
@@ -189,8 +193,8 @@ def create_sea_rail_queries(
             RailRoute.company_id == DropModel.company_id,
             RailPrice.container_id == DropModel.container_id,
             DropModel.sea_start_point_id.is_(None),
-            DropModel.sea_end_point_id.is_(None)
-        )
+            DropModel.sea_end_point_id.is_(None),
+        ),
     )
 
     query_sea_drop = _add_drop_join(
@@ -201,8 +205,8 @@ def create_sea_rail_queries(
             SeaRoute.company_id == DropModel.company_id,
             SeaPrice.container_id == DropModel.container_id,
             DropModel.rail_start_point_id.is_(None),
-            DropModel.rail_end_point_id.is_(None)
-        )
+            DropModel.rail_end_point_id.is_(None),
+        ),
     )
 
     query_no_drop = base_query
