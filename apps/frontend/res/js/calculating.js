@@ -11,7 +11,7 @@ dispatchDateInput.valueAsDate = dispatchDateInput.valueAsDate || new Date();
 
 const departures = { data: {} };
 
-function getCurrencySymbol(currName, defaultCur = '') {
+function getCurrencySymbol(currName, defaultCur = undefined) {
     const currMap = {RUB: '₽', USD: '$'};
     return currMap[currName] ?? defaultCur;
 }
@@ -192,25 +192,34 @@ async function calculateAndRender(icons, selectedCurrency) {
             routeEl.appendChild(document.createElement('hr'));
 
             let dropEl = document.createElement('div');
-            dropEl.className = 'drop-off';
+            dropEl.className = 'drop-off row';
+            dropEl.innerHTML = "<div class='col-md-7'>Drop off:</div>";
+
+            const dropPriceEl = document.createElement('div');
+            dropPriceEl.className = 'col-md-5';
 
             if (drop?.price) {
-                const priceSpan = document.createElement('span');
+                const priceSpan = document.createElement('b');
                 priceSpan.className = 'drop-off-price';
                 priceSpan.innerHTML = drop.price;
 
-                const currencySpan = document.createElement('span');
+                const currencySpan = document.createElement('b');
                 currencySpan.className = 'drop-off-currency';
                 currencySpan.setAttribute('data-bs-currency', drop.currency);
-                currencySpan.innerHTML = getCurrencySymbol(drop.currency);
+                const currencySymbol = getCurrencySymbol(drop.currency);
+                currencySpan.innerHTML = currencySymbol ?? drop.currency;
 
-                dropEl.appendChild(document.createTextNode('+'));
-                dropEl.appendChild(currencySpan);
-                dropEl.appendChild(priceSpan);
-                dropEl.appendChild(document.createTextNode(' стоимость drop off'));
+                if (currencySymbol) {
+                    dropPriceEl.appendChild(currencySpan);
+                    dropPriceEl.appendChild(priceSpan);
+                } else {
+                    dropPriceEl.appendChild(priceSpan);
+                    dropPriceEl.appendChild(currencySpan);
+                }
             } else
-                dropEl.innerHTML = 'drop off включен';
+                dropPriceEl.innerHTML = '<b>включен</b>';
 
+            dropEl.appendChild(dropPriceEl);
             routeEl.appendChild(dropEl);
 
             const sumPriceEl = document.createElement('div');
