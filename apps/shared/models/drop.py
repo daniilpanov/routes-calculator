@@ -35,6 +35,7 @@ class DropModel(Base):
     effective_from: Mapped[datetime.date] = mapped_column(DateTime(timezone=False))
     effective_to: Mapped[datetime.date] = mapped_column(DateTime(timezone=False))
     price: Mapped[float] = mapped_column(default=0)
+    conversation_percents: Mapped[float] = mapped_column(default=0)
     currency: Mapped[str] = mapped_column(String(25))
 
     sea_start_point: Mapped[PointModel | None] = relationship(
