@@ -16,7 +16,6 @@ function updateResults(selectedCurrency) {
         let i = 0;
         const keys = [];
         const values = [];
-        const elements = [];
         const results = [...resultsEl.getElementsByClassName("result-item")];
 
         for (const result of results) {
@@ -24,7 +23,6 @@ function updateResults(selectedCurrency) {
             if (!sumPriceEl)
                 continue;
 
-            elements.push(result);
             result.remove();
 
             let minSumPrice = 0, maxSumPrice = 0, sumPrice = 0;
