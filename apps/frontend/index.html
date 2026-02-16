@@ -126,7 +126,7 @@
             </select>
         </div>
         <div class="mb-3 position-relative inactive" id="extendedCurrencySwitcherWrapper">
-            <input type="text" class="form-control" id="currencySwitcher" placeholder="Выберите валюту" autocomplete="off" required>
+            <input type="text" class="form-control" value="RUB" id="currencySwitcher" placeholder="Выберите валюту" autocomplete="off" required>
             <div id="currencySwitcherList" class="autocomplete-items d-none"></div>
         </div>
 
@@ -140,6 +140,7 @@
 </main>
 
 <script src="js/api.js"></script>
+<script src="js/store.js"></script>
 <script src="js/components/alerts.js"></script>
 <script src="js/components/autocomplete.js"></script>
 <script src="js/components/result-block.js"></script>
@@ -150,6 +151,11 @@
 <script>
     const currenciesSwitcherInputWrapper = document.getElementById("extendedCurrencySwitcherWrapper");
     const currenciesSwitcherInput = document.getElementById("currencySwitcher");
+
+    const updateSelectedCurrency = () => store.set("selectedCurrency", currenciesSwitcherInput.value);
+
+    currenciesSwitcherInput.addEventListener("input", () => updateSelectedCurrency);
+    updateSelectedCurrency();
 
     document.getElementById("currencySwitcherSelect")?.addEventListener("change", e => {
         const val = e?.target?.value;
@@ -178,17 +184,18 @@
         for (const rate in rates)
             mappedRates[rate] = rate;
 
-        setupAutocomplete("currencySwitcher", "currencySwitcherList", { data: mappedRates }, null, updateResults);
-        document.getElementById("currencySwitcher").value = "RUB";
+        setupAutocomplete("currencySwitcher", "currencySwitcherList", "rates", null, updateResults);
     });
 
     updateDepartures();
 
     const icons = {};
 
-    fetch("/res/img/route-icons/sea.svg").then(res => res.text()).then(svg => icons.sea = svg);
-    fetch("/res/img/route-icons/rail.svg").then(res => res.text()).then(svg => icons.rail = svg);
-    fetch("/res/img/route-icons/truck.svg").then(res => res.text()).then(svg => icons.truck = svg);
+    Promise.all([
+        fetch("/res/img/route-icons/sea.svg").then(res => res.text()).then(svg => icons.sea = svg),
+        fetch("/res/img/route-icons/rail.svg").then(res => res.text()).then(svg => icons.rail = svg),
+        fetch("/res/img/route-icons/truck.svg").then(res => res.text()).then(svg => icons.truck = svg),
+    ]).then(() => store.set("icons", icons));
 
     document.getElementById("calcForm").addEventListener("submit", function (e) {
         if (!this.checkValidity()) {
@@ -204,12 +211,15 @@
             if (!destinationHiddenInput.value) destinationInput.classList.add("is-invalid");
             return;
         }
-        const selectedCurrency = document.getElementById("currencySwitcher").value;
+
+        const selectedCurrency = store.get("selectedCurrency").value;
         if (!selectedCurrency || selectedCurrency.trim() === "") {
             showGlobalAlert("Пожалуйста, выберите валюту.");
             document.getElementById("currencySwitcher").classList.add("is-invalid");
             return;
         }
+
+        const rates = store.get("rates").value;
         if (!rates || !rates[selectedCurrency]) {
             showGlobalAlert(`Валюта "${selectedCurrency}" не найдена.`);
             document.getElementById("currencySwitcher").classList.add("is-invalid");
@@ -222,7 +232,7 @@
         const calculateButton = document.getElementById("calculate");
         calculateButton.disabled = true;
 
-        calculateAndRender(icons, selectedCurrency)
+        calculateAndRender()
             .catch(e => {
                 showGlobalAlert(`Error: ${e.message}`)
                 throw e;

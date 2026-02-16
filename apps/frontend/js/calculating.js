@@ -9,8 +9,6 @@ const containerTypeInput = document.getElementById("containerType");
 
 dispatchDateInput.valueAsDate = dispatchDateInput.valueAsDate || new Date();
 
-const departures = { data: {} };
-
 function getCurrencySymbol(currName, defaultCur = undefined) {
     const currMap = {RUB: "₽", USD: "$"};
     return currMap[currName] ?? defaultCur;
@@ -29,7 +27,7 @@ async function updateDepartures() {
         return;
 
     const date = dispatchDateInput.value;
-    departures.data = await asyncCallOrAlert(getDepartures, date);
+    store.set("departures", await asyncCallOrAlert(getDepartures, date));
 
     destinationInput.value = "";
     destinationHiddenInput.value = "";
@@ -38,20 +36,18 @@ async function updateDepartures() {
 
 dispatchDateInput.addEventListener("input", updateDepartures);
 
-const destinations = { data: {} };
-
-setupAutocomplete("departure", "departureList", departures, "departureId", async () => {
+setupAutocomplete("departure", "departureList", "departures", "departureId", async () => {
     destinationInput.disabled = false;
     const date = dispatchDateInput.value;
     const departureId = departureHiddenInput.value;
-    destinations.data = await asyncCallOrAlert(getDestinations, date, departureId);
+    store.set("destinations", await asyncCallOrAlert(getDestinations, date, departureId));
 }, () => {
     destinationInput.disabled = true;
     destinationInput.value = "";
 });
-setupAutocomplete("destination", "destinationList", destinations, "destinationId");
+setupAutocomplete("destination", "destinationList", "destinations", "destinationId");
 
-async function calculateAndRender(icons, selectedCurrency) {
+async function calculateAndRender() {
     const routes = await asyncCallOrAlert(
         getRoutes,
         dispatchDateInput.value,
@@ -62,11 +58,15 @@ async function calculateAndRender(icons, selectedCurrency) {
         containerTypeInput.value,
     );
 
+    store.set("result", routes);
+
     const dataEls = [routes.one_service_routes, routes.multi_service_routes];
     const wrappers = [
         document.getElementById("results-direct"),
         document.getElementById("results-other"),
     ];
+
+    const selectedCurrency = store.get("selectedCurrency").value;
 
     for (let i = 0; i < dataEls.length; ++i) {
         const data = dataEls[i];
@@ -77,14 +77,16 @@ async function calculateAndRender(icons, selectedCurrency) {
         container.innerHTML = "";
 
         container.append(...data.map(([route, drop, mayRouteBeInvalid]) =>
-            _buildRoute(route, drop, mayRouteBeInvalid, icons, selectedCurrency)
+            _buildRoute(route, drop, mayRouteBeInvalid, selectedCurrency)
         ));
     }
 
     updateResults(document.getElementById("currencySwitcher").value);
 }
 
-function _buildRoute(route, drop, mayRouteBeInvalid, icons, selectedCurrency) {
+function _buildRoute(route, drop, mayRouteBeInvalid, selectedCurrency) {
+    const icons = store.get("icons")?.value;
+
     const routeEl = document.createElement("div");
     routeEl.className = "p-3 mb-4 border rounded shadow-sm result-item";
 

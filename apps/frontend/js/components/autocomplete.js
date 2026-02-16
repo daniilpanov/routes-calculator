@@ -1,7 +1,7 @@
 function setupAutocomplete(
     inputId,
     listId,
-    dataObj,
+    storeKey,
     hiddenInputId = undefined,
     callbackOnCompleted = undefined,
     callbackOnUncompleted = undefined,
@@ -11,7 +11,7 @@ function setupAutocomplete(
     const list = document.getElementById(listId);
 
     function autocompleteProcess() {
-        const data = dataObj.data;
+        const data = store.get(storeKey)?.value;
         const val = this.value.trim().toLowerCase();
         list.innerHTML = "";
 
