@@ -117,8 +117,8 @@ class DropModel(Base):
     rail_start_point_id: Mapped[int | None] = mapped_column(ForeignKey("points.id"), nullable=True)
     rail_end_point_id: Mapped[int | None] = mapped_column(ForeignKey("points.id"), nullable=True)
 
-    start_date: Mapped[datetime.date] = mapped_column(DateTime(timezone=False))
-    end_date: Mapped[datetime.date] = mapped_column(DateTime(timezone=False))
+    effective_from: Mapped[datetime.date] = mapped_column(DateTime(timezone=False))
+    effective_to: Mapped[datetime.date] = mapped_column(DateTime(timezone=False))
     price: Mapped[float] = mapped_column(default=0)
     currency: Mapped[str] = mapped_column(String(25))
 
