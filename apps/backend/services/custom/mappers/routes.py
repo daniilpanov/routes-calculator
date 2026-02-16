@@ -45,8 +45,13 @@ def _map_route(route_and_drop_and_datecheck: tuple[list[Base], bool]):
             skipped_count += 1
 
     return (
-        (res, {"price": drop.price, "currency": drop.currency}, may_route_be_invalid)
-        if drop else (res, None, may_route_be_invalid)
+        res,
+        {"price": drop.price, "conversation_percents": drop.conversation_percents, "currency": drop.currency},
+        may_route_be_invalid,
+    ) if drop else (
+        res,
+        None,
+        may_route_be_invalid,
     )
 
 

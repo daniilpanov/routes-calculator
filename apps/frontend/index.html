@@ -317,8 +317,12 @@
                         const dropPrice = updateResultRates(Number.parseFloat(price), currency, selectedCurrency);
                         minSumPrice += dropPrice;
                         maxSumPrice += dropPrice;
-                        minSumPriceWithConv += dropPrice;
-                        maxSumPriceWithConv += dropPrice;
+
+                        const conversationPercents = dropEl.getElementsByClassName('drop-off-conversation')[0]
+                            ?.getAttribute('data-bs-conversation') ?? 0;
+                        const dropPriceWithConv = dropPrice * (1 + Number(conversationPercents) / 100);
+                        minSumPriceWithConv += dropPriceWithConv;
+                        maxSumPriceWithConv += dropPriceWithConv;
                     }
                 }
 
