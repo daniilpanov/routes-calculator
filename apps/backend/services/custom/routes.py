@@ -89,6 +89,8 @@ def build_mixed_with_drop_query(
                 PriceModel.container_id == DropModel.container_id,
                 DropModel.rail_start_point_id.is_(None),
                 DropModel.sea_end_point_id.is_(None),
+                DropModel.effective_from <= RouteModel.effective_from,
+                DropModel.effective_to >= RouteModel.effective_to,
             ),
         )
         .order_by(desc(RouteModel.effective_to))
@@ -182,6 +184,10 @@ def create_sea_rail_queries(
             RailPrice.container_id == DropModel.container_id,
             SeaRoute.start_point_id == DropModel.sea_start_point_id,
             SeaRoute.end_point_id == DropModel.sea_end_point_id,
+            DropModel.effective_from <= SeaRoute.effective_from,
+            DropModel.effective_to >= SeaRoute.effective_to,
+            DropModel.effective_from <= RailRoute.effective_from,
+            DropModel.effective_to >= RailRoute.effective_to,
         ),
     )
 
@@ -194,6 +200,10 @@ def create_sea_rail_queries(
             RailPrice.container_id == DropModel.container_id,
             DropModel.sea_start_point_id.is_(None),
             DropModel.sea_end_point_id.is_(None),
+            DropModel.effective_from <= SeaRoute.effective_from,
+            DropModel.effective_to >= SeaRoute.effective_to,
+            DropModel.effective_from <= RailRoute.effective_from,
+            DropModel.effective_to >= RailRoute.effective_to,
         ),
     )
 
@@ -206,6 +216,10 @@ def create_sea_rail_queries(
             SeaPrice.container_id == DropModel.container_id,
             DropModel.rail_start_point_id.is_(None),
             DropModel.rail_end_point_id.is_(None),
+            DropModel.effective_from <= SeaRoute.effective_from,
+            DropModel.effective_to >= SeaRoute.effective_to,
+            DropModel.effective_from <= RailRoute.effective_from,
+            DropModel.effective_to >= RailRoute.effective_to,
         ),
     )
 
