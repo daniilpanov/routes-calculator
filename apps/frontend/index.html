@@ -148,97 +148,21 @@
 <script src="js/calculating.js"></script>
 <script src="js/conversation.js"></script>
 
+<script src="js/app.js"></script>
+
 <script>
-    const currenciesSwitcherInputWrapper = document.getElementById("extendedCurrencySwitcherWrapper");
-    const currenciesSwitcherInput = document.getElementById("currencySwitcher");
-
-    const updateSelectedCurrency = () => store.set("selectedCurrency", currenciesSwitcherInput.value);
-
-    currenciesSwitcherInput.addEventListener("input", () => updateSelectedCurrency);
-    updateSelectedCurrency();
-
-    document.getElementById("currencySwitcherSelect")?.addEventListener("change", e => {
-        const val = e?.target?.value;
-        if (val === undefined) return;
-
-        currenciesSwitcherInput.value = val;
-        if (val)
-            currenciesSwitcherInputWrapper.classList.add("inactive");
-        else
-            currenciesSwitcherInputWrapper.classList.remove("inactive");
-
-        currenciesSwitcherInput.dispatchEvent(
-            new Event("input", { bubbles: true })
-        );
-    });
-
-    updateRates().then(rates => {
-        const currencySelect = document.getElementById("currencySwitcherList");
-        for (const rate in rates) {
-            const optionEl = document.createElement("option");
-            optionEl.value = rate;
-            currencySelect.appendChild(optionEl);
-        }
-
-        let mappedRates = {};
-        for (const rate in rates)
-            mappedRates[rate] = rate;
-
-        setupAutocomplete("currencySwitcher", "currencySwitcherList", "rates", null, updateResults);
-    });
-
-    updateDepartures();
-
-    const icons = {};
-
-    Promise.all([
-        fetch("/res/img/route-icons/sea.svg").then(res => res.text()).then(svg => icons.sea = svg),
-        fetch("/res/img/route-icons/rail.svg").then(res => res.text()).then(svg => icons.rail = svg),
-        fetch("/res/img/route-icons/truck.svg").then(res => res.text()).then(svg => icons.truck = svg),
-    ]).then(() => store.set("icons", icons));
-
-    document.getElementById("calcForm").addEventListener("submit", function (e) {
-        if (!this.checkValidity()) {
-            // стандартная браузерная валидация
-            return;
-        }
-
-        e.preventDefault();
-
-        if (!departureHiddenInput.value || !destinationHiddenInput.value) {
-            showGlobalAlert("Пожалуйста, выберите один из вариантов пункта А и пункта Б.");
-            if (!departureHiddenInput.value) departureInput.classList.add("is-invalid");
-            if (!destinationHiddenInput.value) destinationInput.classList.add("is-invalid");
-            return;
-        }
-
-        const selectedCurrency = store.get("selectedCurrency").value;
-        if (!selectedCurrency || selectedCurrency.trim() === "") {
-            showGlobalAlert("Пожалуйста, выберите валюту.");
-            document.getElementById("currencySwitcher").classList.add("is-invalid");
-            return;
-        }
-
-        const rates = store.get("rates").value;
-        if (!rates || !rates[selectedCurrency]) {
-            showGlobalAlert(`Валюта "${selectedCurrency}" не найдена.`);
-            document.getElementById("currencySwitcher").classList.add("is-invalid");
-            return;
-        }
-
-        departureInput.classList.remove("is-invalid");
-        destinationInput.classList.remove("is-invalid");
-
-        const calculateButton = document.getElementById("calculate");
-        calculateButton.disabled = true;
-
-        calculateAndRender()
-            .catch(e => {
-                showGlobalAlert(`Error: ${e.message}`)
-                throw e;
-            })
-            .finally(() => calculateButton.disabled = false);
-    });
+    new App(
+        document.getElementById("currencySwitcher"),
+        document.getElementById("extendedCurrencySwitcherWrapper"),
+        document.getElementById("dispatchDate"),
+        document.getElementById("showAllRoutes"),
+        document.getElementById("departure"),
+        document.getElementById("destination"),
+        document.getElementById("departureId"),
+        document.getElementById("destinationId"),
+        document.getElementById("cargoWeight"),
+        document.getElementById("containerType"),
+    ).setup();
 </script>
 
 <script src="lib/bootstrap5/bootstrap.bundle.js"></script>

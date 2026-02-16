@@ -1,14 +1,3 @@
-const dispatchDateInput = document.getElementById("dispatchDate");
-const showAllRoutesCheckbox = document.getElementById("showAllRoutes");
-const departureInput = document.getElementById("departure");
-const destinationInput = document.getElementById("destination");
-const departureHiddenInput = document.getElementById("departureId");
-const destinationHiddenInput = document.getElementById("destinationId");
-const cargoWeightInput = document.getElementById("cargoWeight");
-const containerTypeInput = document.getElementById("containerType");
-
-dispatchDateInput.valueAsDate = dispatchDateInput.valueAsDate || new Date();
-
 function getCurrencySymbol(currName, defaultCur = undefined) {
     const currMap = {RUB: "₽", USD: "$"};
     return currMap[currName] ?? defaultCur;
@@ -22,40 +11,22 @@ async function asyncCallOrAlert(func, ...args) {
     }
 }
 
-async function updateDepartures() {
-    if (!dispatchDateInput.validity.valid)
-        return;
-
-    const date = dispatchDateInput.value;
-    store.set("departures", await asyncCallOrAlert(getDepartures, date));
-
-    destinationInput.value = "";
-    destinationHiddenInput.value = "";
-    destinationInput.disabled = true;
-}
-
-dispatchDateInput.addEventListener("input", updateDepartures);
-
-setupAutocomplete("departure", "departureList", "departures", "departureId", async () => {
-    destinationInput.disabled = false;
-    const date = dispatchDateInput.value;
-    const departureId = departureHiddenInput.value;
-    store.set("destinations", await asyncCallOrAlert(getDestinations, date, departureId));
-}, () => {
-    destinationInput.disabled = true;
-    destinationInput.value = "";
-});
-setupAutocomplete("destination", "destinationList", "destinations", "destinationId");
-
-async function calculateAndRender() {
+async function calculateAndRender(
+    dispatchDate,
+    showAllRoutes,
+    departureDescriptor,
+    destinationDescriptor,
+    containerWeight,
+    containerType,
+) {
     const routes = await asyncCallOrAlert(
         getRoutes,
-        dispatchDateInput.value,
-        !showAllRoutesCheckbox.checked ?? false,
-        JSON.parse(departureHiddenInput.value),
-        JSON.parse(destinationHiddenInput.value),
-        cargoWeightInput.value,
-        containerTypeInput.value,
+        dispatchDate,
+        !showAllRoutes,
+        departureDescriptor,
+        destinationDescriptor,
+        containerWeight,
+        containerType,
     );
 
     store.set("result", routes);
