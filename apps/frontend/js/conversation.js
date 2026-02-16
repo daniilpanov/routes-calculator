@@ -6,8 +6,8 @@ function numberWithSpaces(x) {
 
 function updateResults(selectedCurrency) {
     const resultWrappers = [
-        document.getElementById('results-direct'),
-        document.getElementById('results-other'),
+        document.getElementById("results-direct"),
+        document.getElementById("results-other"),
     ];
 
     const needConversation = selectedCurrency === "RUB";
@@ -96,18 +96,18 @@ function updateResults(selectedCurrency) {
                 maxSumPriceWithConv += maximalWithConv;
             }
 
-            const dropEl = result.getElementsByClassName('drop-off')[0];
+            const dropEl = result.getElementsByClassName("drop-off")[0];
             if (dropEl) {
-                const currency = dropEl.getElementsByClassName('drop-off-currency')[0]?.getAttribute('data-bs-currency');
-                const price = dropEl.getElementsByClassName('drop-off-price')[0]?.textContent;
+                const currency = dropEl.getElementsByClassName("drop-off-currency")[0]?.getAttribute("data-bs-currency");
+                const price = dropEl.getElementsByClassName("drop-off-price")[0]?.textContent;
                 if (currency && price) {
                     const dropPrice = updateResultRates(Number.parseFloat(price), currency, selectedCurrency);
                     minSumPrice += dropPrice;
                     maxSumPrice += dropPrice;
                     sumPrice += dropPrice;
 
-                    const conversationPercents = dropEl.getElementsByClassName('drop-off-conversation')[0]
-                        ?.getAttribute('data-bs-conversation') ?? 0;
+                    const conversationPercents = dropEl.getElementsByClassName("drop-off-conversation")[0]
+                        ?.getAttribute("data-bs-conversation") ?? 0;
                     const dropPriceWithConv = dropPrice * (1 + Number(conversationPercents) / 100);
                     minSumPriceWithConv += dropPriceWithConv;
                     maxSumPriceWithConv += dropPriceWithConv;

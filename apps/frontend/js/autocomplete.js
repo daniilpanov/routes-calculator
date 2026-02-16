@@ -6,11 +6,11 @@ function setupAutocomplete(inputId, listId, dataObj, hiddenInputId, callbackOnCo
     function autocompleteProcess() {
         const data = dataObj.data;
         const val = this.value.trim().toLowerCase();
-        list.innerHTML = '';
+        list.innerHTML = "";
 
         const filtered = Object.keys(data).filter(item => item.toLowerCase().includes(val));
         if (!filtered.length) {
-            list.classList.add('d-none');
+            list.classList.add("d-none");
             if (callbackOnUncompleted) callbackOnUncompleted();
             return;
         }
@@ -19,16 +19,16 @@ function setupAutocomplete(inputId, listId, dataObj, hiddenInputId, callbackOnCo
 
         filtered.forEach(item => {
             if (item.toLowerCase() === val.toLowerCase()) selectedVal = item;
-            const div = document.createElement('div');
+            const div = document.createElement("div");
             div.textContent = item;
-            div.setAttribute('data-item-id', data[item]);
-            div.classList.add('autocomplete-item');
-            div.addEventListener('mousedown', () => {
+            div.setAttribute("data-item-id", data[item]);
+            div.classList.add("autocomplete-item");
+            div.addEventListener("mousedown", () => {
                 input.value = item;
                 if (hiddenInput)
                     hiddenInput.value = data[item];
-                input.classList.remove('is-invalid');
-                list.classList.add('d-none');
+                input.classList.remove("is-invalid");
+                list.classList.add("d-none");
                 if (callbackOnCompleted) callbackOnCompleted(item);
             });
             list.appendChild(div);
@@ -40,17 +40,17 @@ function setupAutocomplete(inputId, listId, dataObj, hiddenInputId, callbackOnCo
             if (callbackOnCompleted) callbackOnCompleted(selectedVal);
         } else {
             if (hiddenInput)
-                hiddenInput.value = '';
+                hiddenInput.value = "";
             if (callbackOnUncompleted) callbackOnUncompleted();
         }
 
-        list.classList.remove('d-none');
+        list.classList.remove("d-none");
     }
 
-    input.addEventListener('input', autocompleteProcess);
-    input.addEventListener('focus', autocompleteProcess);
+    input.addEventListener("input", autocompleteProcess);
+    input.addEventListener("focus", autocompleteProcess);
 
-    input.addEventListener('blur', () => {
-        setTimeout(() => list.classList.add('d-none'), 50);
+    input.addEventListener("blur", () => {
+        setTimeout(() => list.classList.add("d-none"), 50);
     });
 }

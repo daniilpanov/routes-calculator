@@ -1,18 +1,18 @@
-const dispatchDateInput = document.getElementById('dispatchDate');
-const showAllRoutesCheckbox = document.getElementById('showAllRoutes');
-const departureInput = document.getElementById('departure');
-const destinationInput = document.getElementById('destination');
-const departureHiddenInput = document.getElementById('departureId');
-const destinationHiddenInput = document.getElementById('destinationId');
-const cargoWeightInput = document.getElementById('cargoWeight');
-const containerTypeInput = document.getElementById('containerType');
+const dispatchDateInput = document.getElementById("dispatchDate");
+const showAllRoutesCheckbox = document.getElementById("showAllRoutes");
+const departureInput = document.getElementById("departure");
+const destinationInput = document.getElementById("destination");
+const departureHiddenInput = document.getElementById("departureId");
+const destinationHiddenInput = document.getElementById("destinationId");
+const cargoWeightInput = document.getElementById("cargoWeight");
+const containerTypeInput = document.getElementById("containerType");
 
 dispatchDateInput.valueAsDate = dispatchDateInput.valueAsDate || new Date();
 
 const departures = { data: {} };
 
 function getCurrencySymbol(currName, defaultCur = undefined) {
-    const currMap = {RUB: '₽', USD: '$'};
+    const currMap = {RUB: "₽", USD: "$"};
     return currMap[currName] ?? defaultCur;
 }
 
@@ -25,17 +25,17 @@ async function updateDepartures() {
         departures.data = {};
         for (const loc in data)
             departures.data[loc] = JSON.stringify(data[loc]);
-        destinationInput.value = '';
-        destinationHiddenInput.value = '';
+        destinationInput.value = "";
+        destinationHiddenInput.value = "";
         destinationInput.disabled = true;
     }
 }
 
-dispatchDateInput.addEventListener('input', updateDepartures);
+dispatchDateInput.addEventListener("input", updateDepartures);
 
 const destinations = { data: {} };
 
-setupAutocomplete('departure', 'departureList', departures, 'departureId', async () => {
+setupAutocomplete("departure", "departureList", departures, "departureId", async () => {
     destinationInput.disabled = false;
     const date = dispatchDateInput.value;
     const departureId = departureHiddenInput.value;
@@ -48,9 +48,9 @@ setupAutocomplete('departure', 'departureList', departures, 'departureId', async
     }
 }, () => {
     destinationInput.disabled = true;
-    destinationInput.value = '';
+    destinationInput.value = "";
 });
-setupAutocomplete('destination', 'destinationList', destinations, 'destinationId');
+setupAutocomplete("destination", "destinationList", destinations, "destinationId");
 
 function _renderComment(text) {
     return text ? `<blockquote><p>Комментарий: <i>${text}</i></p></blockquote>` : "";
@@ -79,7 +79,7 @@ function _renderOnePriceOfSegment(priceVariant) {
 
 function _renderMultiPrice(icon, segment, isMixed, selectedCurrency) {
     return `
-        <div class="align-items-center my-2 result-segment" data-bs-price="${isMixed ? 'X' : 'M'}">
+        <div class="align-items-center my-2 result-segment" data-bs-price="${isMixed ? "X" : "M"}">
             <div class="route-icon">${icon} &emsp; ${segment.company}</div>
             <div class="mb-2">
                 Ставка действует:
@@ -89,7 +89,7 @@ function _renderMultiPrice(icon, segment, isMixed, selectedCurrency) {
                 ${
                     segment.prices
                         .map(priceVariant => _renderOnePriceOfSegment(priceVariant, selectedCurrency))
-                        .join('\n')
+                        .join("\n")
                 }
             </div>
             <div>
@@ -109,7 +109,7 @@ function _renderSinglePrice(icon, segment) {
     return `
         <div class="align-items-center my-2 result-segment" data-bs-price="${roundedPrice}" data-bs-currency="${segment.currency}">
             <div class="route-icon">${icon} &emsp; ${segment.company}</div>
-            <div class="mb-2">${segment.beginCond ? `Условия: ${segment.beginCond} - ${segment.finishCond}` : ''}</div>
+            <div class="mb-2">${segment.beginCond ? `Условия: ${segment.beginCond} - ${segment.finishCond}` : ""}</div>
             <div class="mb-2">Ставка действует: ${new Date(segment.effectiveFrom).toLocaleDateString()} — ${new Date(segment.effectiveTo).toLocaleDateString()}</div>
             <div class="mb-3">Контейнер: ${segment.container.name}</div>
             <div>
@@ -135,10 +135,10 @@ async function calculateAndRender(icons, selectedCurrency) {
         containerType: containerTypeInput.value,
     };
 
-    const response = await fetch('/api/routes/calculate', {
-        method: 'POST',
+    const response = await fetch("/api/routes/calculate", {
+        method: "POST",
         headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
         },
         body: JSON.stringify(payload),
     });
@@ -146,7 +146,7 @@ async function calculateAndRender(icons, selectedCurrency) {
         throw new Error(`[${response.status} ${response.statusText}]<p>` + await response.text());
 
     const responseData = await response.json();
-    const wrappers = [document.getElementById('results-direct'), document.getElementById('results-other')];
+    const wrappers = [document.getElementById("results-direct"), document.getElementById("results-other")];
     const dataEls = [responseData.one_service_routes, responseData.multi_service_routes];
 
     for (let i = 0; i < dataEls.length; ++i) {
@@ -155,11 +155,11 @@ async function calculateAndRender(icons, selectedCurrency) {
             continue;
 
         const container = wrappers[i];
-        container.innerHTML = '';
+        container.innerHTML = "";
 
         data.forEach(([route, drop, mayRouteBeInvalid]) => {
-            const routeEl = document.createElement('div');
-            routeEl.className = 'p-3 mb-4 border rounded shadow-sm result-item';
+            const routeEl = document.createElement("div");
+            routeEl.className = "p-3 mb-4 border rounded shadow-sm result-item";
 
             if (mayRouteBeInvalid) {
                 routeEl.innerHTML = `
@@ -172,8 +172,8 @@ async function calculateAndRender(icons, selectedCurrency) {
                 `;
             }
 
-            const segmentsEl = document.createElement('div');
-            segmentsEl.className = 'segments';
+            const segmentsEl = document.createElement("div");
+            segmentsEl.className = "segments";
 
             segmentsEl.innerHTML = route
                 .map(segment => {
@@ -185,27 +185,27 @@ async function calculateAndRender(icons, selectedCurrency) {
                         ? _renderSinglePrice(icon, segment)
                         : _renderMultiPrice(icon, segment, segment.type === "SEA_RAIL", selectedCurrency);
                 })
-                .join('<div class="text-center mb-3 col-md-2">↓</div>');
+                .join("<div class='text-center mb-3 col-md-2'>↓</div>");
 
             routeEl.appendChild(segmentsEl);
 
-            routeEl.appendChild(document.createElement('hr'));
+            routeEl.appendChild(document.createElement("hr"));
 
-            let dropEl = document.createElement('div');
-            dropEl.className = 'drop-off row';
+            let dropEl = document.createElement("div");
+            dropEl.className = "drop-off row";
             dropEl.innerHTML = "<div class='col-md-7'>Drop off:</div>";
 
-            const dropPriceEl = document.createElement('div');
-            dropPriceEl.className = 'col-md-5';
+            const dropPriceEl = document.createElement("div");
+            dropPriceEl.className = "col-md-5";
 
             if (drop?.price) {
-                const priceSpan = document.createElement('b');
-                priceSpan.className = 'drop-off-price';
+                const priceSpan = document.createElement("b");
+                priceSpan.className = "drop-off-price";
                 priceSpan.innerHTML = drop.price;
 
-                const currencySpan = document.createElement('b');
-                currencySpan.className = 'drop-off-currency';
-                currencySpan.setAttribute('data-bs-currency', drop.currency);
+                const currencySpan = document.createElement("b");
+                currencySpan.className = "drop-off-currency";
+                currencySpan.setAttribute("data-bs-currency", drop.currency);
                 const currencySymbol = getCurrencySymbol(drop.currency);
                 currencySpan.innerHTML = currencySymbol ?? drop.currency;
 
@@ -218,26 +218,26 @@ async function calculateAndRender(icons, selectedCurrency) {
                 }
 
                 if (drop.conversation_percents) {
-                    const conversationPercentsEl = document.createElement('span');
-                    conversationPercentsEl.className = 'text-muted drop-off-conversation';
-                    conversationPercentsEl.setAttribute('data-bs-conversation', drop.conversation_percents);
+                    const conversationPercentsEl = document.createElement("span");
+                    conversationPercentsEl.className = "text-muted drop-off-conversation";
+                    conversationPercentsEl.setAttribute("data-bs-conversation", drop.conversation_percents);
                     conversationPercentsEl.innerHTML = `+ ${drop.conversation_percents}% конвертация в рубли`;
-                    dropPriceEl.appendChild(document.createTextNode(' '));
+                    dropPriceEl.appendChild(document.createTextNode(" "));
                     dropPriceEl.appendChild(conversationPercentsEl);
                 }
             } else
-                dropPriceEl.innerHTML = '<b>включен</b>';
+                dropPriceEl.innerHTML = "<b>включен</b>";
 
             dropEl.appendChild(dropPriceEl);
             routeEl.appendChild(dropEl);
 
-            const sumPriceEl = document.createElement('div');
-            sumPriceEl.classList.add('sum-price', 'mb-3');
+            const sumPriceEl = document.createElement("div");
+            sumPriceEl.classList.add("sum-price", "mb-3");
             routeEl.appendChild(sumPriceEl);
 
             container.appendChild(routeEl);
         });
     }
 
-    updateResults(document.getElementById('currencySwitcher').value);
+    updateResults(document.getElementById("currencySwitcher").value);
 }

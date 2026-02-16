@@ -165,9 +165,9 @@
     });
 
     updateRates().then(rates => {
-        const currencySelect = document.getElementById('currencySwitcherList');
+        const currencySelect = document.getElementById("currencySwitcherList");
         for (const rate in rates) {
-            const optionEl = document.createElement('option');
+            const optionEl = document.createElement("option");
             optionEl.value = rate;
             currencySelect.appendChild(optionEl);
         }
@@ -176,19 +176,19 @@
         for (const rate in rates)
             mappedRates[rate] = rate;
 
-        setupAutocomplete('currencySwitcher', 'currencySwitcherList', { data: mappedRates }, null, updateResults);
-        document.getElementById('currencySwitcher').value = 'RUB';
+        setupAutocomplete("currencySwitcher", "currencySwitcherList", { data: mappedRates }, null, updateResults);
+        document.getElementById("currencySwitcher").value = "RUB";
     });
 
     updateDepartures();
 
     const icons = {};
 
-    fetch('/res/img/route-icons/sea.svg').then(res => res.text()).then(svg => icons.sea = svg);
-    fetch('/res/img/route-icons/rail.svg').then(res => res.text()).then(svg => icons.rail = svg);
-    fetch('/res/img/route-icons/truck.svg').then(res => res.text()).then(svg => icons.truck = svg);
+    fetch("/res/img/route-icons/sea.svg").then(res => res.text()).then(svg => icons.sea = svg);
+    fetch("/res/img/route-icons/rail.svg").then(res => res.text()).then(svg => icons.rail = svg);
+    fetch("/res/img/route-icons/truck.svg").then(res => res.text()).then(svg => icons.truck = svg);
 
-    document.getElementById('calcForm').addEventListener('submit', function (e) {
+    document.getElementById("calcForm").addEventListener("submit", function (e) {
         if (!this.checkValidity()) {
             // стандартная браузерная валидация
             return;
@@ -198,26 +198,26 @@
 
         if (!departureHiddenInput.value || !destinationHiddenInput.value) {
             showGlobalAlert("Пожалуйста, выберите один из вариантов пункта А и пункта Б.");
-            if (!departureHiddenInput.value) departureInput.classList.add('is-invalid');
-            if (!destinationHiddenInput.value) destinationInput.classList.add('is-invalid');
+            if (!departureHiddenInput.value) departureInput.classList.add("is-invalid");
+            if (!destinationHiddenInput.value) destinationInput.classList.add("is-invalid");
             return;
         }
-        const selectedCurrency = document.getElementById('currencySwitcher').value;
-        if (!selectedCurrency || selectedCurrency.trim() === '') {
+        const selectedCurrency = document.getElementById("currencySwitcher").value;
+        if (!selectedCurrency || selectedCurrency.trim() === "") {
             showGlobalAlert("Пожалуйста, выберите валюту.");
-            document.getElementById('currencySwitcher').classList.add('is-invalid');
+            document.getElementById("currencySwitcher").classList.add("is-invalid");
             return;
         }
         if (!rates || !rates[selectedCurrency]) {
             showGlobalAlert(`Валюта "${selectedCurrency}" не найдена.`);
-            document.getElementById('currencySwitcher').classList.add('is-invalid');
+            document.getElementById("currencySwitcher").classList.add("is-invalid");
             return;
         }
 
-        departureInput.classList.remove('is-invalid');
-        destinationInput.classList.remove('is-invalid');
+        departureInput.classList.remove("is-invalid");
+        destinationInput.classList.remove("is-invalid");
 
-        const calculateButton = document.getElementById('calculate');
+        const calculateButton = document.getElementById("calculate");
         calculateButton.disabled = true;
 
         calculateAndRender(icons, selectedCurrency)
