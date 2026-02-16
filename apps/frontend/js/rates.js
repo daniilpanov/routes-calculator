@@ -1,7 +1,8 @@
 let rates = {};
 
 async function updateRates() {
-    rates = await fetch("/api/rates/").then(res => res.json());
+    rates = await asyncCallOrAlert(getRates);
+
     document.getElementById("USD-rates").innerHTML = rates.USD + " ₽";
     document.getElementById("EUR-rates").innerHTML = rates.EUR + " ₽";
     rates.RUB = 1;

@@ -16,19 +16,24 @@ function getCurrencySymbol(currName, defaultCur = undefined) {
     return currMap[currName] ?? defaultCur;
 }
 
-async function updateDepartures() {
-    if (!dispatchDateInput.validity.valid) return;
-    const date = dispatchDateInput.value;
-    const resp = await fetch(`/api/points/departures?date=${date}`);
-    if (resp.ok) {
-        const data = await resp.json();
-        departures.data = {};
-        for (const loc in data)
-            departures.data[loc] = JSON.stringify(data[loc]);
-        destinationInput.value = "";
-        destinationHiddenInput.value = "";
-        destinationInput.disabled = true;
+async function asyncCallOrAlert(func, ...args) {
+    try {
+        return await func(...args);
+    } catch (e) {
+        showGlobalAlert(e.message);
     }
+}
+
+async function updateDepartures() {
+    if (!dispatchDateInput.validity.valid)
+        return;
+
+    const date = dispatchDateInput.value;
+    departures.data = await asyncCallOrAlert(getDepartures, date);
+
+    destinationInput.value = "";
+    destinationHiddenInput.value = "";
+    destinationInput.disabled = true;
 }
 
 dispatchDateInput.addEventListener("input", updateDepartures);
@@ -39,13 +44,7 @@ setupAutocomplete("departure", "departureList", departures, "departureId", async
     destinationInput.disabled = false;
     const date = dispatchDateInput.value;
     const departureId = departureHiddenInput.value;
-    const resp = await fetch(`/api/points/destinations?date=${date}&departure_point_id=${departureId}`);
-    if (resp.ok) {
-        const data = await resp.json();
-        destinations.data = {};
-        for (const loc in data)
-            destinations.data[loc] = JSON.stringify(data[loc]);
-    }
+    destinations.data = await asyncCallOrAlert(getDestinations, date, departureId);
 }, () => {
     destinationInput.disabled = true;
     destinationInput.value = "";
@@ -53,28 +52,21 @@ setupAutocomplete("departure", "departureList", departures, "departureId", async
 setupAutocomplete("destination", "destinationList", destinations, "destinationId");
 
 async function calculateAndRender(icons, selectedCurrency) {
-    const payload = {
-        dispatchDate: dispatchDateInput.value,
-        onlyInSelectedDateRange: !showAllRoutesCheckbox.checked ?? false,
-        departureId: JSON.parse(departureHiddenInput.value),
-        destinationId: JSON.parse(destinationHiddenInput.value),
-        cargoWeight: cargoWeightInput.value,
-        containerType: containerTypeInput.value,
-    };
+    const routes = await asyncCallOrAlert(
+        getRoutes,
+        dispatchDateInput.value,
+        !showAllRoutesCheckbox.checked ?? false,
+        JSON.parse(departureHiddenInput.value),
+        JSON.parse(destinationHiddenInput.value),
+        cargoWeightInput.value,
+        containerTypeInput.value,
+    );
 
-    const response = await fetch("/api/routes/calculate", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-    });
-    if (!response.ok)
-        throw new Error(`[${response.status} ${response.statusText}]<p>` + await response.text());
-
-    const responseData = await response.json();
-    const wrappers = [document.getElementById("results-direct"), document.getElementById("results-other")];
-    const dataEls = [responseData.one_service_routes, responseData.multi_service_routes];
+    const dataEls = [routes.one_service_routes, routes.multi_service_routes];
+    const wrappers = [
+        document.getElementById("results-direct"),
+        document.getElementById("results-other"),
+    ];
 
     for (let i = 0; i < dataEls.length; ++i) {
         const data = dataEls[i];
