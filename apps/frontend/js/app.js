@@ -124,10 +124,11 @@ class App {
     }
 
     async _updateDestinations() {
-        this._destinationInput.disabled = false;
         const date = this._dispatchDateInput.value;
         const departureId = this._departureHiddenInput.value;
         store.set("destinations", await asyncCallOrAlert(getDestinations, date, departureId));
+
+        this._destinationInput.disabled = false;
     }
 
     _updateSelectedCurrency() {
