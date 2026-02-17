@@ -81,7 +81,12 @@ class App {
             "truck": "/res/img/route-icons/truck.svg",
         };
 
-        store.set("icons", Object.assign(await Promise.allSettled(Object.entries(iconsMap).map(this._loadIcon))));
+        store.set("icons", Object.fromEntries(
+            (await Promise.allSettled(
+                Object.entries(iconsMap).map(this._loadIcon)
+            ))
+            .map(item => Object.values(item.value))
+        ));
 
         const ctx = this;
         document.getElementById("calcForm").addEventListener("submit", async function (e) {
