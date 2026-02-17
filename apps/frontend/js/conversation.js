@@ -4,10 +4,9 @@ function numberWithSpaces(x) {
     return parts.join(".");
 }
 
-function updateResultItem(result, selectedCurrency, needConversation, keys, values, i) {
-    const sumPriceEl = result.getElementsByClassName("sum-price")[0];
-    if (!sumPriceEl)
-        return;
+function createSumPrice(result, selectedCurrency, needConversation) {
+    const sumPriceEl = document.createElement("div");
+    sumPriceEl.classList.add("sum-price", "mb-3");
 
     let minSumPrice = 0, maxSumPrice = 0, sumPrice = 0;
     let minSumPriceWithConv = 0, maxSumPriceWithConv = 0, sumPriceWithConv = 0;
@@ -76,8 +75,7 @@ function updateResultItem(result, selectedCurrency, needConversation, keys, valu
     const maxPriceWithConv = Math.round((maxSumPriceWithConv + Number.EPSILON) * 100) / 100;
     sumPriceWithConv = Math.round((sumPriceWithConv + Number.EPSILON) * 100) / 100;
 
-    keys.push(i);
-    values.push(sumPriceWithConv || minPriceWithConv);
+    const value = sumPriceWithConv || minPriceWithConv;
 
     let sumPriceElContent = "<div class='row'><div class='col-md-7'>Суммарная стоимость: </div><div class='col-md-5'><b>";
     sumPriceElContent += numberWithSpaces(sumPrice || minPrice);
@@ -96,6 +94,7 @@ function updateResultItem(result, selectedCurrency, needConversation, keys, valu
     }
 
     sumPriceEl.innerHTML = sumPriceElContent;
+    return [value, sumPriceEl];
 }
 
 function getSimpleSegmentIncrementation(item, price, selectedCurrency, needConversation) {

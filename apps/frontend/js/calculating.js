@@ -48,21 +48,22 @@ function renderRoutes() {
     for (const [data, container] of dataWithElements) {
         container.innerHTML = "";
 
-        const keys = [];
-        const values = [];
         const results = data.map(([route, drop, mayRouteBeInvalid]) =>
-            _buildRoute(route, drop, mayRouteBeInvalid, selectedCurrency)
+            _buildRoute(route, drop, mayRouteBeInvalid, selectedCurrency, needConversation)
         );
 
-        results.forEach((result, i) => updateResultItem(result, selectedCurrency, needConversation, keys, values, i));
-        keys.sort((a, b) => values[a] - values[b]);
+        const keys = new Array(results.length);
+        for (let i = 0; i < keys.length; ++i)
+            keys[i] = i;
+
+        keys.sort((a, b) => results[a][0] - results[b][0]);
 
         for (const key of keys)
-            container.appendChild(results[key]);
+            container.appendChild(results[key][1]);
     }
 }
 
-function _buildRoute(route, drop, mayRouteBeInvalid, selectedCurrency) {
+function _buildRoute(route, drop, mayRouteBeInvalid, selectedCurrency, needConversation) {
     const icons = store.get("icons")?.value;
 
     const routeEl = document.createElement("div");
@@ -90,9 +91,8 @@ function _buildRoute(route, drop, mayRouteBeInvalid, selectedCurrency) {
     routeEl.appendChild(document.createElement("hr"));
     routeEl.appendChild(renderDrop(drop));
 
-    const sumPriceEl = document.createElement("div");
-    sumPriceEl.classList.add("sum-price", "mb-3");
+    const [value, sumPriceEl] = createSumPrice(routeEl, selectedCurrency, needConversation);
     routeEl.appendChild(sumPriceEl);
 
-    return routeEl;
+    return [value, routeEl];
 }
