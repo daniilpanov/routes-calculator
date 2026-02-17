@@ -184,7 +184,7 @@ class App {
         calculateButton.disabled = true;
 
         try {
-            await calculateAndRender(
+            await updateRoutes(
                 this._dispatchDateInput.value,
                 this._showAllRoutesCheckbox.checked ?? false,
                 JSON.parse(this._departureHiddenInput.value),
@@ -192,6 +192,7 @@ class App {
                 this._containerWeightInput.value,
                 this._containerTypeInput.value,
             );
+            renderRoutes();
         } catch (e) {
             showGlobalAlert(`Error: ${e.message}`);
         } finally {

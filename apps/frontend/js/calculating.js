@@ -11,7 +11,7 @@ async function asyncCallOrAlert(func, ...args) {
     }
 }
 
-async function calculateAndRender(
+async function updateRoutes(
     dispatchDate,
     showAllRoutes,
     departureDescriptor,
@@ -30,21 +30,21 @@ async function calculateAndRender(
     );
 
     store.set("result", routes);
+}
 
-    const dataEls = [routes.one_service_routes, routes.multi_service_routes];
-    const wrappers = [
-        document.getElementById("results-direct"),
-        document.getElementById("results-other"),
+function renderRoutes() {
+    const routes = store.get("result")?.value;
+    if (!routes)
+        return;
+
+    const dataWithElements = [
+        [routes.one_service_routes, document.getElementById("results-direct")],
+        [routes.multi_service_routes, document.getElementById("results-other")],
     ];
 
     const selectedCurrency = store.get("selectedCurrency").value;
 
-    for (let i = 0; i < dataEls.length; ++i) {
-        const data = dataEls[i];
-        if (!data)
-            continue;
-
-        const container = wrappers[i];
+    for (const [data, container] of dataWithElements) {
         container.innerHTML = "";
 
         container.append(...data.map(([route, drop, mayRouteBeInvalid]) =>
