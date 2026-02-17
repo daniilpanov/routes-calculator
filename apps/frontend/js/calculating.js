@@ -75,24 +75,132 @@ function _buildRoute(route, drop, mayRouteBeInvalid, selectedCurrency, needConve
     const segmentsEl = document.createElement("div");
     segmentsEl.className = "segments";
 
-    segmentsEl.innerHTML = route
-        .map(segment => {
+    let minSumPrice = 0, maxSumPrice = 0, sumPrice = 0;
+    let minSumPriceWithConv = 0, maxSumPriceWithConv = 0, sumPriceWithConv = 0;
+    let globalSum = false;
+
+    const segmentsHtml = [];
+
+    for (let i = 0; i < route.length; i++) {
+        const segment = route[i];
+
+        if (segment.price) {
+            const { incrementation, incrementationWithConv } =
+                getSimpleSegmentIncrementation(segment, selectedCurrency, needConversation);
+
+            minSumPrice += incrementation;
+            maxSumPrice += incrementation;
+            minSumPriceWithConv += incrementationWithConv;
+            maxSumPriceWithConv += incrementationWithConv;
+
             const icon = segment.type === "SEA_RAIL"
                 ? "Море+ЖД"
                 : icons[segment.type.toLowerCase()] || segment.type;
 
-            return segment.price
-                ? renderSinglePrice(icon, segment)
-                : renderMultiPrice(icon, segment, segment.type === "SEA_RAIL", selectedCurrency);
-        })
-        .join("<div class='text-center mb-3 col-md-2'>↓</div>");
+            segmentsHtml.push(renderSinglePrice(icon, segment));
+        } else {
+            if (segment.type === "SEA_RAIL")
+                globalSum = true;
 
+            const multiResult = getMultiSegmentIncrementation(
+                segment,
+                globalSum,
+                selectedCurrency,
+                needConversation
+            );
+
+            minSumPrice += multiResult.minimal;
+            maxSumPrice += multiResult.maximal;
+            sumPrice += multiResult.segmentSumPrice;
+
+            minSumPriceWithConv += multiResult.minimalWithConv;
+            maxSumPriceWithConv += multiResult.maximalWithConv;
+            sumPriceWithConv += multiResult.segmentSumPriceWithConv;
+
+            const icon = segment.type === "SEA_RAIL"
+                ? "Море+ЖД"
+                : icons[segment.type.toLowerCase()] || segment.type;
+
+            segmentsHtml.push(renderMultiPrice(icon, segment, selectedCurrency));
+        }
+
+        if (i < route.length - 1)
+            segmentsHtml.push("<div class='text-center mb-3 col-md-2'>↓</div>");
+    }
+
+    segmentsEl.innerHTML = segmentsHtml.join("");
     routeEl.appendChild(segmentsEl);
+
     routeEl.appendChild(document.createElement("hr"));
     routeEl.appendChild(renderDrop(drop));
 
-    const [value, sumPriceEl] = createSumPrice(routeEl, selectedCurrency, needConversation);
+    if (drop) {
+        const { dropPrice, dropPriceWithConv } = getDropIncrementation(drop, selectedCurrency);
+
+        minSumPrice += dropPrice;
+        maxSumPrice += dropPrice;
+        minSumPriceWithConv += dropPriceWithConv;
+        maxSumPriceWithConv += dropPriceWithConv;
+
+        if (globalSum) {
+            sumPrice += dropPrice;
+            sumPriceWithConv += dropPriceWithConv;
+        }
+    }
+
+    const sumPriceEl = createSumPriceElement({
+        minSumPrice,
+        maxSumPrice,
+        sumPrice,
+        minSumPriceWithConv,
+        maxSumPriceWithConv,
+        sumPriceWithConv,
+        selectedCurrency,
+        needConversation
+    });
     routeEl.appendChild(sumPriceEl);
 
-    return [value, routeEl];
+    const sortValue = sumPriceWithConv || minSumPriceWithConv;
+    return [sortValue, routeEl];
+}
+
+function createSumPriceElement({
+    minSumPrice,
+    maxSumPrice,
+    sumPrice,
+    minSumPriceWithConv,
+    maxSumPriceWithConv,
+    sumPriceWithConv,
+    selectedCurrency,
+    needConversation,
+}) {
+    const minPrice = Math.round((minSumPrice + Number.EPSILON) * 100) / 100;
+    const maxPrice = Math.round((maxSumPrice + Number.EPSILON) * 100) / 100;
+    const totalSumPrice = Math.round((sumPrice + Number.EPSILON) * 100) / 100;
+
+    const minPriceWithConv = Math.round((minSumPriceWithConv + Number.EPSILON) * 100) / 100;
+    const maxPriceWithConv = Math.round((maxSumPriceWithConv + Number.EPSILON) * 100) / 100;
+    const totalSumPriceWithConv = Math.round((sumPriceWithConv + Number.EPSILON) * 100) / 100;
+
+    const sumPriceEl = document.createElement("div");
+    sumPriceEl.classList.add("sum-price", "mb-3");
+
+    let content = "<div class='row'><div class='col-md-7'>Суммарная стоимость: </div><div class='col-md-5'><b>";
+    content += numberWithSpaces(totalSumPrice || minPrice);
+    if (minPrice !== maxPrice) {
+        content += " - " + numberWithSpaces(maxPrice);
+    }
+    content += ` ${selectedCurrency}</b></div></div>`;
+
+    if (needConversation) {
+        content += "<div class='row'><div class='col-md-7'>Оплата в рублях по курсу ЦБ на дату выставления счёта: </div><div class='col-md-5'><b>";
+        content += numberWithSpaces(totalSumPriceWithConv || minPriceWithConv);
+        if (minPriceWithConv !== maxPriceWithConv) {
+            content += " - " + numberWithSpaces(maxPriceWithConv);
+        }
+        content += ` ${selectedCurrency}</b></div></div>`;
+    }
+
+    sumPriceEl.innerHTML = content;
+    return sumPriceEl;
 }

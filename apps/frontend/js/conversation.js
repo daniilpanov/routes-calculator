@@ -4,148 +4,44 @@ function numberWithSpaces(x) {
     return parts.join(".");
 }
 
-function createSumPrice(result, selectedCurrency, needConversation) {
-    const sumPriceEl = document.createElement("div");
-    sumPriceEl.classList.add("sum-price", "mb-3");
-
-    let minSumPrice = 0, maxSumPrice = 0, sumPrice = 0;
-    let minSumPriceWithConv = 0, maxSumPriceWithConv = 0, sumPriceWithConv = 0;
-    let globalSum = false;
-    for (const item of result.querySelectorAll(".segments .result-segment")) {
-        const price = item.getAttribute("data-bs-price");
-        if (price !== "M" && price !== "X") {
-            const { incrementation, incrementationWithConv } =
-                getSimpleSegmentIncrementation(item, price, needConversation);
-
-            minSumPrice += incrementation;
-            maxSumPrice += incrementation;
-
-            minSumPriceWithConv += incrementationWithConv;
-            maxSumPriceWithConv += incrementationWithConv;
-            continue;
-        }
-
-        if (price === "X")
-            globalSum = true;
-
-        const {
-            minimal,
-            maximal,
-            minimalWithConv,
-            maximalWithConv,
-            segmentSumPrice,
-            segmentSumPriceWithConv,
-        } = getMultiSegmentIncrementation(
-            item,
-            globalSum,
-            selectedCurrency,
-            needConversation,
-        );
-
-        minSumPrice += minimal;
-        maxSumPrice += maximal;
-        sumPrice += segmentSumPrice;
-
-        minSumPriceWithConv += minimalWithConv;
-        maxSumPriceWithConv += maximalWithConv;
-        sumPriceWithConv += segmentSumPriceWithConv;
-    }
-
-    const dropEl = result.getElementsByClassName("drop-off")[0];
-    if (dropEl) {
-        const { dropPrice, dropPriceWithConv } = getDropIncrementation(dropEl, selectedCurrency);
-
-        minSumPrice += dropPrice;
-        maxSumPrice += dropPrice;
-
-        minSumPriceWithConv += dropPriceWithConv;
-        maxSumPriceWithConv += dropPriceWithConv;
-
-        if (globalSum) {
-            sumPrice += dropPrice;
-            sumPriceWithConv += dropPriceWithConv;
-        }
-    }
-
-    const minPrice = Math.round((minSumPrice + Number.EPSILON) * 100) / 100;
-    const maxPrice = Math.round((maxSumPrice + Number.EPSILON) * 100) / 100;
-    sumPrice = Math.round((sumPrice + Number.EPSILON) * 100) / 100;
-
-    const minPriceWithConv = Math.round((minSumPriceWithConv + Number.EPSILON) * 100) / 100;
-    const maxPriceWithConv = Math.round((maxSumPriceWithConv + Number.EPSILON) * 100) / 100;
-    sumPriceWithConv = Math.round((sumPriceWithConv + Number.EPSILON) * 100) / 100;
-
-    const value = sumPriceWithConv || minPriceWithConv;
-
-    let sumPriceElContent = "<div class='row'><div class='col-md-7'>Суммарная стоимость: </div><div class='col-md-5'><b>";
-    sumPriceElContent += numberWithSpaces(sumPrice || minPrice);
-    if (minPrice !== maxPrice)
-        sumPriceElContent += " - " + numberWithSpaces(maxPrice);
-
-    sumPriceElContent += ` ${selectedCurrency}</b></div></div>`;
-
-    if (needConversation) {
-        sumPriceElContent += "<div class='row'><div class='col-md-7'>Оплата в рублях по курсу ЦБ на дату выставления счёта: </div><div class='col-md-5'><b>";
-        sumPriceElContent += numberWithSpaces(sumPriceWithConv || minPriceWithConv);
-        if (minPriceWithConv !== maxPriceWithConv)
-            sumPriceElContent += " - " + numberWithSpaces(maxPriceWithConv);
-
-        sumPriceElContent += ` ${selectedCurrency}</b></div></div>`;
-    }
-
-    sumPriceEl.innerHTML = sumPriceElContent;
-    return [value, sumPriceEl];
-}
-
-function getSimpleSegmentIncrementation(item, price, selectedCurrency, needConversation) {
-    const currency = item.getAttribute("data-bs-currency");
-    const conversation = Number.parseFloat(item.getAttribute("data-bs-conversation-percents") ?? 0)
-        / 100
+function getSimpleSegmentIncrementation(segment, selectedCurrency, needConversation) {
+    const price = segment.price;
+    const currency = segment.currency;
+    const conversation = Number(segment.conversationPercents ?? 0) / 100
         * (needConversation && currency !== selectedCurrency);
 
-    const incrementation = updateResultRates(Number.parseFloat(price), currency, selectedCurrency);
+    const incrementation = updateResultRates(price, currency, selectedCurrency);
+    const incrementationWithConv = incrementation * (1 + conversation);
 
-    return {
-        incrementation,
-        incrementationWithConv: incrementation * (1 + conversation),
-    };
+    return { incrementation, incrementationWithConv };
 }
 
-function getMultiSegmentIncrementation(item, globalSum, selectedCurrency, needConversation) {
-    const priceVariantEls = item.getElementsByClassName("segment--price-variant");
+function getMultiSegmentIncrementation(segment, globalSum, selectedCurrency, needConversation) {
     let minimal = -1, maximal = -1;
     let minimalWithConv = -1, maximalWithConv = -1;
     let segmentSumPrice = 0, segmentSumPriceWithConv = 0;
 
-    for (const priceVariantEl of priceVariantEls) {
-        const priceVariant = priceVariantEl.getAttribute("data-bs-price");
-        const currencyVariant = priceVariantEl.getAttribute("data-bs-currency");
-        if (!priceVariant || !currencyVariant)
-            continue;
+    for (const priceVariant of segment.prices) {
+        const currency = priceVariant.currency;
+        const conversation = (priceVariant.conversation_percents ?? 0) / 100
+          * (needConversation && currency !== selectedCurrency);
 
-        const conversation = Number.parseFloat(priceVariantEl.getAttribute("data-bs-conversation-percents") ?? 0)
-            / 100
-            * (needConversation && currencyVariant !== selectedCurrency);
-        const priceVariantParsed = updateResultRates(
-            Number.parseFloat(priceVariant),
-            currencyVariant,
-            selectedCurrency,
-        );
-        const priceVariantParsedWithConv = priceVariantParsed * (1 + conversation);
+        const priceParsed = updateResultRates(priceVariant.value, currency, selectedCurrency);
+        const priceParsedWithConv = priceParsed * (1 + conversation);
 
         if (globalSum) {
-            segmentSumPrice += priceVariantParsed;
-            segmentSumPriceWithConv += priceVariantParsedWithConv;
+            segmentSumPrice += priceParsed;
+            segmentSumPriceWithConv += priceParsedWithConv;
             continue;
         }
 
-        if (minimal === -1 || minimal > priceVariantParsedWithConv) {
-            minimal = priceVariantParsed;
-            minimalWithConv = priceVariantParsedWithConv;
+        if (minimal === -1 || minimalWithConv > priceParsedWithConv) {
+            minimal = priceParsed;
+            minimalWithConv = priceParsedWithConv;
         }
-        if (maximal === -1 || maximal < priceVariantParsedWithConv) {
-            maximal = priceVariantParsed;
-            maximalWithConv = priceVariantParsedWithConv;
+        if (maximal === -1 || maximalWithConv < priceParsedWithConv) {
+            maximal = priceParsed;
+            maximalWithConv = priceParsedWithConv;
         }
     }
 
@@ -156,25 +52,16 @@ function getMultiSegmentIncrementation(item, globalSum, selectedCurrency, needCo
         maximalWithConv,
         segmentSumPrice,
         segmentSumPriceWithConv,
-    }
+    };
 }
 
-function getDropIncrementation(dropEl, selectedCurrency) {
-    const currency = dropEl.getElementsByClassName("drop-off-currency")[0]
-        ?.getAttribute("data-bs-currency");
-    const price = dropEl.getElementsByClassName("drop-off-price")[0]?.textContent;
+function getDropIncrementation(drop, selectedCurrency) {
+    const price = drop.price;
+    const currency = drop.currency;
+    const conversationPercents = drop.conversationPercents ?? 0;
 
-    let dropPrice = 0, conversationPercents = 0;
+    const dropPrice = updateResultRates(price, currency, selectedCurrency);
+    const dropPriceWithConv = dropPrice * (1 + conversationPercents / 100);
 
-    if (currency && price) {
-        dropPrice = updateResultRates(Number.parseFloat(price), currency, selectedCurrency);
-
-        conversationPercents = dropEl.getElementsByClassName("drop-off-conversation")[0]
-            ?.getAttribute("data-bs-conversation") ?? 0;
-    }
-
-    return {
-        dropPrice,
-        dropPriceWithConv: dropPrice * (1 + Number(conversationPercents) / 100),
-    }
+    return { dropPrice, dropPriceWithConv };
 }
