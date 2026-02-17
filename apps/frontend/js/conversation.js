@@ -4,25 +4,10 @@ function numberWithSpaces(x) {
     return parts.join(".");
 }
 
-function updateResultBlock(block, selectedCurrency) {
-    const needConversation = selectedCurrency === "RUB";
-    const keys = [];
-    const values = [];
-    const results = [...block.getElementsByClassName("result-item")];
-
-    results.forEach((result, i) => updateResultItem(result, selectedCurrency, needConversation, keys, values, i));
-    keys.sort((a, b) => values[a] - values[b]);
-
-    for (const key of keys)
-        block.appendChild(results[key]);
-}
-
 function updateResultItem(result, selectedCurrency, needConversation, keys, values, i) {
     const sumPriceEl = result.getElementsByClassName("sum-price")[0];
     if (!sumPriceEl)
         return;
-
-    result.remove();
 
     let minSumPrice = 0, maxSumPrice = 0, sumPrice = 0;
     let minSumPriceWithConv = 0, maxSumPriceWithConv = 0, sumPriceWithConv = 0;

@@ -43,15 +43,22 @@ function renderRoutes() {
     ];
 
     const selectedCurrency = store.get("selectedCurrency").value;
+    const needConversation = selectedCurrency === "RUB";
 
     for (const [data, container] of dataWithElements) {
         container.innerHTML = "";
 
-        container.append(...data.map(([route, drop, mayRouteBeInvalid]) =>
+        const keys = [];
+        const values = [];
+        const results = data.map(([route, drop, mayRouteBeInvalid]) =>
             _buildRoute(route, drop, mayRouteBeInvalid, selectedCurrency)
-        ));
+        );
 
-        updateResultBlock(container, selectedCurrency);
+        results.forEach((result, i) => updateResultItem(result, selectedCurrency, needConversation, keys, values, i));
+        keys.sort((a, b) => values[a] - values[b]);
+
+        for (const key of keys)
+            container.appendChild(results[key]);
     }
 }
 
