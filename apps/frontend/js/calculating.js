@@ -52,7 +52,7 @@ async function calculateAndRender(
         ));
     }
 
-    updateResults(document.getElementById("currencySwitcher").value);
+    updateResults(store.get("selectedCurrency"));
 }
 
 function _buildRoute(route, drop, mayRouteBeInvalid, selectedCurrency) {
