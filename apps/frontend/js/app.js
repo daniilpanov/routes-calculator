@@ -71,7 +71,7 @@ class App {
         for (const rate in rates)
             mappedRates[rate] = rate;
 
-        setupAutocomplete("currencySwitcher", "currencySwitcherList", "rates", null, updateResults);
+        setupAutocomplete("currencySwitcher", "currencySwitcherList", "rates", null, renderRoutes);
 
         await this._updateDepartures();
 

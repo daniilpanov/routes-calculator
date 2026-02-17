@@ -50,9 +50,9 @@ function renderRoutes() {
         container.append(...data.map(([route, drop, mayRouteBeInvalid]) =>
             _buildRoute(route, drop, mayRouteBeInvalid, selectedCurrency)
         ));
-    }
 
-    updateResults(store.get("selectedCurrency"));
+        updateResultBlock(container, selectedCurrency);
+    }
 }
 
 function _buildRoute(route, drop, mayRouteBeInvalid, selectedCurrency) {

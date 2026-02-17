@@ -4,18 +4,8 @@ function numberWithSpaces(x) {
     return parts.join(".");
 }
 
-function updateResults(selectedCurrency) {
-    const resultWrappers = [
-        document.getElementById("results-direct"),
-        document.getElementById("results-other"),
-    ];
-
+function updateResultBlock(block, selectedCurrency) {
     const needConversation = selectedCurrency === "RUB";
-
-    resultWrappers.forEach(block => updateResultBlock(block, selectedCurrency, needConversation));
-}
-
-function updateResultBlock(block, selectedCurrency, needConversation) {
     const keys = [];
     const values = [];
     const results = [...block.getElementsByClassName("result-item")];
