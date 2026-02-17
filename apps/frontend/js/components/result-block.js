@@ -33,10 +33,10 @@ function renderMultiPrice(icon, segment, isMixed, selectedCurrency) {
             </div>
             <div class="mb-3 row">
                 ${
-        segment.prices
-            .map(priceVariant => renderOnePriceOfSegment(priceVariant, selectedCurrency))
-            .join("\n")
-    }
+                    segment.prices
+                        .map(priceVariant => renderOnePriceOfSegment(priceVariant, selectedCurrency))
+                        .join("\n")
+                }
             </div>
             <div>
                 <div>
