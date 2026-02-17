@@ -116,7 +116,10 @@ class App {
             return;
 
         const date = this._dispatchDateInput.value;
+
+        store.lock("departures");
         store.set("departures", await asyncCallOrAlert(getDepartures, date));
+        store.unlock("departures");
 
         this._destinationInput.value = "";
         this._destinationHiddenInput.value = "";
@@ -126,7 +129,10 @@ class App {
     async _updateDestinations() {
         const date = this._dispatchDateInput.value;
         const departureId = this._departureHiddenInput.value;
+
+        store.lock("destinations");
         store.set("destinations", await asyncCallOrAlert(getDestinations, date, departureId));
+        store.unlock("destinations");
 
         this._destinationInput.disabled = false;
     }
