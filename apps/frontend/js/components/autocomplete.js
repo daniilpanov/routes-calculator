@@ -10,8 +10,8 @@ function setupAutocomplete(
     const hiddenInput = hiddenInputId ? document.getElementById(hiddenInputId) : undefined;
     const list = document.getElementById(listId);
 
-    function autocompleteProcess() {
-        const data = store.get(storeKey)?.value;
+    async function autocompleteProcess() {
+        const data = (await store.getWithMutex(storeKey))?.value;
         const val = this.value.trim().toLowerCase();
         list.innerHTML = "";
 

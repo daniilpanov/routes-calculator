@@ -37,7 +37,7 @@ class App {
     async setup() {
         this._setupAutocomplete();
 
-        this._currenciesSwitcherInput.addEventListener("input", () => this._updateSelectedCurrency.bind(this));
+        this._currenciesSwitcherInput.addEventListener("input", this._updateSelectedCurrency.bind(this));
         this._updateSelectedCurrency();
 
         this._dispatchDateInput.valueAsDate = this._dispatchDateInput.valueAsDate || new Date();
@@ -71,7 +71,7 @@ class App {
         for (const rate in rates)
             mappedRates[rate] = rate;
 
-        setupAutocomplete("currencySwitcher", "currencySwitcherList", "rates", null, updateResults);
+        setupAutocomplete("currencySwitcher", "currencySwitcherList", "rates", null, renderRoutes);
 
         await this._updateDepartures();
 
@@ -81,7 +81,12 @@ class App {
             "truck": "/res/img/route-icons/truck.svg",
         };
 
-        store.set("icons", Object.assign(await Promise.allSettled(Object.entries(iconsMap).map(this._loadIcon))));
+        store.set("icons", Object.fromEntries(
+            (await Promise.allSettled(
+                Object.entries(iconsMap).map(this._loadIcon)
+            ))
+            .map(item => Object.values(item.value))
+        ));
 
         const ctx = this;
         document.getElementById("calcForm").addEventListener("submit", async function (e) {
@@ -116,7 +121,10 @@ class App {
             return;
 
         const date = this._dispatchDateInput.value;
+
+        store.lock("departures");
         store.set("departures", await asyncCallOrAlert(getDepartures, date));
+        store.unlock("departures");
 
         this._destinationInput.value = "";
         this._destinationHiddenInput.value = "";
@@ -124,10 +132,14 @@ class App {
     }
 
     async _updateDestinations() {
-        this._destinationInput.disabled = false;
         const date = this._dispatchDateInput.value;
         const departureId = this._departureHiddenInput.value;
+
+        store.lock("destinations");
         store.set("destinations", await asyncCallOrAlert(getDestinations, date, departureId));
+        store.unlock("destinations");
+
+        this._destinationInput.disabled = false;
     }
 
     _updateSelectedCurrency() {
@@ -172,7 +184,7 @@ class App {
         calculateButton.disabled = true;
 
         try {
-            await calculateAndRender(
+            await updateRoutes(
                 this._dispatchDateInput.value,
                 this._showAllRoutesCheckbox.checked ?? false,
                 JSON.parse(this._departureHiddenInput.value),
@@ -180,6 +192,7 @@ class App {
                 this._containerWeightInput.value,
                 this._containerTypeInput.value,
             );
+            renderRoutes();
         } catch (e) {
             showGlobalAlert(`Error: ${e.message}`);
         } finally {
