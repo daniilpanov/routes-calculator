@@ -37,7 +37,7 @@ class App {
     async setup() {
         this._setupAutocomplete();
 
-        this._currenciesSwitcherInput.addEventListener("input", () => this._updateSelectedCurrency.bind(this));
+        this._currenciesSwitcherInput.addEventListener("input", this._updateSelectedCurrency.bind(this));
         this._updateSelectedCurrency();
 
         this._dispatchDateInput.valueAsDate = this._dispatchDateInput.valueAsDate || new Date();
