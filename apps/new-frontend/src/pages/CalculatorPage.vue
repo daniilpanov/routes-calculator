@@ -2,12 +2,13 @@
 import CalculatorForm from "@/widgets/CalculatorForm.vue";
 import CurrencySelect from "@/widgets/CurrencySelect.vue";
 
-import { type RatesMap, useRates } from "@/stores/rates";
+import { useRates } from "@/stores/rates";
 
 import { useRouter } from "vue-router";
 import { computed, ref } from "vue";
 
 import type { IdIsExternal } from "@/interfaces/Point";
+import type { RatesMap } from "@/stores/rates";
 import type { Ref } from "vue";
 
 interface Props {

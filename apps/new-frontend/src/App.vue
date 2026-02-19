@@ -56,5 +56,7 @@ watch(theme, (newTheme: Theme) => {
                 <p><a href="/old">Вернуться на старую версию сайта</a></p>
             </div>
         </div>
+
+        <router-view />
     </main>
 </template>
