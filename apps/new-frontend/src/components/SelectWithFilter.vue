@@ -5,6 +5,7 @@ type Option = { value: OT; label: string };
 
 interface Props {
     options: Option[];
+    pinnedOptions?: Option[];
     label: string;
     filterFn?: (option: Option, searchText: string) => boolean;
     required?: boolean;
@@ -13,6 +14,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
+    pinnedOptions: () => [],
     required: false,
     disabled: false,
     placeholder: undefined,
@@ -25,16 +27,17 @@ const searchText = ref("");
 const isOpen = ref(false);
 const autocompleteRef = ref<HTMLElement | null>(null);
 
-const filteredOptions = computed(() => {
+const allOptions = computed<Option[]>(() => [...props.pinnedOptions, ...props.options]);
+
+const filteredRegular = computed<Option[]>(() => {
     if (!searchText.value) return props.options;
 
     const search = searchText.value.toLowerCase();
-    const filter =
-        props.filterFn ??
-        ((option, text) => option.label.toLowerCase().includes(text.toLowerCase()));
-
-    return props.options.filter((option) => filter(option, search));
+    const filter = props.filterFn ?? ((opt, text) => opt.label.toLowerCase().includes(text));
+    return props.options.filter((opt) => filter(opt, search));
 });
+
+const displayOptions = computed<Option[]>(() => [...props.pinnedOptions, ...filteredRegular.value]);
 
 const selectOption = (option: Option) => {
     selectedModel.value = option.value;
@@ -55,14 +58,14 @@ const handleClickOutside = (event: MouseEvent) => {
 watch(
     selectedModel,
     (newVal: OT | undefined) => {
-        if (newVal === null) searchText.value = "";
+        if (!newVal) searchText.value = "";
         else {
-            const selectedOption = props.options.find((opt) => opt.value === newVal);
+            const selectedOption = allOptions.value.find((opt) => opt.value === newVal);
 
             if (selectedOption) searchText.value = selectedOption.label;
         }
     },
-    { immediate: true },
+    { immediate: true }
 );
 
 onMounted(() => {
@@ -105,17 +108,43 @@ onBeforeUnmount(() => {
         </div>
 
         <!-- Dropdown list -->
-        <div v-show="isOpen && filteredOptions.length" class="autocomplete-items">
-            <div
-                v-for="(option, index) in filteredOptions"
-                :key="index"
-                class="autocomplete-item"
-                @click="selectOption(option)"
-            >
-                <slot name="option" :option="option" :searchText="searchText">
-                    {{ option.label }}
-                </slot>
-            </div>
+        <div v-show="isOpen && displayOptions.length" class="autocomplete-items">
+            <template v-if="pinnedOptions.length && filteredRegular.length">
+                <div
+                    v-for="option in pinnedOptions"
+                    :key="String(option.value)"
+                    class="autocomplete-item pinned-item"
+                    @click="selectOption(option)"
+                >
+                    <slot name="option" :option="option" :searchText="searchText">
+                        {{ option.label }}
+                    </slot>
+                </div>
+                <div class="autocomplete-divider" />
+                <div
+                    v-for="option in filteredRegular"
+                    :key="String(option.value)"
+                    class="autocomplete-item"
+                    @click="selectOption(option)"
+                >
+                    <slot name="option" :option="option" :searchText="searchText">
+                        {{ option.label }}
+                    </slot>
+                </div>
+            </template>
+            <template v-else>
+                <div
+                    v-for="option in displayOptions"
+                    :key="String(option.value)"
+                    class="autocomplete-item"
+                    :class="{ 'pinned-item': pinnedOptions.includes(option) }"
+                    @click="selectOption(option)"
+                >
+                    <slot name="option" :option="option" :searchText="searchText">
+                        {{ option.label }}
+                    </slot>
+                </div>
+            </template>
         </div>
     </div>
 </template>
@@ -182,5 +211,15 @@ onBeforeUnmount(() => {
     &:focus {
         outline: none;
     }
+}
+
+.pinned-item {
+    background-color: #f8f9fa;
+    font-weight: bolder;
+}
+.autocomplete-divider {
+    height: 1px;
+    background-color: #ced4da;
+    margin: 4px 0;
 }
 </style>
