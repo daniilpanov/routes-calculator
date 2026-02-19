@@ -7,6 +7,7 @@ import { useRates } from "@/stores/rates";
 import { useRouter } from "vue-router";
 import { ref } from "vue";
 import LoadingSpinner from "@/components/LoadingSpinner.vue";
+import Results from "@/widgets/Results.vue";
 
 interface Props {
     date?: string;
@@ -110,6 +111,7 @@ function reset() {
 
     <div class="results">
         <LoadingSpinner v-if="loading" />
+        <Results v-else />
     </div>
 </template>
 
