@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import ThemeSwitcher from "@/widgets/ThemeSwitcher.vue";
 
+import { lockRates, updateRates } from "@/services/rates";
 import { getCurrentTheme, setCurrentTheme, Theme } from "@/services/theme";
 import { ref, watch } from "vue";
+
+lockRates(updateRates());
 
 const theme = ref<Theme>(getCurrentTheme());
 watch(theme, (newTheme: Theme) => {
