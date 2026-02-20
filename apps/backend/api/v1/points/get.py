@@ -4,14 +4,16 @@ import json
 from fastapi import APIRouter
 
 from backend.services import custom, fesco
+from backend.services.custom.mappers.points import map_points_v1 as map_custom
+from backend.services.fesco.mappers.points import map_points_v1 as map_fesco
 from backend.utils.string_formatters import union_country_and_name
 
 router = APIRouter(prefix="/v1/points", tags=["v1", "points"])
 
 
-async def _add_data(main_dict, data):
+async def _add_data(main_dict, data, mapper):
     try:
-        items = await data
+        items = mapper(await data)
     except Exception as e:
         print(e)
         return e
@@ -30,9 +32,9 @@ async def _add_data(main_dict, data):
 async def all_departure_by_date(date: datetime.date):
     prepared_from: dict[str, dict] = {}
     # from FESCO
-    await _add_data(prepared_from, fesco.get_departure_points_by_date(date))
+    await _add_data(prepared_from, fesco.get_departure_points_by_date(date), map_fesco)
     # from CUSTOM
-    await _add_data(prepared_from, custom.get_departure_points())
+    await _add_data(prepared_from, custom.get_departure_points(), map_custom)
 
     result = {}
     for loc, data in prepared_from.items():
@@ -50,10 +52,11 @@ async def all_destination_by_date(date: datetime.date, departure_point_id: str):
         await _add_data(
             prepared_to,
             fesco.get_destination_points_by_date(date, departure_ids.pop("FESCO")),
+            map_fesco,
         )
     # from CUSTOM
     for _id in departure_ids.values():
-        await _add_data(prepared_to, custom.get_destination_points())
+        await _add_data(prepared_to, custom.get_destination_points(), map_custom)
 
     result = {}
     for loc, data in prepared_to.items():
