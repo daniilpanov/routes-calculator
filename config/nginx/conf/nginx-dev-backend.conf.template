@@ -1,16 +1,4 @@
 server {
-    location / {
-        if ($http_referer ~* "/admin/api/user/") {
-            return 307 $scheme://$http_host/admin/api/user/$request_uri;
-        }
-        if ($http_referer ~* "/api/") {
-            return 307 $scheme://$http_host/api/$request_uri;
-        }
-
-        root /www/frontend;
-        index index.html;
-    }
-
     location /api/ {
         index /;
         proxy_set_header Host $host;
@@ -42,5 +30,17 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_pass http://auth:8081/;
+    }
+
+    location / {
+        if ($http_referer ~* "/admin/api/user/") {
+            return 307 $scheme://$http_host/admin/api/user$request_uri;
+        }
+        if ($http_referer ~* "/api/") {
+            return 307 $scheme://$http_host/api$request_uri;
+        }
+
+        root /www/frontend;
+        index index.html;
     }
 }
