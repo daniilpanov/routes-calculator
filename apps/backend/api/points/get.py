@@ -1,62 +1,115 @@
+import asyncio
 import datetime
-import json
+from collections import defaultdict
+from typing import Any
 
 from fastapi import APIRouter
 
+from aiohttp import ClientResponseError
 from backend.services import custom, fesco
-from backend.utils.string_formatters import union_country_and_name
 
 router = APIRouter(prefix="/points", tags=["points"])
 
 
-async def _add_data(main_dict, data):
-    try:
-        items = await data
-    except Exception as e:
-        print(e)
-        return e
-    for full_name, service, _id in (
-        (
-            union_country_and_name(main_dict, x.get("country"), x.get("name")),
-            x["company"],
-            x["id"],
-        )
-        for x in items
-    ):
-        main_dict.setdefault(full_name, {})[service] = _id
+def _error_or_data(result):
+    return (
+        {"success": True, "data": list(result)}
+        if not isinstance(result, Exception) else
+        {"success": True, "data": []}
+        if isinstance(result, ClientResponseError) and result.status == 400 else
+        {"success": False, "error": str(result), "type": str(type(result))}
+    )
+
+
+def _group_point_companies(points: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    point_companies = defaultdict(list)
+    point_info = {}
+
+    for point in points:
+        point_id = point["id"]
+
+        if point_id not in point_info:
+            point_info[point_id] = {
+                "id": point_id,
+                "ports": point["ports"].copy() if "ports" in point else [],
+                "translates": point["translates"].copy() if "translates" in point else {}
+            }
+
+        point_companies[point_id].append(point["company"])
+
+    result = []
+    for point_id, companies in point_companies.items():
+        grouped_point = point_info[point_id].copy()
+        grouped_point["companies"] = companies
+        result.append(grouped_point)
+
+    return result
+
+
+@router.get("/")
+async def all_points():
+    fesco_points, custom_points = await asyncio.gather(
+        fesco.get_all_points(),
+        custom.get_all_points(),
+        return_exceptions=True,
+    )
+
+    errors = {}
+    points = []
+
+    if isinstance(fesco_points, Exception):
+        errors["external"] = {
+            "error_text": str(fesco_points),
+            "error_type": str(type(fesco_points)),
+        }
+    else:
+        points.extend(fesco_points)
+
+    if isinstance(custom_points, Exception):
+        errors["internal"] = {
+            "error_text": str(custom_points),
+            "error_type": str(type(custom_points)),
+        }
+    else:
+        points.extend(custom_points)
+
+    return {
+        "errors": errors,
+        "data": _group_point_companies(points),
+    }
 
 
 @router.get("/departures")
 async def all_departure_by_date(date: datetime.date):
-    prepared_from: dict[str, dict] = {}
-    # from FESCO
-    await _add_data(prepared_from, fesco.get_departure_points_by_date(date))
-    # from CUSTOM
-    await _add_data(prepared_from, custom.get_departure_points())
+    fesco_departures, custom_departures = map(_error_or_data, await asyncio.gather(
+        fesco.get_departure_points_by_date(date),
+        custom.get_departure_points(),
+        return_exceptions=True,
+    ))
 
-    result = {}
-    for loc, data in prepared_from.items():
-        result[f"{loc} [" + (", ".join(service for service in data)) + "]"] = data
-
-    return result
+    return {
+        "external": fesco_departures,
+        "internal": custom_departures,
+    }
 
 
 @router.get("/destinations")
-async def all_destination_by_date(date: datetime.date, departure_point_id: str):
-    departure_ids = json.loads(departure_point_id)
-    prepared_to: dict[str, dict] = {}
-    # from FESCO
-    if "FESCO" in departure_ids:
-        await _add_data(
-            prepared_to,
-            fesco.get_destination_points_by_date(date, departure_ids.pop("FESCO")),
-        )
-    # from CUSTOM
-    for _id in departure_ids.values():
-        await _add_data(prepared_to, custom.get_destination_points())
+async def all_destination_by_date(date: datetime.date, external_point_id: str | None = None):
+    coros = [custom.get_departure_points()]
+    if external_point_id:
+        coros.append(fesco.get_destination_points_by_date(date, external_point_id))
 
-    result = {}
-    for loc, data in prepared_to.items():
-        result[f"{loc} [" + (", ".join(service for service in data)) + "]"] = data
+    departures = list(
+        map(
+            _error_or_data,
+            await asyncio.gather(
+                *coros,
+                return_exceptions=True,
+            ),
+        ),
+    )
 
-    return result
+    return {
+        "external": departures[1] if len(departures) > 1 else {"success": True, "data": []},
+        "internal": departures[0],
+    }
