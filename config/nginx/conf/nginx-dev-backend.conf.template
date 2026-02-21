@@ -32,6 +32,11 @@ server {
         proxy_pass http://auth:8081/;
     }
 
+    location /admin {
+        alias /www/admin;
+        try_files $uri $uri/ /index.html /404.html;
+    }
+
     location / {
         if ($http_referer ~* "/admin/api/user/") {
             return 307 $scheme://$http_host/admin/api/user$request_uri;
