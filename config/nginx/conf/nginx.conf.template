@@ -1,5 +1,9 @@
 server {
     location /api/ {
+        if ($request_uri ~ ^([^.]*)/([?#].*)?$) {
+            return 308 $scheme://$http_host$1$is_args$args;
+        }
+
         index /;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -8,6 +12,10 @@ server {
     }
 
     location /admin/api/user/ {
+        if ($request_uri ~ ^([^.]*)/([?#].*)?$) {
+            return 308 $scheme://$http_host$1$is_args$args;
+        }
+
         index /;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;

@@ -1,5 +1,26 @@
 server {
     location /api/ {
+        if ($request_uri ~ ^([^.]*)/([?#].*)?$) {
+            return 308 $scheme://$http_host$1$is_args$args;
+        }
+
+        # CORS headers
+        add_header 'Access-Control-Allow-Origin' '*' always;
+        add_header 'Access-Control-Allow-Credentials' 'true' always;
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
+        add_header 'Access-Control-Allow-Headers' 'Content-Type, Authorization' always;
+
+        if ($request_method = OPTIONS) {
+            add_header 'Access-Control-Allow-Origin' '*' always;
+            add_header 'Access-Control-Allow-Credentials' 'true' always;
+            add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
+            add_header 'Access-Control-Allow-Headers' 'Content-Type, Authorization' always;
+            add_header 'Access-Control-Max-Age' 1728000;
+            add_header 'Content-Type' 'text/plain charset=UTF-8';
+            add_header 'Content-Length' 0;
+            return 204;
+        }
+
         index /;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -8,6 +29,10 @@ server {
     }
 
     location /admin/api/user/ {
+        if ($request_uri ~ ^([^.]*)/([?#].*)?$) {
+            return 308 $scheme://$http_host$1$is_args$args;
+        }
+
         # CORS headers
         add_header 'Access-Control-Allow-Origin' '*' always;
         add_header 'Access-Control-Allow-Credentials' 'true' always;

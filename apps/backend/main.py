@@ -9,7 +9,7 @@ if find_spec("dotenv") is not None:
 
     load_dotenv()
 
-app = FastAPI()
+app = FastAPI(redirect_slashes=False)
 
 routers = api_discover()
 for router in routers:
