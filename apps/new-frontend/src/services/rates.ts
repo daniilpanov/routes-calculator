@@ -9,3 +9,6 @@ export async function updateRates() {
 }
 
 export const lockRates = async (coro: Promise<void>) => useRates().setLocker(coro);
+
+export const isConversationNeeded = (currency: string) =>
+    ["RUB", "RUR", "РУБ"].indexOf(currency) === -1;

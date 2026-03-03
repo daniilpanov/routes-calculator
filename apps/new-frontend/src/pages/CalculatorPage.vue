@@ -1,12 +1,18 @@
 <script setup lang="ts">
+import LoadingSpinner from "@/components/LoadingSpinner.vue";
 import CalculatorForm from "@/widgets/CalculatorForm.vue";
 import CurrencySelect from "@/widgets/CurrencySelect.vue";
+import ResultsWidget from "@/widgets/ResultsWidget.vue";
 
+import { clearRoutes, serializeCalculatorQueryParams } from "@/services/calculator";
+import { updateRoutes } from "@/services/calculator";
 import { useRates } from "@/stores/rates";
+import { useRoutes } from "@/stores/routes";
 
 import { useRouter } from "vue-router";
-import { computed, ref } from "vue";
+import { computed, nextTick, onMounted, ref } from "vue";
 
+import type { ICalculatorResult } from "@/interfaces/APIResponses";
 import type { IdIsExternal } from "@/interfaces/Point";
 import type { RatesMap } from "@/stores/rates";
 import type { Ref } from "vue";
@@ -34,7 +40,12 @@ const currentRateRef = computed({
     },
 });
 
+const routesStore = useRoutes();
+const routesRef = computed((): ICalculatorResult | undefined => routesStore.routes);
+
 const router = useRouter();
+
+const resultsElementRef = ref<HTMLElement | undefined>();
 
 const dateModel = ref<string | undefined>();
 if (!dateModel.value) dateModel.value = new Date().toLocaleDateString("en-CA");
@@ -62,13 +73,72 @@ for (const [key, val] of Object.entries(props)) {
     if (models[key]) models[key].value = val;
 }
 
+async function calculate(pushURL: boolean = true) {
+    loading.value = true;
+
+    await nextTick();
+    resultsElementRef.value?.scrollIntoView({ behavior: "smooth" });
+
+    await ratesStore.getLocker();
+
+    if (pushURL)
+        await router.push({
+            query: serializeCalculatorQueryParams({
+                date: dateModel.value,
+                showAllRoutes: showAllRoutesModel.value,
+                departureIds: departureIdsModel.value,
+                destinationIds: destinationIdsModel.value,
+                containerType: containerTypeModel.value,
+                containerWeight: containerWeightModel.value,
+                currency: ratesStore.currentRate,
+            }),
+        });
+
+    await updateRoutes({
+        date: dateModel.value,
+        showAllRoutes: showAllRoutesModel.value,
+        departureIds: departureIdsModel.value,
+        destinationIds: destinationIdsModel.value,
+        containerType: containerTypeModel.value,
+        containerWeight: containerWeightModel.value,
+    });
+
+    loading.value = false;
+
+    await nextTick();
+    resultsElementRef.value?.scrollIntoView({ behavior: "smooth" });
+}
+
 function reset() {
     router.push({ query: {} });
     currentRateRef.value = "RUB";
     loading.value = false;
     departureIdsModel.value = undefined;
     destinationIdsModel.value = undefined;
+    clearRoutes();
 }
+
+onMounted(() => {
+    currentRateRef.value = props.currency ?? "RUB";
+
+    const data = [
+        props.date,
+        props.showAllRoutes,
+        props.departureIds,
+        props.destinationIds,
+        props.containerType,
+        props.containerWeight,
+        props.currency,
+    ];
+    let allParamsSent = true;
+    for (const item of data)
+        if (item === undefined) {
+            allParamsSent = false;
+            break;
+        }
+
+    if (allParamsSent) nextTick().then(() => calculate(false));
+});
 </script>
 
 <template>
@@ -83,6 +153,7 @@ function reset() {
                 v-model:show-all-routes="showAllRoutesModel"
                 v-model:container-type="containerTypeModel"
                 v-model:container-weight="containerWeightModel"
+                @calculate="calculate"
                 @reset="reset"
             />
         </div>
@@ -95,4 +166,15 @@ function reset() {
     </div>
 
     <hr />
+
+    <div ref="resultsElementRef" class="results" v-if="loading || routesRef">
+        <div class="text-center" v-if="loading"><LoadingSpinner /></div>
+        <ResultsWidget v-else :routes="routesRef!" />
+    </div>
 </template>
+
+<style scoped>
+.results {
+    min-height: 80vh;
+}
+</style>
