@@ -106,6 +106,7 @@ const drop = computed(
 
     display: flex;
     align-items: center;
+    justify-content: center;
 
     & > .d-md-inline {
         display: none;
