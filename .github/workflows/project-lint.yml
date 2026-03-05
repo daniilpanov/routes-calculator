@@ -16,9 +16,28 @@ jobs:
 
     - uses: pre-commit/action@v3.0.1
 
+  eslint-admin:
+    runs-on: ubuntu-latest
+    name: "Check Admin Frontend part"
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+
+      - name: Install dependencies
+        run: |
+          cd apps/front-admin
+          npm install
+
+      - name: Run ESLint
+        run: |
+          cd apps/front-admin
+          npm run lint
+
   eslint:
     runs-on: ubuntu-latest
-    name: "Check Javascript part"
+    name: "Check Frontend part"
     steps:
     - uses: actions/checkout@v3
 
@@ -27,10 +46,10 @@ jobs:
 
     - name: Install dependencies
       run: |
-        cd apps/front-admin
+        cd apps/new-frontend
         npm install
 
     - name: Run ESLint
       run: |
-        cd apps/front-admin
+        cd apps/new-frontend
         npm run lint

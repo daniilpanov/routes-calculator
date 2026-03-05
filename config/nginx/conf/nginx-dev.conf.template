@@ -74,6 +74,11 @@ server {
         proxy_buffering off;
     }
 
+    location /old {
+        alias /www/old-frontend;
+        index index.html;
+    }
+
     location / {
         if ($http_referer ~* "/admin/api/user/") {
             return 308 $scheme://$http_host/admin/api/user$request_uri;
@@ -84,8 +89,23 @@ server {
         if ($http_referer ~* "/api/") {
             return 308 $scheme://$http_host/api$request_uri;
         }
+        if ($http_referer ~* "/old/") {
+            return 308 $scheme://$http_host/old$request_uri;
+        }
 
-        root /www/frontend;
-        index index.html;
+        proxy_pass http://frontend:${FRONTEND_PORT};
+
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_intercept_errors on;
+        proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;
+
+        proxy_buffering off;
     }
 }
