@@ -46,6 +46,8 @@ const currentRateRef = computed({
 const routesStore = useRoutes();
 const routesRef = computed((): ICalculatorExtendedResult | undefined => routesStore.routes);
 
+const editMode = ref<boolean>(false);
+
 const router = useRouter();
 
 const resultsElementRef = ref<HTMLElement | undefined>();
@@ -166,13 +168,22 @@ onMounted(() => {
         <div class="mb-3 position-relative">
             <CurrencySelect :rates="ratesRef" v-model="currentRateRef" />
         </div>
+
+        <button class="btn btn-secondary" @click="editMode = !editMode">
+            <template v-if="editMode">
+                Сохранить и выйти в обычный режим
+            </template>
+            <template v-else>
+                Отредактировать стоимость для КП
+            </template>
+        </button>
     </div>
 
     <hr />
 
     <div ref="resultsElementRef" class="results" v-if="loading || routesRef">
         <div class="text-center" v-if="loading"><LoadingSpinner /></div>
-        <ResultsWidget v-else :routes="routesRef!" />
+        <ResultsWidget v-else :routes="routesRef!" :editable="editMode" />
     </div>
 </template>
 

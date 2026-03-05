@@ -3,9 +3,12 @@ import type { IMultiPriceSegment } from "@/interfaces/Routes";
 import RouteTypeIcon from "@/components/RouteTypeIcon.vue";
 import OnePriceInMultiSegment from "@/components/routes/OnePriceInMultiSegment.vue";
 
-defineProps<{
+withDefaults(defineProps<{
     segment: IMultiPriceSegment,
-}>();
+    editable?: boolean,
+}>(), { editable: false });
+
+defineEmits(["update:price"]);
 </script>
 
 <template>
@@ -27,7 +30,9 @@ defineProps<{
                     class="col-md"
                     :price-variant="price"
                     :key="JSON.stringify(price)"
-                    v-for="price in segment.prices"
+                    :editable="editable"
+                    v-for="(price, index) in segment.prices"
+                    @update:price="(val: number) => $emit('update:price', [val, index])"
                 />
             </div>
         </div>

@@ -98,12 +98,12 @@ export async function updateRoutes(payload: ICalculatorPayload) {
     });
 
     useRoutes().setRoutes({
-        oneService: processRoutes(oneService),
-        multiService: processRoutes(multiService),
+        oneService: processRoutes(oneService, true),
+        multiService: processRoutes(multiService, true),
     });
 }
 
-export function revalidateRoutes() {
+export function revalidateRoutes(resort: boolean = true) {
     const routes = useRoutes().routes;
     if (!routes)
         return;
@@ -111,14 +111,14 @@ export function revalidateRoutes() {
     const { multiService, oneService } = routes;
 
     useRoutes().setRoutes({
-        oneService: processRoutes(oneService),
-        multiService: processRoutes(multiService),
+        oneService: processRoutes(oneService, resort),
+        multiService: processRoutes(multiService, resort),
     });
 }
 
 export const clearRoutes = () => useRoutes().setRoutes();
 
-function processRoutes(routes: (RouteDescriptor | RouteExtendedDescriptor)[]): RouteExtendedDescriptor[] {
+function processRoutes(routes: (RouteDescriptor | RouteExtendedDescriptor)[], sort: boolean): RouteExtendedDescriptor[] {
     const result: RouteExtendedDescriptor[] = Array.from({ length: routes.length });
 
     for (const key in routes) {
@@ -206,9 +206,10 @@ function processRoutes(routes: (RouteDescriptor | RouteExtendedDescriptor)[]): R
         ];
     }
 
-    result.sort((a: RouteExtendedDescriptor, b: RouteExtendedDescriptor) =>
-        (Number.isNaN(a[4]) ? (a[4] as PriceRange)[0] : a[4] as number)
-        - (Number.isNaN(b[4]) ? (b[4] as PriceRange)[0] : b[4] as number));
+    if (sort)
+        result.sort((a: RouteExtendedDescriptor, b: RouteExtendedDescriptor) =>
+            (Number.isNaN(a[4]) ? (a[4] as PriceRange)[0] : a[4] as number)
+            - (Number.isNaN(b[4]) ? (b[4] as PriceRange)[0] : b[4] as number));
 
     return result;
 }
