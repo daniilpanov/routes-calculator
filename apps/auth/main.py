@@ -10,7 +10,7 @@ from pydantic import BaseModel
 from .config import Settings, get_settings
 
 AuthJWT.load_config(get_settings)
-app = FastAPI()
+app = FastAPI(redirect_slashes=False)
 
 
 class User(BaseModel):
