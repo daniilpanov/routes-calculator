@@ -6,7 +6,7 @@ from fastapi import APIRouter
 from backend.services import custom, fesco
 from backend.utils.string_formatters import union_country_and_name
 
-router = APIRouter(prefix="/points", tags=["points"])
+router = APIRouter(prefix="/v1/points", tags=["v1", "points"])
 
 
 async def _add_data(main_dict, data):
