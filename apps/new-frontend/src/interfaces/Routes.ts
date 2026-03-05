@@ -1,3 +1,6 @@
+export type RouteExtendedDescriptor = [...RouteDescriptor, PriceDescriptor, PriceDescriptor];
+export type PriceDescriptor = number | PriceRange;
+export type PriceRange = [number, number];
 export type RouteDescriptor = [Route, IDrop, boolean];  // boolean = isEffective
 export type Route = (ISinglePriceSegment | IMultiPriceSegment)[];
 
@@ -5,6 +8,11 @@ export enum RouteType {
     SEA = "SEA",
     RAIL = "RAIL",
     SEA_RAIL = "SEA_RAIL",
+}
+
+export interface ICalculatorExtendedResult {
+    oneService: RouteExtendedDescriptor[];
+    multiService: RouteExtendedDescriptor[];
 }
 
 export interface IDrop {

@@ -12,9 +12,9 @@ import { useRoutes } from "@/stores/routes";
 import { useRouter } from "vue-router";
 import { computed, nextTick, onMounted, ref } from "vue";
 
-import type { ICalculatorResult } from "@/interfaces/APIResponses";
 import type { IdIsExternal } from "@/interfaces/Point";
 import type { RatesMap } from "@/stores/rates";
+import type { ICalculatorExtendedResult } from "@/interfaces/Routes";
 import type { Ref } from "vue";
 
 interface Props {
@@ -41,7 +41,7 @@ const currentRateRef = computed({
 });
 
 const routesStore = useRoutes();
-const routesRef = computed((): ICalculatorResult | undefined => routesStore.routes);
+const routesRef = computed((): ICalculatorExtendedResult | undefined => routesStore.routes);
 
 const router = useRouter();
 

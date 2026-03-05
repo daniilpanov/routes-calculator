@@ -1,15 +1,23 @@
 <script setup lang="ts">
-import type { IMultiPriceSegment, ISinglePriceSegment, RouteDescriptor } from "@/interfaces/Routes";
+import type {
+    RouteExtendedDescriptor,
+    IMultiPriceSegment,
+    ISinglePriceSegment, PriceRange
+} from "@/interfaces/Routes";
 
 import MultiPriceSegment from "@/components/routes/MultiPriceSegment.vue";
 import SinglePriceSegment from "@/components/routes/SinglePriceSegment.vue";
 import PriceWithCurrency from "@/components/PriceWithCurrency.vue";
 
+import { useRates } from "@/stores/rates";
 import { computed } from "vue";
 
 const props = defineProps<{
-    route: RouteDescriptor,
+    route: RouteExtendedDescriptor,
 }>();
+
+const ratesStore = useRates();
+const currentRate = computed((): string => ratesStore.currentRate);
 
 const segments = computed(
     () => props.route[0]
@@ -55,6 +63,38 @@ const drop = computed(
                     </span>
                 </span>
                 <b v-else>включен</b>
+            </div>
+        </div>
+
+        <hr>
+
+        <div class="row">
+            <div class="col-md-7">
+                Суммарная стоимость:
+            </div>
+            <div class="col-md-5">
+                <b v-if="Number.isNaN(route[3])">
+                    <PriceWithCurrency :price="(route[3] as PriceRange)[0]" :currency="currentRate" />
+                    &nbsp;&ndash;&nbsp;
+                    <PriceWithCurrency :price="(route[3] as PriceRange)[1]" :currency="currentRate" />
+                </b>
+                <b v-else>
+                    <PriceWithCurrency :price="route[3] as number" :currency="currentRate" />
+                </b>
+            </div>
+
+            <div class="col-md-7">
+                Оплата в рублях по курсу ЦБ на дату выставления счёта:
+            </div>
+            <div class="col-md-5">
+                <b v-if="Number.isNaN(route[4])">
+                    <PriceWithCurrency :price="(route[4] as PriceRange)[0]" :currency="currentRate" />
+                    -
+                    <PriceWithCurrency :price="(route[4] as PriceRange)[1]" :currency="currentRate" />
+                </b>
+                <b v-else>
+                    <PriceWithCurrency :price="route[4] as number" :currency="currentRate" />
+                </b>
             </div>
         </div>
     </div>
