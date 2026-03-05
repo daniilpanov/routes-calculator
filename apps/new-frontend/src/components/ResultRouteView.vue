@@ -37,7 +37,7 @@ const drop = computed(
         </div>
 
         <div class="segments row">
-            <div class="segment col-md m-2" :key="JSON.stringify(segment)" v-for="(segment, i) in segments">
+            <div class="segment col-md m-2" :key="i" v-for="(segment, i) in segments">
                 <div class="row">
                     <div class="col-md-11">
                         <SinglePriceSegment :segment="segment as ISinglePriceSegment" v-if="(segment as ISinglePriceSegment).price" />

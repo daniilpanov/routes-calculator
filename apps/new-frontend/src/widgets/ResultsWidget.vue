@@ -16,8 +16,8 @@ defineProps<{
     <h3>Сквозные маршруты</h3>
     <div id="results-direct" class="mt-4" v-if="routes.oneService.length">
         <ResultRouteView
-            v-for="route in routes.oneService"
-            :key="JSON.stringify(route)"
+            v-for="(route, index) in routes.oneService"
+            :key="index"
             :route="route"
         />
     </div>
@@ -28,8 +28,8 @@ defineProps<{
     <h3>Прочие маршруты</h3>
     <div id="results-other" class="mt-4" v-if="routes.multiService.length">
         <ResultRouteView
-            v-for="route in routes.multiService"
-            :key="JSON.stringify(route)"
+            v-for="(route, index) in routes.multiService"
+            :key="index"
             :route="route"
         />
     </div>
