@@ -1,3 +1,5 @@
+import datetime
+
 from fastapi import APIRouter
 
 from backend.services import custom, fesco
@@ -9,11 +11,11 @@ router = APIRouter(prefix="/v1/routes", tags=["v1", "routes"])
 
 async def _get_routes(
     modul,
-    date,
-    departure,
-    destination,
-    container_weight,
-    container_type,
+    date: datetime.date,
+    departure: str | int,
+    destination: str | int,
+    container_weight: float,
+    container_type: int,
     only_in_selected_date_range: bool = False,
 ):
     containers = await modul.get_containers(date, departure, destination)

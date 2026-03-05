@@ -1,13 +1,16 @@
 import datetime
-from typing import Any
 
 from pydantic import BaseModel
 
 
 class CalculateFormRequest(BaseModel):
     dispatchDate: datetime.date
-    departureId: dict[str, Any]
-    destinationId: dict[str, Any]
+
+    departureInternalIds: list[int]
+    destinationInternalIds: list[int]
+    departureExternalIds: list[str]
+    destinationExternalIds: list[str]
+
     cargoWeight: float
     containerType: int
     onlyInSelectedDateRange: bool = False
