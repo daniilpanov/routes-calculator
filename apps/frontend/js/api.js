@@ -7,7 +7,7 @@ function _parseLocations(data) {
 }
 
 async function getDepartures(date) {
-    const resp = await fetch(`/api/points/departures?date=${date}`);
+    const resp = await fetch(`/api/v1/points/departures?date=${date}`);
     if (!resp.ok)
         throw new Error(`Got an error while getting departures [${resp.status}]\n${await resp.text()}`);
 
@@ -15,7 +15,7 @@ async function getDepartures(date) {
 }
 
 async function getDestinations(date, departureId) {
-    const resp = await fetch(`/api/points/destinations?date=${date}&departure_point_id=${departureId}`);
+    const resp = await fetch(`/api/v1/points/destinations?date=${date}&departure_point_id=${departureId}`);
     if (!resp.ok)
         throw new Error(`Got an error while getting destinations [${resp.status}]\n${await resp.text()}`);
 
@@ -30,7 +30,7 @@ async function getRoutes(
     cargoWeight,
     containerType,
 ) {
-    const response = await fetch("/api/routes/calculate", {
+    const response = await fetch("/api/v1/routes/calculate", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -51,7 +51,7 @@ async function getRoutes(
 }
 
 async function getRates() {
-    const response = await fetch("/api/rates/");
+    const response = await fetch("/api/v1/rates/");
     if (!response.ok)
         throw new Error(`Got an error while getting rates [${response.status}]\n${await response.text()}`);
 

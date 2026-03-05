@@ -4,7 +4,7 @@ from fastapi import APIRouter
 
 from backend.services.custom.get_rates import get_rates as _get_rates
 
-router = APIRouter(prefix="/rates", tags=["rates"])
+router = APIRouter(prefix="/v1/rates", tags=["v1", "rates"])
 
 
 @router.get("")
