@@ -103,6 +103,19 @@ export async function updateRoutes(payload: ICalculatorPayload) {
     });
 }
 
+export function revalidateRoutes() {
+    const routes = useRoutes().routes;
+    if (!routes)
+        return;
+
+    const { multiService, oneService } = routes;
+
+    useRoutes().setRoutes({
+        oneService: processRoutes(oneService),
+        multiService: processRoutes(multiService),
+    });
+}
+
 export const clearRoutes = () => useRoutes().setRoutes();
 
 function processRoutes(routes: (RouteDescriptor | RouteExtendedDescriptor)[]): RouteExtendedDescriptor[] {

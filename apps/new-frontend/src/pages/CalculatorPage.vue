@@ -4,7 +4,7 @@ import CalculatorForm from "@/widgets/CalculatorForm.vue";
 import CurrencySelect from "@/widgets/CurrencySelect.vue";
 import ResultsWidget from "@/widgets/ResultsWidget.vue";
 
-import { clearRoutes, serializeCalculatorQueryParams } from "@/services/calculator";
+import { clearRoutes, revalidateRoutes, serializeCalculatorQueryParams } from "@/services/calculator";
 import { updateRoutes } from "@/services/calculator";
 import { useRates } from "@/stores/rates";
 import { useRoutes } from "@/stores/routes";
@@ -35,7 +35,10 @@ const currentRateRef = computed({
     get() { return ratesStore.currentRate; },
     set(val: string) {
         const locker = ratesStore.getLocker();
-        if (locker) locker.then(() => ratesStore.setCurrentRate(val));
+        if (locker) locker.then(() => {
+            ratesStore.setCurrentRate(val);
+            revalidateRoutes();
+        });
         else ratesStore.setCurrentRate(val);
     },
 });
