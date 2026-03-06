@@ -5,17 +5,30 @@ import ThemeSwitcher from "@/widgets/ThemeSwitcher.vue";
 import { lockRates, updateRates } from "@/services/rates";
 import { useRates } from "@/stores/rates";
 import { getCurrentTheme, setCurrentTheme, Theme } from "@/services/theme";
-import { computed, ref, watch } from "vue";
+import { computed, provide, ref, watch } from "vue";
 
 lockRates(updateRates());
 
 const rates = computed(() => useRates().rates);
-
+const printMode = ref<boolean>(false);
 const theme = ref<Theme>(getCurrentTheme());
+let oldTheme: Theme = theme.value;
+
+provide("printMode", printMode);
+
 watch(theme, (newTheme: Theme) => {
     document.documentElement.setAttribute("data-bs-theme", newTheme);
     setCurrentTheme(theme.value);
 }, { immediate: true });
+
+watch(printMode, (val: boolean) => {
+    if (val) {
+        if (theme.value !== Theme.LIGHT) {
+            oldTheme = theme.value;
+            theme.value = Theme.LIGHT;
+        }
+    } else if (theme.value !== oldTheme) theme.value = oldTheme;
+});
 </script>
 
 <template>
@@ -35,10 +48,10 @@ watch(theme, (newTheme: Theme) => {
         <HeaderComponent :rates="rates" />
     </header>
 
-    <ThemeSwitcher v-model="theme" />
+    <ThemeSwitcher v-show="!printMode" v-model="theme" />
 
     <main class="container">
-        <div class="alert alert-warning d-flex align-items-center" role="alert">
+        <div v-show="!printMode" class="alert alert-warning align-items-center" role="alert">
             <div>
                 <p>
                     <svg
