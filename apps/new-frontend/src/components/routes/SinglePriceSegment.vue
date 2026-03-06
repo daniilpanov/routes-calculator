@@ -4,9 +4,12 @@ import type { ISinglePriceSegment } from "@/interfaces/Routes";
 import RouteTypeIcon from "@/components/RouteTypeIcon.vue";
 import PriceWithCurrency from "@/components/PriceWithCurrency.vue";
 
-defineProps<{
+withDefaults(defineProps<{
     segment: ISinglePriceSegment,
-}>();
+    editable?: boolean,
+}>(), { editable: false });
+
+defineEmits(["update:price"]);
 </script>
 
 <template>
@@ -27,7 +30,14 @@ defineProps<{
                 →
                 <strong>{{ segment.endPointCountry.toUpperCase() }}, {{ segment.endPointName }}</strong>
             </div>
-            <div><PriceWithCurrency :price="segment.price" :currency="segment.currency" /></div>
+            <div>
+                <PriceWithCurrency
+                    :editable="editable"
+                    :price="segment.price"
+                    :currency="segment.currency"
+                    @update:price="(val: number) => $emit('update:price', val)"
+                />
+            </div>
         </div>
     </div>
 </template>

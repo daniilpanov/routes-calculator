@@ -10,7 +10,7 @@ import { useRates } from "@/stores/rates";
 import { useRoutes } from "@/stores/routes";
 
 import { useRouter } from "vue-router";
-import { computed, nextTick, onMounted, ref } from "vue";
+import { computed, inject, nextTick, onMounted, ref } from "vue";
 
 import type { IdIsExternal } from "@/interfaces/Point";
 import type { RatesMap } from "@/stores/rates";
@@ -45,6 +45,9 @@ const currentRateRef = computed({
 
 const routesStore = useRoutes();
 const routesRef = computed((): ICalculatorExtendedResult | undefined => routesStore.routes);
+
+const editMode = ref<boolean>(false);
+const printMode: Ref<boolean> = inject("printMode")!;
 
 const router = useRouter();
 
@@ -121,6 +124,13 @@ function reset() {
     clearRoutes();
 }
 
+async function saveInPdf() {
+    printMode.value = true;
+    await nextTick();
+    window.print();
+    printMode.value = false;
+}
+
 onMounted(() => {
     currentRateRef.value = props.currency ?? "RUB";
 
@@ -145,7 +155,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="my-5">
+    <div class="my-5" v-show="!printMode">
         <div class="card shadow-sm rounded-4 p-4">
             <h2 class="mb-4 text-center">Калькулятор маршрутов</h2>
 
@@ -166,13 +176,24 @@ onMounted(() => {
         <div class="mb-3 position-relative">
             <CurrencySelect :rates="ratesRef" v-model="currentRateRef" />
         </div>
+
+        <button class="btn btn-secondary" @click="editMode = !editMode">
+            <template v-if="editMode">
+                Сохранить и выйти в обычный режим
+            </template>
+            <template v-else>
+                Отредактировать стоимость для КП
+            </template>
+        </button>
+
+        <button class="btn btn-success" :disabled="!routesRef" @click="saveInPdf">Сохранить результат в PDF</button>
     </div>
 
     <hr />
 
     <div ref="resultsElementRef" class="results" v-if="loading || routesRef">
         <div class="text-center" v-if="loading"><LoadingSpinner /></div>
-        <ResultsWidget v-else :routes="routesRef!" />
+        <ResultsWidget v-else :routes="routesRef!" :editable="editMode" />
     </div>
 </template>
 

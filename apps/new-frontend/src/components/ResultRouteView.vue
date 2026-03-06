@@ -12,9 +12,12 @@ import PriceWithCurrency from "@/components/PriceWithCurrency.vue";
 import { useRates } from "@/stores/rates";
 import { computed } from "vue";
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
     route: RouteExtendedDescriptor,
-}>();
+    editable?: boolean,
+}>(), { editable: false });
+
+defineEmits(["update:singlePrice", "update:multiPrice"]);
 
 const ratesStore = useRates();
 const currentRate = computed((): string => ratesStore.currentRate);
@@ -37,11 +40,21 @@ const drop = computed(
         </div>
 
         <div class="segments row">
-            <div class="segment col-md m-2" :key="JSON.stringify(segment)" v-for="(segment, i) in segments">
+            <div class="segment col-md m-2" :key="i" v-for="(segment, i) in segments">
                 <div class="row">
                     <div class="col-md-11">
-                        <SinglePriceSegment :segment="segment as ISinglePriceSegment" v-if="(segment as ISinglePriceSegment).price" />
-                        <MultiPriceSegment :segment="segment as IMultiPriceSegment" v-else />
+                        <SinglePriceSegment
+                            :editable="editable"
+                            :segment="segment as ISinglePriceSegment"
+                            v-if="(segment as ISinglePriceSegment).price"
+                            @update:price="(val: number) => $emit('update:singlePrice', val, i)"
+                        />
+                        <MultiPriceSegment
+                            :editable="editable"
+                            :segment="segment as IMultiPriceSegment"
+                            v-else
+                            @update:price="([val, priceIndex]) => $emit('update:multiPrice', val, priceIndex, i)"
+                        />
                     </div>
                     <div class="col-md-1 segments-divider" v-if="i < segments.length - 1">
                         <span class="d-md-inline">&rightarrow;</span>
@@ -106,6 +119,7 @@ const drop = computed(
 
     display: flex;
     align-items: center;
+    justify-content: center;
 
     & > .d-md-inline {
         display: none;

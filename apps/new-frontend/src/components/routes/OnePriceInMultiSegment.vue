@@ -5,13 +5,16 @@ import PriceWithCurrency from "@/components/PriceWithCurrency.vue";
 import { isConversationNeeded } from "@/services/rates";
 import { computed } from "vue";
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
     priceVariant: IPrice,
-}>();
+    editable?: boolean,
+}>(), { editable: false });
 
 const needConversation = computed(
     () => isConversationNeeded(props.priceVariant.currency)
 );
+
+defineEmits(["update:price"]);
 </script>
 
 <template>
@@ -20,7 +23,12 @@ const needConversation = computed(
             <div class="mb-2">Условия: {{ priceVariant.cond }}</div>
             <div class="mb-2">Контейнер: {{ priceVariant.container.name }}</div>
             <div>
-                <PriceWithCurrency :price="priceVariant.value" :currency="priceVariant.currency" />
+                <PriceWithCurrency
+                    :editable="editable"
+                    :price="priceVariant.value"
+                    :currency="priceVariant.currency"
+                    @update:price="(val: number) => $emit('update:price', val)"
+                />
                 <span v-if="priceVariant.conversation_percents && needConversation" class="text-muted">
                     + {{ priceVariant.conversation_percents }}% конвертация в рубли
                 </span>
