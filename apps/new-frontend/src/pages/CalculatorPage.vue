@@ -188,7 +188,7 @@ onMounted(() => {
             </template>
         </button>
 
-        <button class="btn btn-success" :disabled="!routesRef" @click="saveInPdf">Сохранить результат в PDF</button>
+        <button class="btn btn-success" :disabled="!routesRef || editMode" @click="saveInPdf">Сохранить результат в PDF</button>
     </div>
 
     <hr />
