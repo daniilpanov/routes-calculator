@@ -181,10 +181,10 @@ onMounted(() => {
 
         <button class="btn btn-secondary" @click="editMode = !editMode">
             <template v-if="editMode">
-                Сохранить и выйти в обычный режим
+                Обычный режим
             </template>
             <template v-else>
-                Отредактировать стоимость для КП
+                Режим редактирования КП
             </template>
         </button>
 
