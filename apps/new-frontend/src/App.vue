@@ -23,10 +23,8 @@ watch(theme, (newTheme: Theme) => {
 
 watch(printMode, (val: boolean) => {
     if (val) {
-        if (theme.value !== Theme.LIGHT) {
-            oldTheme = theme.value;
-            theme.value = Theme.LIGHT;
-        }
+        oldTheme = theme.value;
+        if (theme.value !== Theme.LIGHT) theme.value = Theme.LIGHT;
     } else if (theme.value !== oldTheme) theme.value = oldTheme;
 });
 </script>
