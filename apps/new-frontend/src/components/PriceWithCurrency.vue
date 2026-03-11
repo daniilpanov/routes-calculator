@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import { getCurrencySymbol } from "@/helpers/currency";
 import { roundPrice } from "@/helpers/roundPrice";
-import { computed, ref, watch } from "vue";
+import { computed, inject, ref, watch } from "vue";
 
-const props = withDefaults(defineProps<{
+import type { Ref } from "vue";
+
+const props = defineProps<{
     price: number,
     currency: string,
-    editable?: boolean,
-}>(), { editable: false });
+}>();
+
+const editable: Ref<boolean> = inject("editable") || ref(false);
 
 const currencySymbol = computed(
     () => getCurrencySymbol(props.currency)
