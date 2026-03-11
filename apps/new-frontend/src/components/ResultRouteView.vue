@@ -10,13 +10,15 @@ import SinglePriceSegment from "@/components/routes/SinglePriceSegment.vue";
 import PriceWithCurrency from "@/components/PriceWithCurrency.vue";
 
 import { useRates } from "@/stores/rates";
-import { computed } from "vue";
+import { computed, inject, ref, watch } from "vue";
+
+import type { Ref } from "vue";
 
 const props = defineProps<{
     route: RouteExtendedDescriptor,
 }>();
 
-defineEmits(["update:singlePrice", "update:multiPrice"]);
+const emit = defineEmits(["update:singlePrice", "update:multiPrice", "setSelected"]);
 
 const ratesStore = useRates();
 const currentRate = computed((): string => ratesStore.currentRate);
@@ -27,10 +29,28 @@ const segments = computed(
 const drop = computed(
     () => props.route[1]
 );
+
+const editMode: Ref<boolean> = inject("editable") || ref(props.route[5]);
+const routeSelected = ref<boolean>(true);
+
+let quiteSelect: boolean = false;
+
+watch(routeSelected, (newVal: boolean) => {
+    if (quiteSelect) quiteSelect = false;
+    else emit("setSelected", newVal);
+});
+
+watch(() => props.route, (newRoute: RouteExtendedDescriptor) => {
+    quiteSelect = true;
+    routeSelected.value = newRoute[5];
+});
 </script>
 
 <template>
-    <div class="p-3 mb-4 border rounded shadow-sm result-item">
+    <div class="p-3 mb-4 border rounded shadow-sm result-item" :class="routeSelected ? '' : 'excluded'">
+        <label v-if="editMode"><input type="checkbox" v-model="routeSelected" class="select-route-checkbox"></label>
+        <b v-else-if="!routeSelected">Маршрут не будет отображаться в КП</b>
+
         <div v-if="props.route[2]" class="alert alert-warning d-flex align-items-center" role="alert">
             <svg class="flex-shrink-0 me-2" width="24" height="24" role="img" aria-label="Warning:"><use xlink:href="#exclamation-triangle-fill"/></svg>
             <div>
@@ -121,5 +141,14 @@ const drop = computed(
     & > .d-md-inline {
         display: none;
     }
+}
+
+.excluded {
+    border-left: .5rem solid red !important;
+}
+
+.select-route-checkbox {
+    width: 1.25rem;
+    height: 1.25rem;
 }
 </style>

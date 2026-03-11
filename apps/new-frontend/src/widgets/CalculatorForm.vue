@@ -213,7 +213,7 @@ onMounted(async () => {
         <div class="mb-3 position-relative">
             <PointsSelect
                 :points="departurePoints"
-                text-label="Пункт отправки"
+                text-label="Пункт отправления"
                 v-model="departureIdsModel"
                 v-model:is-disabled="departureInputDisabledModel"
                 v-model:search-text="departureInputTextModel"
