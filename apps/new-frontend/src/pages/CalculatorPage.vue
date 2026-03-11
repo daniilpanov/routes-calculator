@@ -10,7 +10,7 @@ import { useRates } from "@/stores/rates";
 import { useRoutes } from "@/stores/routes";
 
 import { useRouter } from "vue-router";
-import { computed, inject, nextTick, onMounted, ref } from "vue";
+import { computed, inject, nextTick, onMounted, provide, ref } from "vue";
 
 import type { IdIsExternal } from "@/interfaces/Point";
 import type { RatesMap } from "@/stores/rates";
@@ -47,6 +47,8 @@ const routesStore = useRoutes();
 const routesRef = computed((): ICalculatorExtendedResult | undefined => routesStore.routes);
 
 const editMode = ref<boolean>(false);
+
+provide("editable", editMode);
 const printMode: Ref<boolean> = inject("printMode")!;
 
 const router = useRouter();
@@ -193,7 +195,7 @@ onMounted(() => {
 
     <div ref="resultsElementRef" class="results" v-if="loading || routesRef">
         <div class="text-center" v-if="loading"><LoadingSpinner /></div>
-        <ResultsWidget v-else :routes="routesRef!" :editable="editMode" />
+        <ResultsWidget v-else :routes="routesRef!" />
     </div>
 </template>
 

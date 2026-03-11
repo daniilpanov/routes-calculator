@@ -4,10 +4,9 @@ import type { ISinglePriceSegment } from "@/interfaces/Routes";
 import RouteTypeIcon from "@/components/RouteTypeIcon.vue";
 import PriceWithCurrency from "@/components/PriceWithCurrency.vue";
 
-withDefaults(defineProps<{
+defineProps<{
     segment: ISinglePriceSegment,
-    editable?: boolean,
-}>(), { editable: false });
+}>();
 
 defineEmits(["update:price"]);
 </script>
@@ -32,7 +31,6 @@ defineEmits(["update:price"]);
             </div>
             <div>
                 <PriceWithCurrency
-                    :editable="editable"
                     :price="segment.price"
                     :currency="segment.currency"
                     @update:price="(val: number) => $emit('update:price', val)"

@@ -12,10 +12,9 @@ import PriceWithCurrency from "@/components/PriceWithCurrency.vue";
 import { useRates } from "@/stores/rates";
 import { computed } from "vue";
 
-const props = withDefaults(defineProps<{
+const props = defineProps<{
     route: RouteExtendedDescriptor,
-    editable?: boolean,
-}>(), { editable: false });
+}>();
 
 defineEmits(["update:singlePrice", "update:multiPrice"]);
 
@@ -44,13 +43,11 @@ const drop = computed(
                 <div class="row">
                     <div class="col-md-11">
                         <SinglePriceSegment
-                            :editable="editable"
                             :segment="segment as ISinglePriceSegment"
                             v-if="(segment as ISinglePriceSegment).price"
                             @update:price="(val: number) => $emit('update:singlePrice', val, i)"
                         />
                         <MultiPriceSegment
-                            :editable="editable"
                             :segment="segment as IMultiPriceSegment"
                             v-else
                             @update:price="([val, priceIndex]) => $emit('update:multiPrice', val, priceIndex, i)"

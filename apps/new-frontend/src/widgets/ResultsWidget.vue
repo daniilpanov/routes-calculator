@@ -4,10 +4,9 @@ import ResultRouteView from "@/components/ResultRouteView.vue";
 import RoutesSVG from "@/components/RoutesSVG.vue";
 import { revalidateRoutes } from "@/services/calculator";
 
-const props = withDefaults(defineProps<{
+const props = defineProps<{
     routes: ICalculatorExtendedResult,
-    editable?: boolean,
-}>(), { editable: false });
+}>();
 
 const buildErrorMessage = (
     val: number,
@@ -71,7 +70,6 @@ function updateMultiPrice(
             v-for="(route, index) in routes.oneService"
             :key="index"
             :route="route"
-            :editable="editable"
             @update:single-price="(val: number, segId: number) => updateSinglePrice(val, segId, index, false)"
             @update:multi-price="(val: number, segId: number, routeId: number) => updateMultiPrice(val, segId, routeId, index, false)"
         />
@@ -86,7 +84,6 @@ function updateMultiPrice(
             v-for="(route, index) in routes.multiService"
             :key="index"
             :route="route"
-            :editable="editable"
             @update:single-price="(val: number, segId: number) => updateSinglePrice(val, segId, index, true)"
             @update:multi-price="(val: number, segId: number, routeId: number) => updateMultiPrice(val, segId, routeId, index, true)"
         />
