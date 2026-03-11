@@ -203,6 +203,7 @@ function processRoutes(routes: (RouteDescriptor | RouteExtendedDescriptor)[], so
             (maxSumPriceWithConv - minSumPriceWithConv > Number.EPSILON
                 ? [minSumPriceWithConv, maxSumPriceWithConv]
                 : minSumPriceWithConv) as PriceDescriptor,
+            true,
         ];
     }
 

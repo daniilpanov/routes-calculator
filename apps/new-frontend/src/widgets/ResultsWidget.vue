@@ -1,12 +1,34 @@
 <script setup lang="ts">
-import type { ICalculatorExtendedResult, IMultiPriceSegment, ISinglePriceSegment } from "@/interfaces/Routes";
+import type {
+    ICalculatorExtendedResult,
+    IMultiPriceSegment,
+    ISinglePriceSegment,
+    RouteExtendedDescriptor
+} from "@/interfaces/Routes";
+
 import ResultRouteView from "@/components/ResultRouteView.vue";
 import RoutesSVG from "@/components/RoutesSVG.vue";
+
 import { revalidateRoutes } from "@/services/calculator";
+import { computed, inject, ref } from "vue";
+
+import type { Ref } from "vue";
 
 const props = defineProps<{
     routes: ICalculatorExtendedResult,
 }>();
+
+const printMode: Ref<boolean> = inject("printMode") || ref(false);
+const filterSelected = (routes: RouteExtendedDescriptor[]) => routes.filter(r => r[5]);
+const filterSelectedIfPrintMode = (routes: RouteExtendedDescriptor[], printMode: boolean) =>
+    printMode ? filterSelected(routes) : routes;
+
+const oneService = computed(
+    () => filterSelectedIfPrintMode(props.routes.oneService, printMode.value)
+);
+const multiService = computed(
+    () => filterSelectedIfPrintMode(props.routes.multiService, printMode.value)
+);
 
 const buildErrorMessage = (
     val: number,
@@ -57,6 +79,17 @@ function updateMultiPrice(
     priceVariant.value = val;
     revalidateRoutes(false);
 }
+
+function setIsRouteSelected(val: boolean, routeIndex: number, multiService: boolean) {
+    if (printMode.value)
+        throw new Error("Can not set the route selected in print mode!");
+
+    const route = (multiService ? props.routes.multiService : props.routes.oneService)[routeIndex];
+    if (!route)
+        throw new Error(`Can not ${val ? "" : "un"}select route with index ${routeIndex}: undefined`);
+
+    route[5] = val;
+}
 </script>
 
 <template>
@@ -65,13 +98,14 @@ function updateMultiPrice(
     </div>
 
     <h3>Сквозные маршруты</h3>
-    <div id="results-direct" class="mt-4" v-if="routes.oneService.length">
+    <div id="results-direct" class="mt-4" v-if="oneService.length">
         <ResultRouteView
-            v-for="(route, index) in routes.oneService"
+            v-for="(route, index) in oneService"
             :key="index"
             :route="route"
             @update:single-price="(val: number, segId: number) => updateSinglePrice(val, segId, index, false)"
             @update:multi-price="(val: number, segId: number, routeId: number) => updateMultiPrice(val, segId, routeId, index, false)"
+            @set-selected="(val: boolean) => setIsRouteSelected(val, index, false)"
         />
     </div>
     <div v-else>
@@ -79,13 +113,14 @@ function updateMultiPrice(
     </div>
 
     <h3>Прочие маршруты</h3>
-    <div id="results-other" class="mt-4" v-if="routes.multiService.length">
+    <div id="results-other" class="mt-4" v-if="multiService.length">
         <ResultRouteView
-            v-for="(route, index) in routes.multiService"
+            v-for="(route, index) in multiService"
             :key="index"
             :route="route"
             @update:single-price="(val: number, segId: number) => updateSinglePrice(val, segId, index, true)"
             @update:multi-price="(val: number, segId: number, routeId: number) => updateMultiPrice(val, segId, routeId, index, true)"
+            @set-selected="(val: boolean) => setIsRouteSelected(val, index, true)"
         />
     </div>
     <div v-else>

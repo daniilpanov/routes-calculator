@@ -1,4 +1,5 @@
-export type RouteExtendedDescriptor = [...RouteDescriptor, PriceDescriptor, PriceDescriptor];
+// boolean = selected in commercial proposal
+export type RouteExtendedDescriptor = [...RouteDescriptor, PriceDescriptor, PriceDescriptor, boolean];
 export type PriceDescriptor = number | PriceRange;
 export type PriceRange = [number, number];
 export type RouteDescriptor = [Route, IDrop, boolean];  // boolean = isEffective
