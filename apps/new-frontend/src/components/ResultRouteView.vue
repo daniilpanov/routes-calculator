@@ -30,8 +30,11 @@ const drop = computed(
     () => props.route[1]
 );
 
-const editMode: Ref<boolean> = inject("editable") || ref(props.route[5]);
-const routeSelected = ref<boolean>(true);
+const editMode: Ref<boolean> = inject("editable") || ref(false);
+const printMode: Ref<boolean> = inject("printMode") || ref(false);
+const allRoutesSelected: Ref<boolean> = inject("allRoutesSelected") || ref(false);
+const allRoutesSelectedSignalRef: Ref<boolean> = inject("allRoutesSelectedSignal") || ref(false);
+const routeSelected = ref<boolean>(props.route[5]);
 
 let quiteSelect: boolean = false;
 
@@ -44,10 +47,12 @@ watch(() => props.route, (newRoute: RouteExtendedDescriptor) => {
     quiteSelect = true;
     routeSelected.value = newRoute[5];
 });
+
+watch(allRoutesSelectedSignalRef, () => (routeSelected.value = allRoutesSelected.value));
 </script>
 
 <template>
-    <div class="p-3 mb-4 border rounded shadow-sm result-item" :class="routeSelected ? '' : 'excluded'">
+    <div class="p-3 mb-4 border rounded shadow-sm result-item" :class="!routeSelected ? 'excluded' : printMode ? '' : 'included'">
         <label v-if="editMode"><input type="checkbox" v-model="routeSelected" class="select-route-checkbox"></label>
         <b v-else-if="!routeSelected">Маршрут не будет отображаться в КП</b>
 
@@ -145,6 +150,10 @@ watch(() => props.route, (newRoute: RouteExtendedDescriptor) => {
 
 .excluded {
     border-left: .5rem solid red !important;
+}
+
+.included {
+    border-left: .5rem solid green !important;
 }
 
 .select-route-checkbox {
