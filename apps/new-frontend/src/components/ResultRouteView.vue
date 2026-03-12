@@ -31,6 +31,7 @@ const drop = computed(
 );
 
 const editMode: Ref<boolean> = inject("editable") || ref(false);
+const printMode: Ref<boolean> = inject("printMode") || ref(false);
 const routeSelected = ref<boolean>(props.route[5]);
 
 let quiteSelect: boolean = false;
@@ -47,7 +48,7 @@ watch(() => props.route, (newRoute: RouteExtendedDescriptor) => {
 </script>
 
 <template>
-    <div class="p-3 mb-4 border rounded shadow-sm result-item" :class="routeSelected ? '' : 'excluded'">
+    <div class="p-3 mb-4 border rounded shadow-sm result-item" :class="!routeSelected ? 'excluded' : printMode ? '' : 'included'">
         <label v-if="editMode"><input type="checkbox" v-model="routeSelected" class="select-route-checkbox"></label>
         <b v-else-if="!routeSelected">Маршрут не будет отображаться в КП</b>
 
@@ -145,6 +146,10 @@ watch(() => props.route, (newRoute: RouteExtendedDescriptor) => {
 
 .excluded {
     border-left: .5rem solid red !important;
+}
+
+.included {
+    border-left: .5rem solid green !important;
 }
 
 .select-route-checkbox {
