@@ -32,6 +32,8 @@ const drop = computed(
 
 const editMode: Ref<boolean> = inject("editable") || ref(false);
 const printMode: Ref<boolean> = inject("printMode") || ref(false);
+const allRoutesSelected: Ref<boolean> = inject("allRoutesSelected") || ref(false);
+const allRoutesSelectedSignalRef: Ref<boolean> = inject("allRoutesSelectedSignal") || ref(false);
 const routeSelected = ref<boolean>(props.route[5]);
 
 let quiteSelect: boolean = false;
@@ -45,6 +47,8 @@ watch(() => props.route, (newRoute: RouteExtendedDescriptor) => {
     quiteSelect = true;
     routeSelected.value = newRoute[5];
 });
+
+watch(allRoutesSelectedSignalRef, () => (routeSelected.value = allRoutesSelected.value));
 </script>
 
 <template>

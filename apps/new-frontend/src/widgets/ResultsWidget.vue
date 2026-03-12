@@ -10,7 +10,7 @@ import ResultRouteView from "@/components/ResultRouteView.vue";
 import RoutesSVG from "@/components/RoutesSVG.vue";
 
 import { revalidateRoutes } from "@/services/calculator";
-import { computed, inject, ref } from "vue";
+import { computed, inject, provide, ref, watch } from "vue";
 
 import type { Ref } from "vue";
 
@@ -18,6 +18,7 @@ const props = defineProps<{
     routes: ICalculatorExtendedResult,
 }>();
 
+const editMode: Ref<boolean> = inject("editable") || ref(false);
 const printMode: Ref<boolean> = inject("printMode") || ref(false);
 const filterSelected = (routes: RouteExtendedDescriptor[]) => routes.filter(r => r[5]);
 const filterSelectedIfPrintMode = (routes: RouteExtendedDescriptor[], printMode: boolean) =>
@@ -42,6 +43,19 @@ const buildErrorMessage = (
     + (priceIndex === undefined ? "" : ` and price index = ${priceIndex}`)
     + ": element is undefined"
 );
+
+const allRoutesSelected = (routes: RouteExtendedDescriptor[]) => {
+    for (const route of routes)
+        if (!route[5]) return false;
+
+    return true;
+}
+
+const areAllRoutesSelected = ref<boolean>(allRoutesSelected(props.routes.oneService) && allRoutesSelected(props.routes.multiService));
+const areAllRoutesSelectedSignalRef = ref<boolean>(areAllRoutesSelected.value);
+provide("allRoutesSelected", areAllRoutesSelected);
+provide("allRoutesSelectedSignal", areAllRoutesSelectedSignalRef);
+let quietAllRoutesSelectedChange: boolean = false;
 
 function updateSinglePrice(
     val: number,
@@ -89,10 +103,31 @@ function setIsRouteSelected(val: boolean, routeIndex: number, multiService: bool
         throw new Error(`Can not ${val ? "" : "un"}select route with index ${routeIndex}: undefined`);
 
     route[5] = val;
+
+    if (!val && areAllRoutesSelected.value) {
+        quietAllRoutesSelectedChange = true;
+        areAllRoutesSelected.value = false;
+    } else if (
+        val && !areAllRoutesSelected.value
+        && allRoutesSelected(props.routes.oneService) && allRoutesSelected(props.routes.multiService)
+    ) {
+        quietAllRoutesSelectedChange = true;
+        areAllRoutesSelected.value = true;
+    }
 }
+
+watch(areAllRoutesSelected, () => {
+    if (quietAllRoutesSelectedChange) quietAllRoutesSelectedChange = false;
+    else areAllRoutesSelectedSignalRef.value = !areAllRoutesSelectedSignalRef.value;
+});
 </script>
 
 <template>
+    <div v-show="editMode" class="mb-4">
+        <label for="select-all-routes">Добавить все маршруты в КП: </label>
+        <input id="select-all-routes" class="m-2" type="checkbox" v-model="areAllRoutesSelected">
+    </div>
+
     <div hidden="hidden">
         <RoutesSVG />
     </div>
