@@ -14,6 +14,7 @@ import type {
     RouteDescriptor,
     RouteExtendedDescriptor,
 } from "@/interfaces/Routes";
+import { roundPrice } from "@/helpers/roundPrice.ts";
 
 export const serializeCalculatorQueryParams = (payload: ICalculatorPayloadWithCurrency) => ({
     date: payload.date,
@@ -192,6 +193,11 @@ function processRoutes(routes: (RouteDescriptor | RouteExtendedDescriptor)[], so
             minSumPriceWithConv += incWithConv;
             maxSumPriceWithConv += incWithConv;
         }
+
+        minSumPrice = roundPrice(minSumPrice);
+        maxSumPrice = roundPrice(maxSumPrice);
+        minSumPriceWithConv = roundPrice(minSumPriceWithConv);
+        maxSumPriceWithConv = roundPrice(maxSumPriceWithConv);
 
         result[key] = [
             route[0],
