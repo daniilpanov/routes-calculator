@@ -30,7 +30,7 @@ const drop = computed(
     () => props.route[1]
 );
 
-const editMode: Ref<boolean> = inject("editable") || ref(props.route[5]);
+const editMode: Ref<boolean> = inject("editable") || ref(false);
 const routeSelected = ref<boolean>(true);
 
 let quiteSelect: boolean = false;
