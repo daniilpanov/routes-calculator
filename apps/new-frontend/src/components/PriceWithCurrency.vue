@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { getCurrencySymbol } from "@/helpers/currency";
-import { roundPrice } from "@/helpers/roundPrice";
 import { computed, inject, ref, watch } from "vue";
 
 import type { Ref } from "vue";
@@ -32,7 +31,7 @@ watch(() => props.price, (newPrice: number) => (priceRef.value = newPrice));
     </span>
 
     <input v-if="editable" v-model="priceRef" @blur="$emit('update:price', priceRef)" type="number">
-    <span v-else>{{ fp(roundPrice(price)) }}</span>
+    <span v-else>{{ fp(price) }}</span>
 
     <template v-if="!currencySymbol">
         &nbsp;
