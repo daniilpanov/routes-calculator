@@ -2,15 +2,19 @@ import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException
-from fastapi.params import Depends
+from fastapi.params import Depends, File
 from fastapi.responses import StreamingResponse
 from starlette.status import HTTP_200_OK, HTTP_500_INTERNAL_SERVER_ERROR
 
 from back_admin.service.db_management.db_dumper import create_db_dump
 from back_admin.service.db_management.db_eraser import clear_database_data
+from back_admin.service.db_management.db_loader import load_db_dump
 from shared.database import Database, get_database
-from shared.responses import DetailErrorResponse, ErrorDescriptor
-from shared.responses_fabric import create_an_error_descriptor_from_an_exception
+from shared.responses import DetailErrorResponse, ErrorDescriptor, MultiErrorResponse
+from shared.responses_fabric import (
+    create_an_error_descriptor_from_an_exception,
+    create_multi_error_response_from_an_array_of_exceptions,
+)
 
 router = APIRouter(prefix="/db")
 
@@ -56,3 +60,20 @@ async def erase_all_data(db: Annotated[Database, Depends(get_database)]):
                 status_code=HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=create_an_error_descriptor_from_an_exception(e),
             ) from e
+
+
+@router.post("/data", status_code=204, responses={
+    HTTP_500_INTERNAL_SERVER_ERROR: {
+        "model": DetailErrorResponse[MultiErrorResponse],
+        "description": "If any SQL query was failed or other error was occurred",
+    },
+})
+async def load_dump(dump_file: Annotated[bytes, File()], db: Annotated[Database, Depends(get_database)]):
+    async with db.session_context() as session:
+        errors = await load_db_dump(session, dump_file.decode())
+
+    if errors:
+        raise HTTPException(
+            status_code=HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=create_multi_error_response_from_an_array_of_exceptions(errors),
+        )
