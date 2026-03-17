@@ -44,6 +44,19 @@ services:
       - "--port"
       - "8081"
       - "--reload"
+  backadmin:
+    extends:
+      service: backadmin
+      file: docker-compose.yml
+    volumes:
+      - "./apps/:/apps/:ro"
+    command:
+      - "back_admin.main:app"
+      - "--host"
+      - "0.0.0.0"
+      - "--port"
+      - "8082"
+      - "--reload"
 
   ### PROXY
   reverseproxy:
@@ -54,6 +67,8 @@ services:
       calculator:
         condition: service_started
       auth:
+        condition: service_started
+      backadmin:
         condition: service_started
     volumes:
       - "./config/nginx/conf/nginx-dev-backend.conf.template:/etc/nginx/templates/default.conf.template:ro"
