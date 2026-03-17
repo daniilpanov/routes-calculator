@@ -33,6 +33,7 @@ fastapi_another_jwt_auth = "*"
 uvicorn = { extras = ["standard"], version = "*" }
 sqlparse = "^0.5.5"
 python-multipart = "^0.0.22"
+alembic = "^1.18.4"
 
 [tool.poetry.group.dev.dependencies]
 black = {version = "*", python = "^3.12"}
