@@ -1,0 +1,61 @@
+services:
+  database:
+    image: mariadb:latest
+    environment:
+      MYSQL_RANDOM_ROOT_PASSWORD: 1
+      MYSQL_USER: "${DB_USER}"
+      MYSQL_PASSWORD: "${DB_PASS}"
+      MYSQL_DATABASE: "${DB_NAME}"
+    volumes:
+      - "./config/database/backups/:/backup:rw"
+      - "./config/database/mariadb-data/:/var/lib/mysql/:rw"
+    restart: always
+    cap_drop:
+      - ALL
+    cap_add:
+      - DAC_OVERRIDE
+      - SETUID
+      - SETGID
+      - CHOWN
+      - FOWNER
+      - SYS_NICE
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges
+    expose:
+      - 3306
+    networks:
+      db:
+    healthcheck:
+      test: >
+        sh -c '
+        mariadb-dump -u$${MYSQL_USER} -p$${MYSQL_PASSWORD} $${MYSQL_DATABASE} > /backup/last_dump.sql 2>/backup/dump_error.log;
+        if [ $$? -eq 0 ]; then
+        gzip /backup/last_dump.sql -c > /backup/$$(date -I)-dump.gz;
+        rm /backup/last_dump.sql;
+        exit 0;
+        else
+        exit 1;
+        fi
+        '
+      interval: 30m
+      retries: 3
+      start_period: 1m
+  dbmigrator:
+    image: danielgreen1806/calculator-db-migration:${DOCKER_PROD_IMAGES_TAG}
+    env_file:
+      - ".env"
+    depends_on:
+      database:
+        condition: service_healthy
+    restart: no
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges
+    user: 1000:1000
+    networks:
+      db:
+
+networks:
+  db:
