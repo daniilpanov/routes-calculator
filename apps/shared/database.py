@@ -51,9 +51,6 @@ class Database:
             class_=AsyncSession,
         )
 
-        async with self._engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-
     async def session(self) -> AsyncGenerator:
         if not self._sessionmaker:
             await self.init()

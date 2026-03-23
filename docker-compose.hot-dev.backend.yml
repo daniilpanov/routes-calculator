@@ -7,6 +7,8 @@ services:
     volumes:
       - "./config/database/backups/:/backup:rw"
       - "./config/database/dev-version/:/docker-entrypoint-initdb.d:ro"
+    ports:
+      - "${DB_PORT}:${DB_PORT}"
   dbadmin:
     extends:
       service: dbadmin

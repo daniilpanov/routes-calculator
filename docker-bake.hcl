@@ -3,7 +3,7 @@ variable "TAG" {
 }
 
 group "default" {
-  targets = ["python-apps", "reverseproxy"]
+  targets = ["python-apps", "db-migration", "reverseproxy"]
 }
 
 target "python-apps" {
@@ -11,6 +11,13 @@ target "python-apps" {
   dockerfile = "Dockerfile"
   target = "python-apps"
   tags = ["danielgreen1806/calculator-python-apps:${TAG}"]
+}
+
+target "db-migration" {
+  context = "."
+  dockerfile = "Dockerfile"
+  target = "db-migration"
+  tags = ["danielgreen1806/calculator-db-migration:${TAG}"]
 }
 
 target "frontend-builder" {
