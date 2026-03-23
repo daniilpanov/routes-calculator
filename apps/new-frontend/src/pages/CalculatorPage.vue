@@ -49,7 +49,7 @@ const routesRef = computed((): ICalculatorExtendedResult | undefined => routesSt
 const editMode = ref<boolean>(false);
 
 provide("editable", editMode);
-const printMode: Ref<boolean> = inject("printMode")!;
+const printMode: Ref<boolean> = inject("printMode") || ref<boolean>(false);
 
 const router = useRouter();
 
