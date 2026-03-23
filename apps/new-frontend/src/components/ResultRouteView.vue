@@ -10,7 +10,7 @@ import SinglePriceSegment from "@/components/routes/SinglePriceSegment.vue";
 import PriceWithCurrency from "@/components/PriceWithCurrency.vue";
 
 import { useRates } from "@/stores/rates";
-import { computed, inject, ref, watch } from "vue";
+import { computed, inject, nextTick, ref, watch } from "vue";
 
 import type { Ref } from "vue";
 
@@ -39,13 +39,17 @@ const routeSelected = ref<boolean>(props.route[5]);
 let quiteSelect: boolean = false;
 
 watch(routeSelected, (newVal: boolean) => {
-    if (quiteSelect) quiteSelect = false;
-    else emit("setSelected", newVal);
+    if (quiteSelect) return;
+
+    emit("setSelected", newVal);
 });
 
-watch(() => props.route, (newRoute: RouteExtendedDescriptor) => {
+watch(() => props.route, async (newRoute: RouteExtendedDescriptor) => {
     quiteSelect = true;
     routeSelected.value = newRoute[5];
+
+    await nextTick();
+    quiteSelect = false;
 });
 
 watch(allRoutesSelectedSignalRef, () => (routeSelected.value = allRoutesSelected.value));

@@ -49,7 +49,7 @@ const routesRef = computed((): ICalculatorExtendedResult | undefined => routesSt
 const editMode = ref<boolean>(false);
 
 provide("editable", editMode);
-const printMode: Ref<boolean> = inject("printMode")!;
+const printMode: Ref<boolean> = inject("printMode") || ref<boolean>(false);
 
 const router = useRouter();
 
@@ -127,8 +127,12 @@ function reset() {
 }
 
 async function saveInPdf() {
+    editMode.value = false;
+    await nextTick();
+
     printMode.value = true;
     await nextTick();
+
     window.print();
     printMode.value = false;
 }
@@ -188,7 +192,7 @@ onMounted(() => {
             </template>
         </button>
 
-        <button class="btn btn-success" :disabled="!routesRef || editMode" @click="saveInPdf">Сохранить результат в PDF</button>
+        <button class="btn btn-success" :disabled="!routesRef" @click="saveInPdf">Сохранить результат в PDF</button>
     </div>
 
     <hr />
