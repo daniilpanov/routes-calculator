@@ -22,11 +22,17 @@ class PriceTypeEnum(enum.Enum):
     MIXED = "MIXED"
 
 
+class ContainerOwner(enum.Enum):
+    COC = "COC"  # The line provides an equipment
+    SOC = "SOC"  # The expeditor provides an equipment
+
+
 class PriceModel(Base):
     uid = (
         "route_id",
         "container_id",
         "type",
+        "container_owner",
     )
 
     __tablename__ = "prices"
@@ -44,6 +50,14 @@ class PriceModel(Base):
     type: Mapped[PriceTypeEnum] = mapped_column(  # noqa: A003
         Enum(
             PriceTypeEnum,
+            create_constraint=True,
+            check_constraint=True,
+            validate_strings=True,
+        )
+    )
+    container_owner: Mapped[ContainerOwner] = mapped_column(
+        Enum(
+            ContainerOwner,
             create_constraint=True,
             check_constraint=True,
             validate_strings=True,
