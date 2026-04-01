@@ -40,7 +40,7 @@ class PriceModel(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
 
-    route_id: Mapped[int] = mapped_column(ForeignKey("routes.id", name="fk__price_route"))
+    route_id: Mapped[int] = mapped_column(ForeignKey("routes.id", name="fk__price_route", ondelete="CASCADE"))
     container_id: Mapped[int] = mapped_column(ForeignKey("containers.id", name="fk__price_container"))
 
     value: Mapped[float | None] = mapped_column(nullable=True, default=None)
