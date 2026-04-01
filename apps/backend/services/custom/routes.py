@@ -56,58 +56,6 @@ def build_usual_query(
     )
 
 
-def build_mixed_with_drop_query(
-    date: datetime.date,
-    start_point_id: int,
-    end_point_id: int,
-    container_ids: list[int],
-    only_in_selected_date_range: bool = False,
-):
-    where_clause = and_(
-        RouteModel.effective_from <= date,
-        RouteModel.start_point_id == start_point_id,
-        RouteModel.end_point_id == end_point_id,
-        RouteModel.type == RouteTypeEnum.SEA_RAIL,
-    )
-    if only_in_selected_date_range:
-        where_clause &= RouteModel.effective_to >= date
-
-    return (  # noqa: ECE001
-        select(RouteModel)
-        .where(where_clause)
-        .join(
-            PriceModel,
-            and_(
-                RouteModel.id == PriceModel.route_id,
-                PriceModel.container_id.in_(container_ids),
-                PriceModel.container_owner == ContainerOwner.COC,
-            ),
-        )
-        .join(
-            DropModel,
-            and_(
-                RouteModel.start_point_id == DropModel.sea_start_point_id,
-                RouteModel.end_point_id == DropModel.rail_end_point_id,
-                RouteModel.company_id == DropModel.company_id,
-                PriceModel.container_id == DropModel.container_id,
-                DropModel.rail_start_point_id.is_(None),
-                DropModel.sea_end_point_id.is_(None),
-                DropModel.effective_from <= RouteModel.effective_from,
-                DropModel.effective_to >= RouteModel.effective_to,
-            ),
-        )
-        .order_by(desc(RouteModel.effective_to))
-        # note: I tried using 'group by' statement, but it cuts off prices
-        .options(
-            joinedload(RouteModel.start_point),
-            joinedload(RouteModel.end_point),
-            joinedload(RouteModel.company),
-            contains_eager(RouteModel.prices).joinedload(PriceModel.container),
-        )
-        .add_columns(DropModel)
-    )
-
-
 def _create_aliases():
     SeaRoute = aliased(RouteModel, name="sea_route")
     RailRoute = aliased(RouteModel, name="rail_route")
@@ -318,14 +266,6 @@ async def find_all_paths(
         only_in_selected_date_range,
     )
 
-    query_mixed_with_drop = build_mixed_with_drop_query(
-        date,
-        start_point_id,
-        end_point_id,
-        container_ids,
-        only_in_selected_date_range,
-    )
-
     sea_rail_queries = create_sea_rail_queries(
         date,
         start_point_id,
@@ -337,7 +277,6 @@ async def find_all_paths(
     all_queries = [
         query_rail,
         query_sea,
-        query_mixed_with_drop,
         query_mixed,
     ] + sea_rail_queries
 
