@@ -222,15 +222,6 @@ async def find_all_paths(
         ContainerOwner.COC,  # Sea always provides an equipment
         only_in_selected_date_range,
     )
-    query_mixed = build_usual_query(
-        RouteTypeEnum.SEA_RAIL,
-        date,
-        start_point_id,
-        end_point_id,
-        container_ids,
-        ContainerOwner.COC,  # Mixed (Sea+Rail) always provides an equipment
-        only_in_selected_date_range,
-    )
 
     sea_rail_queries = create_sea_rail_queries(
         date,
@@ -243,7 +234,6 @@ async def find_all_paths(
     all_queries = [
         query_rail,
         query_sea,
-        query_mixed,
     ] + sea_rail_queries
 
     coroutines = [_execute_query(query) for query in all_queries]

@@ -12,14 +12,12 @@ from .point import PointModel
 class RouteTypeEnum(enum.Enum):
     SEA = "sea"
     RAIL = "rail"
-    SEA_RAIL = "sea_rail"
 
 
-class PriceTypeEnum(enum.Enum):
+class ContainerTransferTerms(enum.Enum):
     FIFOR = "FIFO"
     FILO = "FILO"
     FOBFOR = "FOR"
-    MIXED = "MIXED"
 
 
 class ContainerOwner(enum.Enum):
@@ -31,7 +29,7 @@ class PriceModel(Base):
     uid = (
         "route_id",
         "container_id",
-        "type",
+        "container_transfer_terms",
         "container_owner",
     )
 
@@ -47,9 +45,9 @@ class PriceModel(Base):
     currency: Mapped[str] = mapped_column(String(10))
     conversation_percents: Mapped[float] = mapped_column(default=0)
 
-    type: Mapped[PriceTypeEnum] = mapped_column(  # noqa: A003
+    container_transfer_terms: Mapped[ContainerTransferTerms] = mapped_column(
         Enum(
-            PriceTypeEnum,
+            ContainerTransferTerms,
             create_constraint=True,
             check_constraint=True,
             validate_strings=True,
