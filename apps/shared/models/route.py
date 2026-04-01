@@ -36,12 +36,12 @@ class PriceModel(Base):
     )
 
     __tablename__ = "prices"
-    __table_args__ = (UniqueConstraint(*uid),)
+    __table_args__ = (UniqueConstraint(*uid, name="uk__fingerprint"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
 
-    route_id: Mapped[int] = mapped_column(ForeignKey("routes.id"))
-    container_id: Mapped[int] = mapped_column(ForeignKey("containers.id"))
+    route_id: Mapped[int] = mapped_column(ForeignKey("routes.id", name="fk__price_route"))
+    container_id: Mapped[int] = mapped_column(ForeignKey("containers.id", name="fk__price_container"))
 
     value: Mapped[float | None] = mapped_column(nullable=True, default=None)
     currency: Mapped[str] = mapped_column(String(10))
@@ -78,13 +78,13 @@ class RouteModel(Base):
     )
 
     __tablename__ = "routes"
-    __table_args__ = (UniqueConstraint(*uid),)
+    __table_args__ = (UniqueConstraint(*uid, name="uk__fingerprint"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
 
-    company_id: Mapped[int] = mapped_column(ForeignKey("companies.id"))
-    start_point_id: Mapped[int] = mapped_column(ForeignKey("points.id"))
-    end_point_id: Mapped[int] = mapped_column(ForeignKey("points.id"))
+    company_id: Mapped[int] = mapped_column(ForeignKey("companies.id", name="fk__route_company"))
+    start_point_id: Mapped[int] = mapped_column(ForeignKey("points.id", name="fk__route_point__start"))
+    end_point_id: Mapped[int] = mapped_column(ForeignKey("points.id", name="fk__route_point__end"))
 
     effective_from: Mapped[datetime.date] = mapped_column(DateTime(timezone=False))
     effective_to: Mapped[datetime.date] = mapped_column(DateTime(timezone=False))

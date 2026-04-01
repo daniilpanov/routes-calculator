@@ -21,16 +21,28 @@ class DropModel(Base):
     )
 
     __tablename__ = "drop"
-    __table_args__ = (UniqueConstraint(*uid),)
+    __table_args__ = (UniqueConstraint(*uid, name="uk__fingerprint"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
 
-    company_id: Mapped[int] = mapped_column(ForeignKey("companies.id"))
-    container_id: Mapped[int] = mapped_column(ForeignKey("containers.id"))
-    sea_start_point_id: Mapped[int | None] = mapped_column(ForeignKey("points.id"), nullable=True)
-    sea_end_point_id: Mapped[int | None] = mapped_column(ForeignKey("points.id"), nullable=True)
-    rail_start_point_id: Mapped[int | None] = mapped_column(ForeignKey("points.id"), nullable=True)
-    rail_end_point_id: Mapped[int | None] = mapped_column(ForeignKey("points.id"), nullable=True)
+    company_id: Mapped[int] = mapped_column(ForeignKey("companies.id", name="fk__drop_companies"))
+    container_id: Mapped[int] = mapped_column(ForeignKey("containers.id", name="fk__drop_container"))
+    sea_start_point_id: Mapped[int | None] = mapped_column(
+        ForeignKey("points.id", name="fk__drop_point__sea_start"),
+        nullable=True,
+    )
+    sea_end_point_id: Mapped[int | None] = mapped_column(
+        ForeignKey("points.id", name="fk__drop_point__sea_end"),
+        nullable=True,
+    )
+    rail_start_point_id: Mapped[int | None] = mapped_column(
+        ForeignKey("points.id", name="fk__drop_point__rail_start"),
+        nullable=True,
+    )
+    rail_end_point_id: Mapped[int | None] = mapped_column(
+        ForeignKey("points.id", name="fk__drop_point__rail_end"),
+        nullable=True,
+    )
 
     effective_from: Mapped[datetime.date] = mapped_column(DateTime(timezone=False))
     effective_to: Mapped[datetime.date] = mapped_column(DateTime(timezone=False))
