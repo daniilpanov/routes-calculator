@@ -3,8 +3,8 @@ import datetime
 
 from backend.mapper_decorator import apply_mapper
 from shared.database import Base, get_database
-from shared.models import DropModel, PriceModel, RouteModel, RouteTypeEnum
-from sqlalchemy import and_, desc, select
+from shared.models import ContainerOwner, DropModel, PriceModel, RouteModel, RouteTypeEnum
+from sqlalchemy import and_, desc, or_, select
 from sqlalchemy.orm import aliased, contains_eager, joinedload
 
 from .mappers.routes import map_routes
@@ -22,6 +22,7 @@ def build_usual_query(
     start_point_id: int,
     end_point_id: int,
     container_ids: list[int],
+    container_ownership: ContainerOwner,
     only_in_selected_date_range: bool = True,
 ):
     where_clause = and_(
@@ -41,6 +42,7 @@ def build_usual_query(
             and_(
                 RouteModel.id == PriceModel.route_id,
                 PriceModel.container_id.in_(container_ids),
+                PriceModel.container_owner == container_ownership,
             ),
         )
         .order_by(desc(RouteModel.effective_to))
@@ -78,6 +80,7 @@ def build_mixed_with_drop_query(
             and_(
                 RouteModel.id == PriceModel.route_id,
                 PriceModel.container_id.in_(container_ids),
+                PriceModel.container_owner == ContainerOwner.COC,
             ),
         )
         .join(
@@ -130,6 +133,17 @@ def build_base_sea_rail_query(
         RailRoute.end_point_id == end_point_id,
         SeaPrice.container_id.in_(container_ids),
         RailPrice.container_id.in_(container_ids),
+        # COC/SOC logic
+        or_(
+            and_(
+                SeaRoute.company_id == RailRoute.company_id,
+                RailPrice.container_owner == ContainerOwner.COC,
+            ),
+            and_(
+                SeaRoute.company_id != RailRoute.company_id,
+                RailPrice.container_owner == ContainerOwner.SOC,
+            ),
+        ),
     )
     if only_in_selected_date_range:
         where_clause &= SeaRoute.effective_to >= date
@@ -277,21 +291,47 @@ async def find_all_paths(
     only_in_selected_date_range: bool = False,
 ) -> list[tuple[list[Base], bool]]:
     query_rail = build_usual_query(
-        RouteTypeEnum.RAIL, date, start_point_id, end_point_id, container_ids, only_in_selected_date_range
+        RouteTypeEnum.RAIL,
+        date,
+        start_point_id,
+        end_point_id,
+        container_ids,
+        ContainerOwner.SOC,  # Rail can not provide an equipment
+        only_in_selected_date_range,
     )
     query_sea = build_usual_query(
-        RouteTypeEnum.SEA, date, start_point_id, end_point_id, container_ids, only_in_selected_date_range
+        RouteTypeEnum.SEA,
+        date,
+        start_point_id,
+        end_point_id,
+        container_ids,
+        ContainerOwner.COC,  # Sea always provides an equipment
+        only_in_selected_date_range,
     )
     query_mixed = build_usual_query(
-        RouteTypeEnum.SEA_RAIL, date, start_point_id, end_point_id, container_ids, only_in_selected_date_range
+        RouteTypeEnum.SEA_RAIL,
+        date,
+        start_point_id,
+        end_point_id,
+        container_ids,
+        ContainerOwner.COC,  # Mixed (Sea+Rail) always provides an equipment
+        only_in_selected_date_range,
     )
 
     query_mixed_with_drop = build_mixed_with_drop_query(
-        date, start_point_id, end_point_id, container_ids, only_in_selected_date_range
+        date,
+        start_point_id,
+        end_point_id,
+        container_ids,
+        only_in_selected_date_range,
     )
 
     sea_rail_queries = create_sea_rail_queries(
-        date, start_point_id, end_point_id, container_ids, only_in_selected_date_range
+        date,
+        start_point_id,
+        end_point_id,
+        container_ids,
+        only_in_selected_date_range,
     )
 
     all_queries = [
