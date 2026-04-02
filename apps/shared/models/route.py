@@ -15,9 +15,12 @@ class RouteTypeEnum(enum.Enum):
 
 
 class ContainerTransferTerms(enum.Enum):
-    FIFOR = "FIFO"
+    FIFO = "FIFO"
     FILO = "FILO"
-    FOBFOR = "FOR"
+
+
+class ContainerShipmentTerms(enum.Enum):
+    FOR = "FOR"
 
 
 class ContainerOwner(enum.Enum):
@@ -29,6 +32,7 @@ class PriceModel(Base):
     uid = (
         "route_id",
         "container_id",
+        "container_shipment_terms",
         "container_transfer_terms",
         "container_owner",
     )
@@ -48,6 +52,14 @@ class PriceModel(Base):
     container_transfer_terms: Mapped[ContainerTransferTerms] = mapped_column(
         Enum(
             ContainerTransferTerms,
+            create_constraint=True,
+            check_constraint=True,
+            validate_strings=True,
+        )
+    )
+    container_shipment_terms: Mapped[ContainerShipmentTerms] = mapped_column(
+        Enum(
+            ContainerShipmentTerms,
             create_constraint=True,
             check_constraint=True,
             validate_strings=True,

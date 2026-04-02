@@ -50,7 +50,8 @@ export interface ISinglePriceSegment extends ISegment {
 }
 
 export interface IPrice {
-    cond: string;
+    transfer_terms: string;
+    shipment_terms: string;
     conversation_percents: number;
     currency: string;
     value: number;

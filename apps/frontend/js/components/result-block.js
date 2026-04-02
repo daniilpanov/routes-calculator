@@ -9,7 +9,7 @@ function renderOnePriceOfSegment(priceVariant) {
 
     return `<div class="col-md">
         <div class="segment--price-variant">
-            <div class="mb-2">Условия: ${priceVariant.cond}</div>
+            <div class="mb-2">Условия: ${priceVariant.shipment_terms} ${priceVariant.transfer_terms}</div>
             <div class="mb-2">${priceVariant.container.name}</div>
             <div class="text-muted">${roundedPrice} ${priceVariant.currency}${contentInsertion}</div>
         </div>
