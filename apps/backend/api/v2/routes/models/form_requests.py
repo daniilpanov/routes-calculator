@@ -13,4 +13,3 @@ class CalculateFormRequest(BaseModel):
 
     cargoWeight: float
     containerType: int
-    onlyInSelectedDateRange: bool = False

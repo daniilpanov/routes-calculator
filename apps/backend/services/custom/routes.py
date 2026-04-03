@@ -23,16 +23,14 @@ def build_usual_query(
     end_point_id: int,
     container_ids: list[int],
     container_ownership: ContainerOwner,
-    only_in_selected_date_range: bool = True,
 ):
     where_clause = and_(
         RouteModel.effective_from <= date,
+        RouteModel.effective_to >= date,
         RouteModel.start_point_id == start_point_id,
         RouteModel.end_point_id == end_point_id,
         RouteModel.type == route_type,
     )
-    if only_in_selected_date_range:
-        where_clause &= RouteModel.effective_to >= date
 
     return (
         select(RouteModel)
@@ -69,7 +67,6 @@ def build_base_sea_rail_query(
     start_point_id: int,
     end_point_id: int,
     container_ids: list[int],
-    only_in_selected_date_range: bool = False,
 ) -> tuple:
     SeaRoute, RailRoute, SeaPrice, RailPrice = _create_aliases()
     where_clause = and_(
@@ -77,6 +74,8 @@ def build_base_sea_rail_query(
         RailRoute.type == RouteTypeEnum.RAIL,
         SeaRoute.effective_from <= date,
         RailRoute.effective_from <= date,
+        SeaRoute.effective_to >= date,
+        RailRoute.effective_to >= date,
         SeaRoute.start_point_id == start_point_id,
         RailRoute.end_point_id == end_point_id,
         SeaPrice.container_id.in_(container_ids),
@@ -93,9 +92,6 @@ def build_base_sea_rail_query(
             ),
         ),
     )
-    if only_in_selected_date_range:
-        where_clause &= SeaRoute.effective_to >= date
-        where_clause &= RailRoute.effective_to >= date
 
     drop_join_clause = and_(
         RailRoute.start_point_id == DropModel.start_point_id,
@@ -178,7 +174,6 @@ async def find_all_paths(
     start_point_id: int,
     end_point_id: int,
     container_ids: list[int],
-    only_in_selected_date_range: bool = False,
 ) -> list[tuple[list[Base], bool]]:
     query_rail = build_usual_query(
         RouteTypeEnum.RAIL,
@@ -187,7 +182,6 @@ async def find_all_paths(
         end_point_id,
         container_ids,
         ContainerOwner.SOC,  # Rail can not provide an equipment
-        only_in_selected_date_range,
     )
     query_sea = build_usual_query(
         RouteTypeEnum.SEA,
@@ -196,7 +190,6 @@ async def find_all_paths(
         end_point_id,
         container_ids,
         ContainerOwner.COC,  # Sea always provides an equipment
-        only_in_selected_date_range,
     )
 
     sea_rail_query = build_base_sea_rail_query(
@@ -204,7 +197,6 @@ async def find_all_paths(
         start_point_id,
         end_point_id,
         container_ids,
-        only_in_selected_date_range,
     )
 
     all_queries = [

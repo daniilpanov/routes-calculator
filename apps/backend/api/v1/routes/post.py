@@ -16,7 +16,6 @@ async def _get_routes(
     destination: str | int,
     container_weight: float,
     container_type: int,
-    only_in_selected_date_range: bool = False,
 ):
     containers = await modul.get_containers(date, departure, destination)
     container_ids = modul.search_container_ids(
@@ -25,7 +24,7 @@ async def _get_routes(
     if not container_ids:
         return []
     try:
-        return await modul.find_all_paths(date, departure, destination, container_ids, only_in_selected_date_range)
+        return await modul.find_all_paths(date, departure, destination, container_ids)
     except Exception as e:
         print(e)
         return []
@@ -61,7 +60,6 @@ async def calculate(request: CalculateFormRequest):
                 destinationId,
                 request.cargoWeight,
                 request.containerType,
-                request.onlyInSelectedDateRange,
             )
         )
 
