@@ -2,7 +2,6 @@ class App {
     _currenciesSwitcherInput;
     _currenciesSwitcherInputWrapper;
     _dispatchDateInput;
-    _showAllRoutesCheckbox;
     _departureInput;
     _destinationInput;
     _departureHiddenInput;
@@ -14,7 +13,6 @@ class App {
         _currenciesSwitcherInput,
         _currenciesSwitcherInputWrapper,
         _dispatchDateInput,
-        _showAllRoutesCheckbox,
         _departureInput,
         _destinationInput,
         _departureHiddenInput,
@@ -25,7 +23,6 @@ class App {
         this._currenciesSwitcherInput = _currenciesSwitcherInput;
         this._currenciesSwitcherInputWrapper = _currenciesSwitcherInputWrapper;
         this._dispatchDateInput = _dispatchDateInput;
-        this._showAllRoutesCheckbox = _showAllRoutesCheckbox;
         this._departureInput = _departureInput;
         this._destinationInput = _destinationInput;
         this._departureHiddenInput = _departureHiddenInput;
@@ -186,7 +183,6 @@ class App {
         try {
             await updateRoutes(
                 this._dispatchDateInput.value,
-                this._showAllRoutesCheckbox.checked ?? false,
                 JSON.parse(this._departureHiddenInput.value),
                 JSON.parse(this._destinationHiddenInput.value),
                 this._containerWeightInput.value,
