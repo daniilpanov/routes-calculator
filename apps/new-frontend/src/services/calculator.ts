@@ -4,6 +4,7 @@ import { RouteType } from "@/interfaces/Routes";
 import { convertToCurrentRate } from "@/services/rates";
 import { useRates } from "@/stores/rates";
 import { useRoutes } from "@/stores/routes";
+import { roundPrice } from "@/helpers/roundPrice";
 
 import type { ICalculatorPayload, ICalculatorPayloadWithCurrency } from "@/interfaces/CalculatorPayload";
 import type {
@@ -14,7 +15,6 @@ import type {
     RouteDescriptor,
     RouteExtendedDescriptor,
 } from "@/interfaces/Routes";
-import { roundPrice } from "@/helpers/roundPrice.ts";
 
 export const serializeCalculatorQueryParams = (payload: ICalculatorPayloadWithCurrency) => ({
     date: payload.date,
