@@ -6,7 +6,6 @@ import { getDepartures, getDestinations } from "@/api_helpers/points";
 import { onMounted, ref, useId, watch } from "vue";
 
 const dateModel = defineModel<string>("date");
-const showAllRoutesModel = defineModel<boolean>("showAllRoutes");
 const departureIdsModel = defineModel<IdIsExternal[]>("departure");
 const destinationIdsModel = defineModel<IdIsExternal[]>("destination");
 const containerTypeModel = defineModel<string>("containerType");
@@ -201,13 +200,6 @@ onMounted(async () => {
                 value=""
                 required
             />
-        </div>
-
-        <div class="mb-3">
-            <label>
-                <input type="checkbox" v-model="showAllRoutesModel" />
-                Показать устаревшие маршруты
-            </label>
         </div>
 
         <div class="mb-3 position-relative">
