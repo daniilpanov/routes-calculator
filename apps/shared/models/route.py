@@ -9,9 +9,9 @@ from . import CompanyModel, ContainerModel
 from .point import PointModel
 
 
-class RouteTypeEnum(enum.Enum):
-    SEA = "sea"
-    RAIL = "rail"
+class RouteType(enum.Enum):
+    SEA = "SEA"
+    RAIL = "RAIL"
 
 
 class ContainerTransferTerms(enum.Enum):
@@ -100,9 +100,9 @@ class RouteModel(Base):
     effective_to: Mapped[datetime.date] = mapped_column(DateTime(timezone=False))
     comment: Mapped[str | None] = mapped_column(String(255), nullable=True, default=None)
 
-    type: Mapped[RouteTypeEnum] = mapped_column(  # noqa: A003
+    type: Mapped[RouteType] = mapped_column(  # noqa: A003
         Enum(
-            RouteTypeEnum,
+            RouteType,
             create_constraint=True,
             check_constraint=True,
             validate_strings=True,
