@@ -1,6 +1,6 @@
 {
   "name": "new-frontend",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -11,8 +11,7 @@
     "type-check": "vue-tsc --build",
     "lint": "run-s lint:*",
     "lint:oxlint": "oxlint . --fix",
-    "lint:eslint": "eslint . --fix --cache",
-    "format": "oxfmt src/"
+    "lint:eslint": "eslint . --fix --cache"
   },
   "dependencies": {
     "bootstrap": "^5.3.8",

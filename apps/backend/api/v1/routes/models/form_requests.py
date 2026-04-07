@@ -10,4 +10,3 @@ class CalculateFormRequest(BaseModel):
     destinationId: dict[str, Any]
     cargoWeight: float
     containerType: int
-    onlyInSelectedDateRange: bool = False

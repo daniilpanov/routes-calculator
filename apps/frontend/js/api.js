@@ -24,7 +24,6 @@ async function getDestinations(date, departureId) {
 
 async function getRoutes(
     dispatchDate,
-    onlyInSelectedDateRange,
     departureId,
     destinationId,
     cargoWeight,
@@ -37,7 +36,6 @@ async function getRoutes(
         },
         body: JSON.stringify({
             dispatchDate,
-            onlyInSelectedDateRange,
             departureId,
             destinationId,
             cargoWeight,

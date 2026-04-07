@@ -4,6 +4,7 @@ import { RouteType } from "@/interfaces/Routes";
 import { convertToCurrentRate } from "@/services/rates";
 import { useRates } from "@/stores/rates";
 import { useRoutes } from "@/stores/routes";
+import { roundPrice } from "@/helpers/roundPrice";
 
 import type { ICalculatorPayload, ICalculatorPayloadWithCurrency } from "@/interfaces/CalculatorPayload";
 import type {
@@ -14,11 +15,9 @@ import type {
     RouteDescriptor,
     RouteExtendedDescriptor,
 } from "@/interfaces/Routes";
-import { roundPrice } from "@/helpers/roundPrice.ts";
 
 export const serializeCalculatorQueryParams = (payload: ICalculatorPayloadWithCurrency) => ({
     date: payload.date,
-    showAllRoutes: payload.showAllRoutes === undefined ? undefined : payload.showAllRoutes ? "true" : "false",
     departureIds: payload.departureIds ? serializeIds(payload.departureIds) : undefined,
     destinationIds: payload.departureIds && payload.destinationIds ? serializeIds(payload.destinationIds) : undefined,
     type: payload.containerType,
@@ -33,8 +32,6 @@ export function deserializeCalculatorQueryParams(query: Record<string, unknown>)
 
     if (query.date && !Number.isNaN(new Date(query.date as string).getDate()))
         params.date = query.date;
-
-    if (query.showAllRoutes) params.showAllRoutes = query.showAllRoutes === "true";
 
     if (query.departureIds) {
         params.departureIds = deserializeIds(query.departureIds as string);
@@ -53,7 +50,6 @@ export function deserializeCalculatorQueryParams(query: Record<string, unknown>)
 export async function updateRoutes(payload: ICalculatorPayload) {
     if (
         !payload.date
-        || payload.showAllRoutes === undefined
         || !payload.departureIds?.length
         || !payload.destinationIds?.length
         || !payload.containerType
@@ -88,7 +84,6 @@ export async function updateRoutes(payload: ICalculatorPayload) {
         one_service_routes: oneService,
     } = await fetchRoutes({
         dispatchDate: payload.date,
-        showAllRoutes: payload.showAllRoutes,
         departureInternalIds,
         destinationInternalIds,
         departureExternalIds,

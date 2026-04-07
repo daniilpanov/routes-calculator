@@ -8,7 +8,7 @@ class PointModel(Base):
     uid = ("city", "country")
 
     __tablename__ = "points"
-    __table_args__ = (UniqueConstraint(*uid),)
+    __table_args__ = (UniqueConstraint(*uid, name="uk__location"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
     city: Mapped[str] = mapped_column(String(100))

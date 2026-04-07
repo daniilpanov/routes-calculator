@@ -15,7 +15,7 @@ class ContainerModel(Base):
     uid = ("size", "type", "weight_from", "weight_to", "name")
 
     __tablename__ = "containers"
-    __table_args__ = (UniqueConstraint(*uid),)
+    __table_args__ = (UniqueConstraint(*uid, name="uk__fingerprint"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
     size: Mapped[int] = mapped_column()

@@ -1,12 +1,12 @@
 from typing import Any
 
 from shared.database import Base
-from shared.models import DropModel
+from shared.models import DropModel, RouteModel
 
 from .containers import _map_container
 
 
-def _map_segment(route):
+def _map_segment(route: RouteModel):
     return {
         "company": route.company.name,
         "type": route.type.name,
@@ -22,7 +22,7 @@ def _map_segment(route):
             "value": price.value,
             "currency": price.currency,
             "conversation_percents": price.conversation_percents,
-            "cond": price.type,
+            "cond": price.container_transfer_terms,
         } for price in route.prices],
     }
 

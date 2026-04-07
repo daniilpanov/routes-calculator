@@ -2,7 +2,6 @@ import type { IdIsExternal } from "@/interfaces/Point";
 
 export interface ICalculatorReadyToSendPayload {
     dispatchDate?: string;
-    showAllRoutes?: boolean;
     departureInternalIds: number[];
     destinationInternalIds: number[];
     departureExternalIds: string[];
@@ -14,7 +13,6 @@ export interface ICalculatorReadyToSendPayload {
 
 export interface ICalculatorPayload {
     date?: string;
-    showAllRoutes?: boolean;
     departureIds?: IdIsExternal[];
     destinationIds?: IdIsExternal[];
     containerType?: string;

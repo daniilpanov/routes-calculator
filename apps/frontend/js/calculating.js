@@ -13,7 +13,6 @@ async function asyncCallOrAlert(func, ...args) {
 
 async function updateRoutes(
     dispatchDate,
-    showAllRoutes,
     departureDescriptor,
     destinationDescriptor,
     containerWeight,
@@ -22,7 +21,6 @@ async function updateRoutes(
     const routes = await asyncCallOrAlert(
         getRoutes,
         dispatchDate,
-        !showAllRoutes,
         departureDescriptor,
         destinationDescriptor,
         containerWeight,

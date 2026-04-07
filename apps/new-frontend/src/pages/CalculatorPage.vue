@@ -19,7 +19,6 @@ import type { Ref } from "vue";
 
 interface Props {
     date?: string;
-    showAllRoutes?: boolean;
     departureIds?: IdIsExternal[];
     destinationIds?: IdIsExternal[];
     containerType?: string;
@@ -58,7 +57,6 @@ const resultsElementRef = ref<HTMLElement | undefined>();
 const dateModel = ref<string | undefined>();
 if (!dateModel.value) dateModel.value = new Date().toLocaleDateString("en-CA");
 
-const showAllRoutesModel = ref<boolean>();
 const departureIdsModel = ref<IdIsExternal[]>();
 const destinationIdsModel = ref<IdIsExternal[]>();
 const containerTypeModel = ref<string>();
@@ -68,7 +66,6 @@ const loading = ref(false);
 
 const models: { [key: string]: Ref<unknown> } = {
     date: dateModel,
-    showAllRoutes: showAllRoutesModel,
     departureIds: departureIdsModel,
     destinationIds: destinationIdsModel,
     containerType: containerTypeModel,
@@ -93,7 +90,6 @@ async function calculate(pushURL: boolean = true) {
         await router.push({
             query: serializeCalculatorQueryParams({
                 date: dateModel.value,
-                showAllRoutes: showAllRoutesModel.value,
                 departureIds: departureIdsModel.value,
                 destinationIds: destinationIdsModel.value,
                 containerType: containerTypeModel.value,
@@ -104,7 +100,6 @@ async function calculate(pushURL: boolean = true) {
 
     await updateRoutes({
         date: dateModel.value,
-        showAllRoutes: showAllRoutesModel.value,
         departureIds: departureIdsModel.value,
         destinationIds: destinationIdsModel.value,
         containerType: containerTypeModel.value,
@@ -142,7 +137,6 @@ onMounted(() => {
 
     const data = [
         props.date,
-        props.showAllRoutes,
         props.departureIds,
         props.destinationIds,
         props.containerType,
@@ -169,7 +163,6 @@ onMounted(() => {
                 v-model:date="dateModel"
                 v-model:departure="departureIdsModel"
                 v-model:destination="destinationIdsModel"
-                v-model:show-all-routes="showAllRoutesModel"
                 v-model:container-type="containerTypeModel"
                 v-model:container-weight="containerWeightModel"
                 @calculate="calculate"

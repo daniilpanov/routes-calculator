@@ -12,38 +12,50 @@ from .point import PointModel
 class RouteTypeEnum(enum.Enum):
     SEA = "sea"
     RAIL = "rail"
-    SEA_RAIL = "sea_rail"
 
 
-class PriceTypeEnum(enum.Enum):
+class ContainerTransferTerms(enum.Enum):
     FIFOR = "FIFO"
     FILO = "FILO"
     FOBFOR = "FOR"
-    MIXED = "MIXED"
+
+
+class ContainerOwner(enum.Enum):
+    COC = "COC"  # The line provides an equipment
+    SOC = "SOC"  # The expeditor provides an equipment
 
 
 class PriceModel(Base):
     uid = (
         "route_id",
         "container_id",
-        "type",
+        "container_transfer_terms",
+        "container_owner",
     )
 
     __tablename__ = "prices"
-    __table_args__ = (UniqueConstraint(*uid),)
+    __table_args__ = (UniqueConstraint(*uid, name="uk__fingerprint"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
 
-    route_id: Mapped[int] = mapped_column(ForeignKey("routes.id"))
-    container_id: Mapped[int] = mapped_column(ForeignKey("containers.id"))
+    route_id: Mapped[int] = mapped_column(ForeignKey("routes.id", name="fk__price_route", ondelete="CASCADE"))
+    container_id: Mapped[int] = mapped_column(ForeignKey("containers.id", name="fk__price_container"))
 
     value: Mapped[float | None] = mapped_column(nullable=True, default=None)
     currency: Mapped[str] = mapped_column(String(10))
     conversation_percents: Mapped[float] = mapped_column(default=0)
 
-    type: Mapped[PriceTypeEnum] = mapped_column(  # noqa: A003
+    container_transfer_terms: Mapped[ContainerTransferTerms] = mapped_column(
         Enum(
-            PriceTypeEnum,
+            ContainerTransferTerms,
+            create_constraint=True,
+            check_constraint=True,
+            validate_strings=True,
+        )
+    )
+    container_owner: Mapped[ContainerOwner] = mapped_column(
+        Enum(
+            ContainerOwner,
             create_constraint=True,
             check_constraint=True,
             validate_strings=True,
@@ -64,13 +76,13 @@ class RouteModel(Base):
     )
 
     __tablename__ = "routes"
-    __table_args__ = (UniqueConstraint(*uid),)
+    __table_args__ = (UniqueConstraint(*uid, name="uk__fingerprint"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
 
-    company_id: Mapped[int] = mapped_column(ForeignKey("companies.id"))
-    start_point_id: Mapped[int] = mapped_column(ForeignKey("points.id"))
-    end_point_id: Mapped[int] = mapped_column(ForeignKey("points.id"))
+    company_id: Mapped[int] = mapped_column(ForeignKey("companies.id", name="fk__route_company"))
+    start_point_id: Mapped[int] = mapped_column(ForeignKey("points.id", name="fk__route_point__start"))
+    end_point_id: Mapped[int] = mapped_column(ForeignKey("points.id", name="fk__route_point__end"))
 
     effective_from: Mapped[datetime.date] = mapped_column(DateTime(timezone=False))
     effective_to: Mapped[datetime.date] = mapped_column(DateTime(timezone=False))
