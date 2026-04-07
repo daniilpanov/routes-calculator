@@ -35,22 +35,14 @@ def _map_route(route_and_drop_and_datecheck: tuple[list[Base], bool]):
         drop = segments[-1]
         segments = segments[:-1]
 
-    res: list[Any] = [None] * len(segments)
-    skipped_count = 0
-
-    for i, segment in enumerate(segments):
-        mapped_segment = _map_segment(segment)
-        if mapped_segment:
-            res[i - skipped_count] = mapped_segment
-        else:
-            skipped_count += 1
+    mapped_segments = list(map(_map_segment, segments))
 
     return (
-        res,
+        mapped_segments,
         {"price": drop.price, "conversation_percents": drop.conversation_percents, "currency": drop.currency},
         may_route_be_invalid,
     ) if drop else (
-        res,
+        mapped_segments,
         None,
         may_route_be_invalid,
     )
