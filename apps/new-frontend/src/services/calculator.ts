@@ -79,10 +79,7 @@ export async function updateRoutes(payload: ICalculatorPayload) {
             destinationInternalIds.push(destinationIdDescriptor.id as number);
     }
 
-    const {
-        multi_service_routes: multiService,
-        one_service_routes: oneService,
-    } = await fetchRoutes({
+    const { routes } = await fetchRoutes({
         dispatchDate: payload.date,
         departureInternalIds,
         destinationInternalIds,
@@ -93,10 +90,7 @@ export async function updateRoutes(payload: ICalculatorPayload) {
         currency: currentRate,
     });
 
-    useRoutes().setRoutes({
-        oneService: processRoutes(oneService, true),
-        multiService: processRoutes(multiService, true),
-    });
+    useRoutes().setRoutes(processRoutes(routes, true));
 }
 
 export function revalidateRoutes(resort: boolean = true) {
@@ -104,12 +98,7 @@ export function revalidateRoutes(resort: boolean = true) {
     if (!routes)
         return;
 
-    const { multiService, oneService } = routes;
-
-    useRoutes().setRoutes({
-        oneService: processRoutes(oneService, resort),
-        multiService: processRoutes(multiService, resort),
-    });
+    useRoutes().setRoutes(processRoutes(routes, resort));
 }
 
 export const clearRoutes = () => useRoutes().setRoutes();

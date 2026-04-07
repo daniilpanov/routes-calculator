@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type {
-    ICalculatorExtendedResult,
     IMultiPriceSegment,
     ISinglePriceSegment,
     RouteExtendedDescriptor
@@ -15,7 +14,7 @@ import { computed, inject, provide, ref, watch } from "vue";
 import type { Ref } from "vue";
 
 const props = defineProps<{
-    routes: ICalculatorExtendedResult,
+    routes: RouteExtendedDescriptor[],
 }>();
 
 const editMode: Ref<boolean> = inject("editable") || ref(false);
@@ -24,21 +23,17 @@ const filterSelected = (routes: RouteExtendedDescriptor[]) => routes.filter(r =>
 const filterSelectedIfPrintMode = (routes: RouteExtendedDescriptor[], printMode: boolean) =>
     printMode ? filterSelected(routes) : routes;
 
-const oneService = computed(
-    () => filterSelectedIfPrintMode(props.routes.oneService, printMode.value)
-);
-const multiService = computed(
-    () => filterSelectedIfPrintMode(props.routes.multiService, printMode.value)
+const selectedRoutesIfPrintMode = computed(
+    () => filterSelectedIfPrintMode(props.routes, printMode.value)
 );
 
 const buildErrorMessage = (
     val: number,
-    multiService: boolean,
     routeIndex: number,
     segmentIndex: number,
     priceIndex?: number,
 ) => (
-    `Can not set price ${val} to ${multiService ? "multi" : "one"}-service route `
+    `Can not set price ${val} to route `
     + `with route index = ${routeIndex}, segment index = ${segmentIndex}`
     + (priceIndex === undefined ? "" : ` and price index = ${priceIndex}`)
     + ": element is undefined"
@@ -51,7 +46,7 @@ const allRoutesSelected = (routes: RouteExtendedDescriptor[]) => {
     return true;
 }
 
-const areAllRoutesSelected = ref<boolean>(allRoutesSelected(props.routes.oneService) && allRoutesSelected(props.routes.multiService));
+const areAllRoutesSelected = ref<boolean>(allRoutesSelected(props.routes));
 const areAllRoutesSelectedSignalRef = ref<boolean>(areAllRoutesSelected.value);
 provide("allRoutesSelected", areAllRoutesSelected);
 provide("allRoutesSelectedSignal", areAllRoutesSelectedSignalRef);
@@ -61,15 +56,14 @@ function updateSinglePrice(
     val: number,
     segmentIndex: number,
     routeIndex: number,
-    multiService: boolean,
 ) {
-    const route = (multiService ? props.routes.multiService : props.routes.oneService)[routeIndex]?.[0];
+    const route = props.routes[routeIndex]?.[0];
     if (!route)
-        throw new Error(buildErrorMessage(val, multiService, routeIndex, segmentIndex));
+        throw new Error(buildErrorMessage(val, routeIndex, segmentIndex));
 
     const segment = (route as ISinglePriceSegment[])[segmentIndex];
     if (!segment)
-        throw new Error(buildErrorMessage(val, multiService, routeIndex, segmentIndex));
+        throw new Error(buildErrorMessage(val, routeIndex, segmentIndex));
 
     segment.price = val;
     revalidateRoutes(false);
@@ -80,25 +74,24 @@ function updateMultiPrice(
     priceIndex: number,
     segmentIndex: number,
     routeIndex: number,
-    multiService: boolean,
 ) {
-    const route = (multiService ? props.routes.multiService : props.routes.oneService)[routeIndex]?.[0];
+    const route = props.routes[routeIndex]?.[0];
     if (!route)
-        throw new Error(buildErrorMessage(val, multiService, routeIndex, segmentIndex, priceIndex));
+        throw new Error(buildErrorMessage(val, routeIndex, segmentIndex, priceIndex));
 
     const priceVariant = (route as IMultiPriceSegment[])[segmentIndex]?.prices[priceIndex];
     if (!priceVariant)
-        throw new Error(buildErrorMessage(val, multiService, routeIndex, segmentIndex, priceIndex));
+        throw new Error(buildErrorMessage(val, routeIndex, segmentIndex, priceIndex));
 
     priceVariant.value = val;
     revalidateRoutes(false);
 }
 
-function setIsRouteSelected(val: boolean, routeIndex: number, multiService: boolean) {
+function setIsRouteSelected(val: boolean, routeIndex: number) {
     if (printMode.value)
         throw new Error("Can not set the route selected in print mode!");
 
-    const route = (multiService ? props.routes.multiService : props.routes.oneService)[routeIndex];
+    const route = props.routes[routeIndex];
     if (!route)
         throw new Error(`Can not ${val ? "" : "un"}select route with index ${routeIndex}: undefined`);
 
@@ -109,7 +102,7 @@ function setIsRouteSelected(val: boolean, routeIndex: number, multiService: bool
         areAllRoutesSelected.value = false;
     } else if (
         val && !areAllRoutesSelected.value
-        && allRoutesSelected(props.routes.oneService) && allRoutesSelected(props.routes.multiService)
+        && allRoutesSelected(props.routes)
     ) {
         quietAllRoutesSelectedChange = true;
         areAllRoutesSelected.value = true;
@@ -132,30 +125,14 @@ watch(areAllRoutesSelected, () => {
         <RoutesSVG />
     </div>
 
-    <h3>Сквозные маршруты</h3>
-    <div id="results-direct" class="mt-4" v-if="oneService.length">
+    <div id="results-direct" class="mt-4" v-if="selectedRoutesIfPrintMode.length">
         <ResultRouteView
-            v-for="(route, index) in oneService"
+            v-for="(route, index) in selectedRoutesIfPrintMode"
             :key="index"
             :route="route"
-            @update:single-price="(val: number, segId: number) => updateSinglePrice(val, segId, index, false)"
-            @update:multi-price="(val: number, segId: number, routeId: number) => updateMultiPrice(val, segId, routeId, index, false)"
-            @set-selected="(val: boolean) => setIsRouteSelected(val, index, false)"
-        />
-    </div>
-    <div v-else>
-        <h5>Не найдены</h5>
-    </div>
-
-    <h3>Прочие маршруты</h3>
-    <div id="results-other" class="mt-4" v-if="multiService.length">
-        <ResultRouteView
-            v-for="(route, index) in multiService"
-            :key="index"
-            :route="route"
-            @update:single-price="(val: number, segId: number) => updateSinglePrice(val, segId, index, true)"
-            @update:multi-price="(val: number, segId: number, routeId: number) => updateMultiPrice(val, segId, routeId, index, true)"
-            @set-selected="(val: boolean) => setIsRouteSelected(val, index, true)"
+            @update:single-price="(val: number, segId: number) => updateSinglePrice(val, segId, index)"
+            @update:multi-price="(val: number, segId: number, routeId: number) => updateMultiPrice(val, segId, routeId, index)"
+            @set-selected="(val: boolean) => setIsRouteSelected(val, index)"
         />
     </div>
     <div v-else>

@@ -1,12 +1,12 @@
-import type { ICalculatorExtendedResult } from "@/interfaces/Routes";
+import type { RouteExtendedDescriptor } from "@/interfaces/Routes";
 
 import { defineStore } from "pinia";
 import { ref } from "vue";
 
 export const useRoutes = defineStore("routes", () => {
-    const routes = ref<ICalculatorExtendedResult | undefined>();
+    const routes = ref<RouteExtendedDescriptor[] | undefined>();
 
-    const setRoutes = (newRoutes?: ICalculatorExtendedResult) => (routes.value = newRoutes);
+    const setRoutes = (newRoutes?: RouteExtendedDescriptor[]) => (routes.value = newRoutes);
 
     return { routes, setRoutes };
 });

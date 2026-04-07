@@ -9,15 +9,18 @@ from . import CompanyModel, ContainerModel
 from .point import PointModel
 
 
-class RouteTypeEnum(enum.Enum):
-    SEA = "sea"
-    RAIL = "rail"
+class RouteType(enum.Enum):
+    SEA = "SEA"
+    RAIL = "RAIL"
 
 
 class ContainerTransferTerms(enum.Enum):
-    FIFOR = "FIFO"
+    FIFO = "FIFO"
     FILO = "FILO"
-    FOBFOR = "FOR"
+
+
+class ContainerShipmentTerms(enum.Enum):
+    FOR = "FOR"
 
 
 class ContainerOwner(enum.Enum):
@@ -29,6 +32,7 @@ class PriceModel(Base):
     uid = (
         "route_id",
         "container_id",
+        "container_shipment_terms",
         "container_transfer_terms",
         "container_owner",
     )
@@ -48,6 +52,14 @@ class PriceModel(Base):
     container_transfer_terms: Mapped[ContainerTransferTerms] = mapped_column(
         Enum(
             ContainerTransferTerms,
+            create_constraint=True,
+            check_constraint=True,
+            validate_strings=True,
+        )
+    )
+    container_shipment_terms: Mapped[ContainerShipmentTerms] = mapped_column(
+        Enum(
+            ContainerShipmentTerms,
             create_constraint=True,
             check_constraint=True,
             validate_strings=True,
@@ -88,9 +100,9 @@ class RouteModel(Base):
     effective_to: Mapped[datetime.date] = mapped_column(DateTime(timezone=False))
     comment: Mapped[str | None] = mapped_column(String(255), nullable=True, default=None)
 
-    type: Mapped[RouteTypeEnum] = mapped_column(  # noqa: A003
+    type: Mapped[RouteType] = mapped_column(  # noqa: A003
         Enum(
-            RouteTypeEnum,
+            RouteType,
             create_constraint=True,
             check_constraint=True,
             validate_strings=True,

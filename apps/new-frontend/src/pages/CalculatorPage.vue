@@ -14,7 +14,7 @@ import { computed, inject, nextTick, onMounted, provide, ref } from "vue";
 
 import type { IdIsExternal } from "@/interfaces/Point";
 import type { RatesMap } from "@/stores/rates";
-import type { ICalculatorExtendedResult } from "@/interfaces/Routes";
+import type { RouteExtendedDescriptor } from "@/interfaces/Routes";
 import type { Ref } from "vue";
 
 interface Props {
@@ -43,7 +43,7 @@ const currentRateRef = computed({
 });
 
 const routesStore = useRoutes();
-const routesRef = computed((): ICalculatorExtendedResult | undefined => routesStore.routes);
+const routesRef = computed((): RouteExtendedDescriptor[] | undefined => routesStore.routes);
 
 const editMode = ref<boolean>(false);
 

@@ -3,7 +3,7 @@ import datetime
 
 from backend.mapper_decorator import apply_mapper
 from shared.database import Base, get_database
-from shared.models import ContainerOwner, DropModel, PriceModel, RouteModel, RouteTypeEnum
+from shared.models import ContainerOwner, DropModel, PriceModel, RouteModel, RouteType
 from sqlalchemy import and_, desc, or_, select
 from sqlalchemy.orm import aliased, contains_eager, joinedload
 
@@ -17,7 +17,7 @@ async def _execute_query(q):
 
 
 def build_usual_query(
-    route_type: RouteTypeEnum,
+    route_type: RouteType,
     date: datetime.date,
     start_point_id: int,
     end_point_id: int,
@@ -70,8 +70,8 @@ def build_base_sea_rail_query(
 ) -> tuple:
     SeaRoute, RailRoute, SeaPrice, RailPrice = _create_aliases()
     where_clause = and_(
-        SeaRoute.type == RouteTypeEnum.SEA,
-        RailRoute.type == RouteTypeEnum.RAIL,
+        SeaRoute.type == RouteType.SEA,
+        RailRoute.type == RouteType.RAIL,
         SeaRoute.effective_from <= date,
         RailRoute.effective_from <= date,
         SeaRoute.effective_to >= date,
@@ -176,7 +176,7 @@ async def find_all_paths(
     container_ids: list[int],
 ) -> list[tuple[list[Base], bool]]:
     query_rail = build_usual_query(
-        RouteTypeEnum.RAIL,
+        RouteType.RAIL,
         date,
         start_point_id,
         end_point_id,
@@ -184,7 +184,7 @@ async def find_all_paths(
         ContainerOwner.SOC,  # Rail can not provide an equipment
     )
     query_sea = build_usual_query(
-        RouteTypeEnum.SEA,
+        RouteType.SEA,
         date,
         start_point_id,
         end_point_id,
