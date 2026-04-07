@@ -39,11 +39,11 @@ def _map_route(route_and_drop_and_datecheck: tuple[list[Base], bool]):
 
     return (
         mapped_segments,
-        {"price": drop.price, "conversation_percents": drop.conversation_percents, "currency": drop.currency},
-        may_route_be_invalid,
-    ) if drop else (
-        mapped_segments,
-        None,
+        {
+            "price": drop.price,
+            "conversation_percents": drop.conversation_percents,
+            "currency": drop.currency,
+        } if drop else None,
         may_route_be_invalid,
     )
 
