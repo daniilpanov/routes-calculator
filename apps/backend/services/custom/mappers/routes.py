@@ -24,6 +24,7 @@ def _map_segment(route: RouteModel):
             "conversation_percents": price.conversation_percents,
             "transfer_terms": price.container_transfer_terms,
             "shipment_terms": price.container_shipment_terms,
+            "owner": price.container_owner,
         } for price in route.prices],
     }
 
