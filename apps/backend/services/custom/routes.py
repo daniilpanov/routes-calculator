@@ -116,9 +116,9 @@ def build_base_sea_rail_query(
         .join(RailPrice, RailRoute.id == RailPrice.route_id)
         .outerjoin(DropModel, drop_join_clause)
         .order_by(desc(SeaRoute.effective_to), desc(RailRoute.effective_to))
+        # note: I tried using 'group by' statement, but it cuts off prices
         # here could be 'group_by', but it doesn't work correctly with 'joinedload'
         # so we select unique on the client-side
-        # note: I tried using 'group by' statement, but it cuts off prices
         .options(
             joinedload(SeaRoute.start_point),
             joinedload(SeaRoute.end_point),
