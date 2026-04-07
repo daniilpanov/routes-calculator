@@ -32,7 +32,7 @@ async def _get_routes(
 
 
 @router.post("/calculate")
-async def calculate(request: CalculateFormRequest):  # noqa: C901
+async def calculate(request: CalculateFormRequest):
     coros = []
     destinationId: str | int
     departureId: str | int
@@ -60,9 +60,8 @@ async def calculate(request: CalculateFormRequest):  # noqa: C901
             ))
 
     result = await asyncio.gather(*coros, return_exceptions=True)
+    routes = []
     errors = []
-    one_service_routes = []
-    multi_service_routes = []
 
     for coro_result in result:
         if isinstance(coro_result, BaseException):
@@ -70,26 +69,12 @@ async def calculate(request: CalculateFormRequest):  # noqa: C901
                 "error_type": str(type(coro_result)),
                 "error_text": str(coro_result),
             })
-            continue
-
-        for route_and_drop_and_datecheck in coro_result:
-            if len(route_and_drop_and_datecheck) == 3:
-                route, drop, may_route_be_invalid = route_and_drop_and_datecheck
-            else:  # magic fallback
-                route = route_and_drop_and_datecheck[0]
-                drop = None
-                may_route_be_invalid = False
-
-            initial_company = route[0]["company"]
-            for segment in route[1:]:
-                if segment["company"] != initial_company:
-                    multi_service_routes.append((route, drop, may_route_be_invalid))
-                    break
-            else:
-                one_service_routes.append((route, drop, may_route_be_invalid))
+        elif coro_result:
+            res = list(coro_result)
+            if res:
+                routes.append(res[0])
 
     return {
         "errors": errors,
-        "one_service_routes": one_service_routes,
-        "multi_service_routes": multi_service_routes,
+        "routes": routes,
     }

@@ -11,11 +11,6 @@ export enum RouteType {
     SEA_RAIL = "SEA_RAIL",
 }
 
-export interface ICalculatorExtendedResult {
-    oneService: RouteExtendedDescriptor[];
-    multiService: RouteExtendedDescriptor[];
-}
-
 export interface IDrop {
     price: number;
     currency: string;
