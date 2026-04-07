@@ -9,7 +9,6 @@ function renderOnePriceOfSegment(priceVariant) {
 
     return `<div class="col-md">
         <div class="segment--price-variant">
-            <div class="mb-2">Условия: ${priceVariant.owner} ${priceVariant.shipment_terms} ${priceVariant.transfer_terms}</div>
             <div class="mb-2">${priceVariant.container.name}</div>
             <div class="text-muted">${roundedPrice} ${priceVariant.currency}${contentInsertion}</div>
         </div>
@@ -24,6 +23,7 @@ function renderMultiPrice(icon, segment) {
     return `
         <div class="align-items-center my-2 result-segment">
             <div class="route-icon">${icon} &emsp; ${segment.company}</div>
+            <div class="mb-2">Условия: ${segment.container_owner} ${segment.container_shipment_terms} ${segment.container_transfer_terms}</div>
             <div class="mb-2">
                 Ставка действует:
                 ${new Date(segment.effectiveFrom).toLocaleDateString()} — ${new Date(segment.effectiveTo).toLocaleDateString()}

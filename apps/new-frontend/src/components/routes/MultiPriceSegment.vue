@@ -17,6 +17,12 @@ defineEmits(["update:price"]);
             {{ segment.company }}
         </div>
         <div class="mb-2">
+            Условия:
+            {{ segment.container_owner }}
+            {{ segment.container_shipment_terms }}
+            {{ segment.container_transfer_terms }}
+        </div>
+        <div class="mb-2">
             Ставка действует:
             {{ new Date(segment.effectiveFrom).toLocaleDateString() }}
             —

@@ -32,9 +32,6 @@ class PriceModel(Base):
     uid = (
         "route_id",
         "container_id",
-        "container_shipment_terms",
-        "container_transfer_terms",
-        "container_owner",
     )
 
     __tablename__ = "prices"
@@ -49,6 +46,43 @@ class PriceModel(Base):
     currency: Mapped[str] = mapped_column(String(10))
     conversation_percents: Mapped[float] = mapped_column(default=0)
 
+    container: Mapped[ContainerModel] = relationship()
+    route: Mapped['RouteModel'] = relationship("RouteModel", back_populates="prices")
+
+
+class RouteModel(Base):
+    uid = (
+        "company_id",
+        "start_point_id",
+        "end_point_id",
+        "effective_from",
+        "effective_to",
+        "container_shipment_terms",
+        "container_transfer_terms",
+        "container_owner",
+    )
+
+    __tablename__ = "routes"
+    __table_args__ = (UniqueConstraint(*uid, name="uk__fingerprint"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
+
+    company_id: Mapped[int] = mapped_column(ForeignKey("companies.id", name="fk__route_company"))
+    start_point_id: Mapped[int] = mapped_column(ForeignKey("points.id", name="fk__route_point__start"))
+    end_point_id: Mapped[int] = mapped_column(ForeignKey("points.id", name="fk__route_point__end"))
+
+    effective_from: Mapped[datetime.date] = mapped_column(DateTime(timezone=False))
+    effective_to: Mapped[datetime.date] = mapped_column(DateTime(timezone=False))
+    comment: Mapped[str | None] = mapped_column(String(255), nullable=True, default=None)
+
+    type: Mapped[RouteType] = mapped_column(  # noqa: A003
+        Enum(
+            RouteType,
+            create_constraint=True,
+            check_constraint=True,
+            validate_strings=True,
+        )
+    )
     container_transfer_terms: Mapped[ContainerTransferTerms] = mapped_column(
         Enum(
             ContainerTransferTerms,
@@ -68,41 +102,6 @@ class PriceModel(Base):
     container_owner: Mapped[ContainerOwner] = mapped_column(
         Enum(
             ContainerOwner,
-            create_constraint=True,
-            check_constraint=True,
-            validate_strings=True,
-        )
-    )
-
-    container: Mapped[ContainerModel] = relationship()
-    route: Mapped['RouteModel'] = relationship("RouteModel", back_populates="prices")
-
-
-class RouteModel(Base):
-    uid = (
-        "company_id",
-        "start_point_id",
-        "end_point_id",
-        "effective_from",
-        "effective_to",
-    )
-
-    __tablename__ = "routes"
-    __table_args__ = (UniqueConstraint(*uid, name="uk__fingerprint"),)
-
-    id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
-
-    company_id: Mapped[int] = mapped_column(ForeignKey("companies.id", name="fk__route_company"))
-    start_point_id: Mapped[int] = mapped_column(ForeignKey("points.id", name="fk__route_point__start"))
-    end_point_id: Mapped[int] = mapped_column(ForeignKey("points.id", name="fk__route_point__end"))
-
-    effective_from: Mapped[datetime.date] = mapped_column(DateTime(timezone=False))
-    effective_to: Mapped[datetime.date] = mapped_column(DateTime(timezone=False))
-    comment: Mapped[str | None] = mapped_column(String(255), nullable=True, default=None)
-
-    type: Mapped[RouteType] = mapped_column(  # noqa: A003
-        Enum(
-            RouteType,
             create_constraint=True,
             check_constraint=True,
             validate_strings=True,
