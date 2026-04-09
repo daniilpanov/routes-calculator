@@ -91,6 +91,11 @@ def build_base_sea_rail_query(
                 RailRoute.container_owner == ContainerOwner.SOC,
             ),
         ),
+        # Through routes logic
+        or_(
+            ~RailRoute.is_through & ~SeaRoute.is_through,
+            SeaRoute.company_id == RailRoute.company_id,
+        ),
     )
 
     drop_join_clause = and_(

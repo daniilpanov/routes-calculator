@@ -60,6 +60,7 @@ class RouteModel(Base):
         "container_shipment_terms",
         "container_transfer_terms",
         "container_owner",
+        "is_through",
     )
 
     __tablename__ = "routes"
@@ -74,6 +75,8 @@ class RouteModel(Base):
     effective_from: Mapped[datetime.date] = mapped_column(DateTime(timezone=False))
     effective_to: Mapped[datetime.date] = mapped_column(DateTime(timezone=False))
     comment: Mapped[str | None] = mapped_column(String(255), nullable=True, default=None)
+
+    is_through: Mapped[bool] = mapped_column(default=True)
 
     type: Mapped[RouteType] = mapped_column(  # noqa: A003
         Enum(
