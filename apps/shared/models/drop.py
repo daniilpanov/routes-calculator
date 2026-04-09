@@ -27,14 +27,8 @@ class DropModel(Base):
     # SEA COMPANY
     company_id: Mapped[int] = mapped_column(ForeignKey("companies.id", name="fk__drop_companies"))
     # RAIL POINTS
-    start_point_id: Mapped[int | None] = mapped_column(
-        ForeignKey("points.id", name="fk__drop_point__start"),
-        nullable=True,
-    )
-    end_point_id: Mapped[int | None] = mapped_column(
-        ForeignKey("points.id", name="fk__drop_point__end"),
-        nullable=True,
-    )
+    start_point_id: Mapped[int | None] = mapped_column(ForeignKey("points.id", name="fk__drop_point__start"))
+    end_point_id: Mapped[int | None] = mapped_column(ForeignKey("points.id", name="fk__drop_point__end"))
 
     effective_from: Mapped[datetime.date] = mapped_column(DateTime(timezone=False))
     effective_to: Mapped[datetime.date] = mapped_column(DateTime(timezone=False))
