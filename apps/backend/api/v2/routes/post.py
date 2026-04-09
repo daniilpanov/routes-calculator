@@ -72,7 +72,7 @@ async def calculate(request: CalculateFormRequest):
         elif coro_result:
             res = list(coro_result)
             if res:
-                routes.append(res[0])
+                routes.extend(res)
 
     return {
         "errors": errors,
