@@ -108,11 +108,7 @@ class RouteModel(Base):
         )
     )
 
-    start_point: Mapped[PointModel] = relationship(
-        PointModel, foreign_keys=[start_point_id]
-    )
-    end_point: Mapped[PointModel] = relationship(
-        PointModel, foreign_keys=[end_point_id]
-    )
+    start_point: Mapped[PointModel] = relationship(PointModel, foreign_keys=[start_point_id])
+    end_point: Mapped[PointModel] = relationship(PointModel, foreign_keys=[end_point_id])
     company: Mapped[CompanyModel] = relationship()
     prices: Mapped[list[PriceModel]] = relationship("PriceModel", back_populates="route")
