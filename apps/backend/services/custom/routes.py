@@ -70,14 +70,18 @@ def build_base_sea_rail_query(
 ) -> tuple:
     SeaRoute, RailRoute, SeaPrice, RailPrice = _create_aliases()
     where_clause = and_(
+        # Types
         SeaRoute.type == RouteType.SEA,
         RailRoute.type == RouteType.RAIL,
+        # Dates
         SeaRoute.effective_from <= date,
         RailRoute.effective_from <= date,
         SeaRoute.effective_to >= date,
         RailRoute.effective_to >= date,
+        # Points
         SeaRoute.start_point_id == start_point_id,
         RailRoute.end_point_id == end_point_id,
+        # Containers
         SeaPrice.container_id.in_(container_ids),
         RailPrice.container_id.in_(container_ids),
         # COC/SOC logic
@@ -99,10 +103,14 @@ def build_base_sea_rail_query(
     )
 
     drop_join_clause = and_(
+        # Points
         RailRoute.start_point_id == DropModel.start_point_id,
         RailRoute.end_point_id == DropModel.end_point_id,
+        # Container
         RailPrice.container_id == DropModel.container_id,
+        # Company
         SeaRoute.company_id == DropModel.company_id,
+        # Dates
         DropModel.effective_from <= SeaRoute.effective_from,
         DropModel.effective_to >= SeaRoute.effective_to,
         DropModel.effective_from <= RailRoute.effective_from,
