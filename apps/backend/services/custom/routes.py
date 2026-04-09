@@ -40,7 +40,7 @@ def build_usual_query(
             and_(
                 RouteModel.id == PriceModel.route_id,
                 PriceModel.container_id.in_(container_ids),
-                PriceModel.container_owner == container_ownership,
+                RouteModel.container_owner == container_ownership,
             ),
         )
         .order_by(desc(RouteModel.effective_to))
@@ -84,11 +84,11 @@ def build_base_sea_rail_query(
         or_(
             and_(
                 SeaRoute.company_id == RailRoute.company_id,
-                RailPrice.container_owner == ContainerOwner.COC,
+                RailRoute.container_owner == ContainerOwner.COC,
             ),
             and_(
                 SeaRoute.company_id != RailRoute.company_id,
-                RailPrice.container_owner == ContainerOwner.SOC,
+                RailRoute.container_owner == ContainerOwner.SOC,
             ),
         ),
     )

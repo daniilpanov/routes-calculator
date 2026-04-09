@@ -29,6 +29,10 @@ interface ISegment {
     endPointName: string;
     endPointCountry: string;
 
+    container_owner: string;
+    container_transfer_terms: string;
+    container_shipment_terms: string;
+
     comment?: string;
 }
 
@@ -45,9 +49,6 @@ export interface ISinglePriceSegment extends ISegment {
 }
 
 export interface IPrice {
-    owner: string;
-    transfer_terms: string;
-    shipment_terms: string;
     conversation_percents: number;
     currency: string;
     value: number;

@@ -17,14 +17,16 @@ def _map_segment(route: RouteModel):
         "endPointCountry": route.end_point.RU_country,
         "endPointName": route.end_point.RU_city,
         "comment": route.comment,
+
+        "container_transfer_terms": route.container_transfer_terms,
+        "container_shipment_terms": route.container_shipment_terms,
+        "container_owner": route.container_owner,
+
         "prices": [{
             "container": _map_container(price.container),
             "value": price.value,
             "currency": price.currency,
             "conversation_percents": price.conversation_percents,
-            "transfer_terms": price.container_transfer_terms,
-            "shipment_terms": price.container_shipment_terms,
-            "owner": price.container_owner,
         } for price in route.prices],
     }
 

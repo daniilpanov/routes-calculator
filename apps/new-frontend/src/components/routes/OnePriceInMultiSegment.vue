@@ -19,7 +19,6 @@ defineEmits(["update:price"]);
 <template>
     <div>
         <div class="segment--price-variant">
-            <div class="mb-2">Условия: {{ priceVariant.owner }} {{ priceVariant.shipment_terms }} {{ priceVariant.transfer_terms }}</div>
             <div class="mb-2">Контейнер: {{ priceVariant.container.name }}</div>
             <div>
                 <PriceWithCurrency
