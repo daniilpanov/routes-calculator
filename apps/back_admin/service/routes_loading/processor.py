@@ -58,6 +58,19 @@ def process_points_services_effectivity(processed_df: DataFrame, fields_config: 
     return processed_df
 
 
+def process_conversion_percents(processed_df: DataFrame, fields_config: UploaderFieldsConfig):
+    processed_df[fields_config.conversation_percents] = (  # noqa: ECE001
+        processed_df[fields_config.conversation_percents].apply(
+            lambda x: (
+                remove_extra_spaces(x.strip()).rstrip("%").rstrip()
+                if isinstance(x, str) else
+                x * 100 if isinstance(x, float) else x
+            )
+        )
+    )
+    return processed_df
+
+
 def process_routes_df(processed_routes_df, route_type: RouteType, warnings, fields_config: UploaderFieldsConfig):
     processed_routes_df = select_cols(processed_routes_df, fields_config.model_dump().values())
 
@@ -74,6 +87,7 @@ def process_routes_df(processed_routes_df, route_type: RouteType, warnings, fiel
     )
 
     processed_routes_df = process_points_services_effectivity(processed_routes_df, fields_config)
+    processed_routes_df = process_conversion_percents(processed_routes_df, fields_config)
 
     processed_routes_df[fields_config.container_condition] = (
         processed_routes_df[fields_config.container_condition].apply(none_filter)
@@ -83,16 +97,6 @@ def process_routes_df(processed_routes_df, route_type: RouteType, warnings, fiel
     )
     processed_routes_df[fields_config.container_shipment_terms] = (
         processed_routes_df[fields_config.container_shipment_terms].apply(none_filter)
-    )
-
-    processed_routes_df[fields_config.conversation_percents] = (  # noqa: ECE001
-        processed_routes_df[fields_config.conversation_percents].apply(
-            lambda x: (
-                remove_extra_spaces(x.strip()).rstrip("%").rstrip()
-                if isinstance(x, str) else
-                x * 100 if isinstance(x, float) else x
-            )
-        )
     )
 
     routes_df_dropna_subset = [
