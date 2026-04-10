@@ -46,7 +46,13 @@ def process_numeric_and_string_cols(processed_df: DataFrame, numeric_cols: set[s
     return processed_df
 
 
-def process_points_services_effectivity(processed_df: DataFrame, fields_config: UploaderFieldsConfig):
+def process_points_services_effectivity(
+    processed_df: DataFrame,
+    warnings,
+    fields_config:
+    UploaderFieldsConfig,
+    ws_name: str,
+):
     processed_df[fields_config.service] = processed_df[fields_config.service].apply(none_filter).str.strip()
 
     processed_df[fields_config.start_point] = processed_df[fields_config.start_point].apply(none_filter).str.strip()
@@ -60,7 +66,20 @@ def process_points_services_effectivity(processed_df: DataFrame, fields_config: 
         processed_df[fields_config.effective_to].apply(none_filter).apply(format_date)
     )
 
-    return processed_df
+    # remove rows without dates
+    df_dropna_subset = [
+        fields_config.effective_from,
+        fields_config.effective_to,
+    ]
+
+    missing_idx = []
+    for col in df_dropna_subset:
+        missing_idx += processed_df[processed_df[col].isna()].index.tolist()
+
+    if missing_idx:
+        warnings.append(("UnsupportedDateFormat", tuple(row_idx for row_idx in missing_idx), ws_name))
+
+    return processed_df.dropna(ignore_index=False, subset=df_dropna_subset)
 
 
 def process_conversion_percents(processed_df: DataFrame, fields_config: UploaderFieldsConfig):
@@ -91,7 +110,12 @@ def process_routes_df(processed_routes_df, route_type: RouteType, warnings, fiel
         },
     )
 
-    processed_routes_df = process_points_services_effectivity(processed_routes_df, fields_config)
+    processed_routes_df = process_points_services_effectivity(
+        processed_routes_df,
+        warnings,
+        fields_config,
+        route_type.value,
+    )
     processed_routes_df = process_conversion_percents(processed_routes_df, fields_config)
 
     processed_routes_df[fields_config.container_condition] = (
@@ -205,21 +229,6 @@ async def load_data(
 
     routes_df: DataFrame = pd.concat((sea_routes_df, rail_routes_df), ignore_index=False)
     del sea_routes_df, rail_routes_df
-
-    # remove routes without dates
-    routes_df_dropna_subset = [
-        fields_config.effective_from,
-        fields_config.effective_to,
-    ]
-    routes_df = routes_df.dropna(ignore_index=False, subset=routes_df_dropna_subset)
-
-    missing_idx = []
-
-    for col in routes_df_dropna_subset:
-        missing_idx += routes_df[routes_df[col].isna()].index.tolist()
-
-    if missing_idx:
-        warnings.append(("UnsupportedDateFormat", tuple(row_idx for row_idx in missing_idx), None))
 
     # Merging points with terminals
     routes_with_transit = routes_df.dropna(subset=[fields_config.terminal])[[
