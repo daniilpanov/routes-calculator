@@ -1,0 +1,178 @@
+from typing import Annotated
+
+from fastapi import APIRouter, HTTPException
+from fastapi.params import Depends
+from starlette.status import HTTP_400_BAD_REQUEST, HTTP_500_INTERNAL_SERVER_ERROR
+
+import gspread
+from back_admin.config import get_settings
+from back_admin.models.upoader_fields_config import UploaderFieldsConfig
+from back_admin.service.routes_loading.errors import (
+    InvalidRouteConditionException,
+    InvalidRouteTypeException,
+    NoPriceInRouteException,
+    PointNotFoundException,
+    PointsWithNanException,
+)
+from back_admin.service.routes_loading.processor import load_data
+from gspread_dataframe import get_as_dataframe
+from shared.database import get_database
+from shared.models import RouteType
+from shared.resources import Resources
+from sqlalchemy.ext.asyncio import AsyncSession
+
+router = APIRouter(prefix="/data")
+settings = get_settings()
+
+
+def get_fields_config_from_file(res_name: str = settings.DEFAULT_UPLOADER_FIELDS_CONFIG_RESOURCE_NAME):
+    return UploaderFieldsConfig(
+        **Resources.get(res_name, scope="back_admin").read_json(),
+    )
+
+
+@router.post("/update-from-gsheets")
+async def update_from_gsheets(
+    fields_config: Annotated[UploaderFieldsConfig, Depends(get_fields_config_from_file)],
+    db_session: Annotated[AsyncSession, Depends(get_database().session)],
+    gsheets_url: str = settings.DEFAULT_GSHEETS_URL,
+    sea_routes_ws_name: str = settings.DEFAULT_SEA_ROUTES_WS,
+    rail_routes_ws_name: str = settings.DEFAULT_RAIL_ROUTES_WS,
+    points_ws_name: str | None = settings.DEFAULT_POINTS_WS,
+    load_on_warnings: bool = True,
+):
+    return await update_from_gsheets_with_custom_fields(
+        db_session,
+        fields_config,
+        gsheets_url,
+        sea_routes_ws_name,
+        rail_routes_ws_name,
+        points_ws_name,
+        load_on_warnings,
+    )
+
+
+@router.post("/update-from-gsheets-with-custom-fields")
+async def update_from_gsheets_with_custom_fields(
+    db_session: Annotated[AsyncSession, Depends(get_database().session)],
+    fields_config: UploaderFieldsConfig,
+    gsheets_url: str = settings.DEFAULT_GSHEETS_URL,
+    sea_routes_ws_name: str = settings.DEFAULT_SEA_ROUTES_WS,
+    rail_routes_ws_name: str = settings.DEFAULT_RAIL_ROUTES_WS,
+    points_ws_name: str | None = settings.DEFAULT_POINTS_WS,
+    load_on_warnings: bool = True,
+):
+    gs = gspread.service_account(
+        filename=Resources.get(settings.GOOGLE_SERVICE_ACCOUNT_RESOURCE_NAME, scope="back_admin").path,
+    )
+    sources_gs = gs.open_by_url(gsheets_url)
+
+    sea_routes_df = get_as_dataframe(
+        sources_gs.worksheet(sea_routes_ws_name),
+        evaluate_formulas=True,
+    )
+    rail_routes_df = get_as_dataframe(
+        sources_gs.worksheet(rail_routes_ws_name),
+        evaluate_formulas=True,
+    )
+    points_df = get_as_dataframe(
+        sources_gs.worksheet(points_ws_name),
+        evaluate_formulas=True,
+    ) if points_ws_name else None
+
+    routes_count = len(sea_routes_df) + len(rail_routes_df)
+    try:
+        res, res_metadata, warnings = await load_data(
+            db_session,
+            sea_routes_df,
+            rail_routes_df,
+            points_df,
+            fields_config,
+            load_on_warnings,
+        )
+
+    except PointsWithNanException as e:
+        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail={
+            "error": f"Ошибка в листе '{points_ws_name}': не заполнены ячейки на следующих строках:",
+            "row_numbers": e.row_numbers,
+        }) from e
+
+    except Exception as e:
+        raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail=e) from e
+
+    if not res:
+        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail={
+            "error": "Несколько ошибок во время загрузки данных из листов"
+                     f"'{sea_routes_ws_name}' и '{rail_routes_ws_name}'"
+                     ". Выполните поиск по таблице, чтобы найти ошибки",
+            "errors_list": parse_all_warning_types(warnings, fields_config),
+        })
+
+    parsed_warnings = parse_all_warning_types(warnings, fields_config)
+
+    return {
+        "routesCount": str(routes_count),
+        "routesInsertedCount": str(res_metadata),
+        "warnings": parsed_warnings,
+    }
+
+
+def parse_all_warning_types(warnings, fc):
+    return list({
+        parse_error(err[0], err[1], err[2])
+        for err in warnings
+        if issubclass(type(err[0]), Exception)
+    }) + [
+        parse_warning(warning[0], warning[1], warning[2], fc)
+        for warning in warnings
+        if not issubclass(type(warning[0]), Exception)
+    ]
+
+
+def parse_error(error, row_number, routes_ws_type):
+    row_number += 2
+    routes_ws = {RouteType.SEA: "МОРЕ", RouteType.RAIL: "ЖД"}.get(routes_ws_type, "Неизвестный")
+
+    if isinstance(error, InvalidRouteConditionException):
+        return f"Неверные условия поставки: '{error.condition}' (лист {routes_ws}, строка {row_number})"
+
+    elif isinstance(error, PointNotFoundException):
+        return f"Не найден город или порт: '{error.error_key}' (лист {routes_ws}, строка {row_number})"
+
+    elif isinstance(error, InvalidRouteTypeException):
+        return f"Неверный тип маршрута: '{error.route_type}' (лист {routes_ws}, строка {row_number})"
+
+    elif isinstance(error, NoPriceInRouteException):
+        return f"Отсутствуют цены в маршруте (лист {routes_ws}, строка {row_number})"
+
+    return f"Неизвестная ошибка {type(error).__name__}: '{error}' (лист {routes_ws}, строка {row_number})"
+
+
+def parse_warning(key, value, routes_ws_name, fields_config: UploaderFieldsConfig):
+    if key == "MissingRoutesDataException":
+        missing_info_parsed = []
+        for invalid_row in value:
+            row_number = invalid_row["row_index"] + 2
+            missing_info_parsed.append({
+                "error": f"Ошибка в листе {routes_ws_name} на строке {row_number} в следующих ячейках:",
+                "row_number": row_number,
+                "columns": invalid_row["skipped_columns"],
+            })
+
+        return {
+            "error": f"Ошибка в листе {routes_ws_name}: не заполнены обязательные столбцы "
+                     f"в следующих строках ({len(value)}):",
+            "rows_list": missing_info_parsed,
+        }
+
+    elif key == "UnsupportedDateFormat":
+        return {
+            "error": f"Ошибка в листе {routes_ws_name}: неподдерживаемый формат столбцов "
+                     f"{fields_config.effective_from}/{fields_config.effective_to}:",
+            "row_numbers": [i + 2 for i in value],
+        }
+
+    return {
+        "error": f"Неизвестная ошибка '{key}' в листе {routes_ws_name}",
+        "row_numbers": [i + 2 for i in value],
+    }
