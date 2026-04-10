@@ -30,8 +30,6 @@ def process_routes_df(processed_routes_df, route_type: RouteType, warnings, fiel
         fields_config.rail_20dc24t,
         fields_config.rail_20dc28t,
         fields_config.conversation_percents,
-        fields_config.drop20,
-        fields_config.drop40,
     }
 
     string_cols = {col for col in processed_routes_df.columns if col not in numeric_cols}
