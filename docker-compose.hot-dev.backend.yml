@@ -25,7 +25,9 @@ services:
       service: calculator
       file: docker-compose.yml
     volumes:
-      - "./apps/:/apps/:ro"
+      - "./apps/backend/:/apps/backend/:ro"
+      - "./apps/shared/:/apps/shared/:ro"
+      - "./resources/:/apps/resources/:rw"
     command:
       - "backend.main:app"
       - "--host"
@@ -38,7 +40,9 @@ services:
       service: auth
       file: docker-compose.yml
     volumes:
-      - "./apps/:/apps/:ro"
+      - "./apps/auth/:/apps/auth/:ro"
+      - "./apps/shared/:/apps/shared/:ro"
+      - "./resources/:/apps/resources/:rw"
     command:
       - "auth.main:app"
       - "--host"
@@ -51,7 +55,9 @@ services:
       service: backadmin
       file: docker-compose.yml
     volumes:
-      - "./apps/:/apps/:ro"
+      - "./apps/back_admin/:/apps/back_admin/:ro"
+      - "./apps/shared/:/apps/shared/:ro"
+      - "./resources/:/apps/resources/:rw"
     command:
       - "back_admin.main:app"
       - "--host"

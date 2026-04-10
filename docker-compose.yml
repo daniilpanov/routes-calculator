@@ -83,6 +83,8 @@ services:
     networks:
       db:
       reverseproxy:
+    volumes:
+      - "./resources/:/apps/resources/:rw"
     command:
       - "backend.main:app"
       - "--host"
@@ -106,6 +108,8 @@ services:
     networks:
       db:
       reverseproxy:
+    volumes:
+      - "./resources/:/apps/resources/:rw"
     command:
       - "auth.main:app"
       - "--host"
@@ -129,6 +133,8 @@ services:
     networks:
       db:
       reverseproxy:
+    volumes:
+      - "./resources/:/apps/resources/:rw"
     command:
       - "back_admin.main:app"
       - "--host"
