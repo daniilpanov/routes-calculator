@@ -177,7 +177,6 @@ async def load_data(
     warnings: list[Any] = []
     # cleanup DF points
     points_df = points_df.apply(lambda x: x.str.strip() if x.dtype == "str" else x)
-    points_df = points_df.apply(lambda x: x.str.title() if x.dtype == "str" else x)
     points_df = points_df.drop_duplicates(subset=["city", "country"], ignore_index=False)
 
     points_rows_with_nan = [i + 2 for i in points_df[points_df.isna().any(axis=1)].index.tolist()]  # noqa: ECE001
