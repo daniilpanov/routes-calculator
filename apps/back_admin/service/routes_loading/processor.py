@@ -46,6 +46,18 @@ def process_numeric_and_string_cols(processed_df: DataFrame, numeric_cols: set[s
     return processed_df
 
 
+def process_points_services_effectivity(processed_df: DataFrame, fields_config: UploaderFieldsConfig):
+    processed_df[fields_config.service] = processed_df[fields_config.service].apply(none_filter).str.strip()
+
+    processed_df[fields_config.start_point] = processed_df[fields_config.start_point].apply(none_filter).str.strip()
+    processed_df[fields_config.end_point] = processed_df[fields_config.end_point].apply(none_filter).str.strip()
+    processed_df[fields_config.terminal] = processed_df[fields_config.terminal].str.strip().str.upper()  # noqa: ECE001
+
+    processed_df[fields_config.effective_from] = processed_df[fields_config.effective_from].apply(none_filter)
+    processed_df[fields_config.effective_to] = processed_df[fields_config.effective_to].apply(none_filter)
+    return processed_df
+
+
 def process_routes_df(processed_routes_df, route_type: RouteType, warnings, fields_config: UploaderFieldsConfig):
     processed_routes_df = select_cols(processed_routes_df, fields_config.model_dump().values())
 
@@ -61,33 +73,16 @@ def process_routes_df(processed_routes_df, route_type: RouteType, warnings, fiel
         },
     )
 
-    processed_routes_df[fields_config.start_point] = (
-        processed_routes_df[fields_config.start_point].apply(none_filter).str.strip()
-    )
-    processed_routes_df[fields_config.end_point] = (
-        processed_routes_df[fields_config.end_point].apply(none_filter).str.strip()
-    )
-    processed_routes_df[fields_config.effective_from] = (
-        processed_routes_df[fields_config.effective_from].apply(none_filter)
-    )
-    processed_routes_df[fields_config.effective_to] = (
-        processed_routes_df[fields_config.effective_to].apply(none_filter)
-    )
+    processed_routes_df = process_points_services_effectivity(processed_routes_df, fields_config)
+
     processed_routes_df[fields_config.container_condition] = (
         processed_routes_df[fields_config.container_condition].apply(none_filter)
-    )
-    processed_routes_df[fields_config.service] = (
-        processed_routes_df[fields_config.service].apply(none_filter)
     )
     processed_routes_df[fields_config.container_transfer_terms] = (
         processed_routes_df[fields_config.container_transfer_terms].apply(none_filter)
     )
     processed_routes_df[fields_config.container_shipment_terms] = (
         processed_routes_df[fields_config.container_shipment_terms].apply(none_filter)
-    )
-    processed_routes_df[fields_config.service] = processed_routes_df[fields_config.service].str.strip()
-    processed_routes_df[fields_config.terminal] = (  # noqa: ECE001
-        processed_routes_df[fields_config.terminal].str.strip().str.upper()
     )
 
     processed_routes_df[fields_config.conversation_percents] = (  # noqa: ECE001
