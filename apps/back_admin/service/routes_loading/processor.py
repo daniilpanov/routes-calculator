@@ -53,8 +53,13 @@ def process_points_services_effectivity(processed_df: DataFrame, fields_config: 
     processed_df[fields_config.end_point] = processed_df[fields_config.end_point].apply(none_filter).str.strip()
     processed_df[fields_config.terminal] = processed_df[fields_config.terminal].str.strip().str.upper()  # noqa: ECE001
 
-    processed_df[fields_config.effective_from] = processed_df[fields_config.effective_from].apply(none_filter)
-    processed_df[fields_config.effective_to] = processed_df[fields_config.effective_to].apply(none_filter)
+    processed_df[fields_config.effective_from] = (
+        processed_df[fields_config.effective_from].apply(none_filter).apply(format_date)
+    )
+    processed_df[fields_config.effective_to] = (
+        processed_df[fields_config.effective_to].apply(none_filter).apply(format_date)
+    )
+
     return processed_df
 
 
@@ -201,9 +206,7 @@ async def load_data(
     routes_df: DataFrame = pd.concat((sea_routes_df, rail_routes_df), ignore_index=False)
     del sea_routes_df, rail_routes_df
 
-    # parse dates
-    routes_df[fields_config.effective_from] = routes_df[fields_config.effective_from].apply(format_date)
-    routes_df[fields_config.effective_to] = routes_df[fields_config.effective_to].apply(format_date)
+    # remove routes without dates
     routes_df_dropna_subset = [
         fields_config.effective_from,
         fields_config.effective_to,
