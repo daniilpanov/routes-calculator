@@ -18,10 +18,12 @@ def remove_extra_spaces(value):
     return value
 
 
+def select_cols(processed_df: DataFrame, cols: list[str]):
+    return processed_df[processed_df.columns.intersection(cols)]
+
+
 def process_routes_df(processed_routes_df, route_type: RouteType, warnings, fields_config: UploaderFieldsConfig):
-    processed_routes_df = processed_routes_df[
-        processed_routes_df.columns.intersection(fields_config.model_dump().values())
-    ]
+    processed_routes_df = select_cols(processed_routes_df, fields_config.model_dump().values())
 
     numeric_cols = {
         fields_config.sea_20dc,
