@@ -8,6 +8,9 @@ async def create_db_dump(session: AsyncSession, structure: bool):
     tables_descriptor = (await session.execute(text("SHOW TABLES"))).scalars()
 
     for table in tables_descriptor:
+        if table == "alembic_version":
+            continue
+
         if structure:
             table_structure_descriptor = (await session.execute(text(f"SHOW CREATE TABLE `{table}`"))).fetchone()[1]
             tables_descriptor = table_structure_descriptor.replace("CREATE TABLE ", "CREATE TABLE IF NOT EXISTS ", 1)
