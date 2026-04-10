@@ -22,37 +22,44 @@ def select_cols(processed_df: DataFrame, cols: list[str]):
     return processed_df[processed_df.columns.intersection(cols)]
 
 
-def process_routes_df(processed_routes_df, route_type: RouteType, warnings, fields_config: UploaderFieldsConfig):
-    processed_routes_df = select_cols(processed_routes_df, fields_config.model_dump().values())
-
-    numeric_cols = {
-        fields_config.sea_20dc,
-        fields_config.sea_40hc,
-        fields_config.rail_40hc,
-        fields_config.rail_20dc24t,
-        fields_config.rail_20dc28t,
-        fields_config.conversation_percents,
-    }
-
-    string_cols = {col for col in processed_routes_df.columns if col not in numeric_cols}
-    numeric_cols = {col for col in numeric_cols if col in processed_routes_df.columns}
+def process_numeric_and_string_cols(processed_df: DataFrame, numeric_cols: set[str]):
+    string_cols = {col for col in processed_df.columns if col not in numeric_cols}
+    numeric_cols = {col for col in numeric_cols if col in processed_df.columns}
 
     if string_cols:
         string_cols_list = list(string_cols)
-        processed_routes_df[string_cols_list] = (  # noqa: ECE001
-            processed_routes_df[string_cols_list]
+        processed_df[string_cols_list] = (  # noqa: ECE001
+            processed_df[string_cols_list]
             .apply(lambda x: x.str.strip() if x.dtype == "str" else x)
             .apply(remove_extra_spaces)
         )
 
     if numeric_cols:
         numeric_cols_list = list(numeric_cols)
-        processed_routes_df[numeric_cols_list] = processed_routes_df[numeric_cols_list].map(  # noqa: ECE001
+        processed_df[numeric_cols_list] = processed_df[numeric_cols_list].map(  # noqa: ECE001
             lambda x: (
                 remove_extra_spaces(x.replace("%", "").replace("$", "")).strip()
                 if isinstance(x, str) else x
             )
         )
+
+    return processed_df
+
+
+def process_routes_df(processed_routes_df, route_type: RouteType, warnings, fields_config: UploaderFieldsConfig):
+    processed_routes_df = select_cols(processed_routes_df, fields_config.model_dump().values())
+
+    processed_routes_df = process_numeric_and_string_cols(
+        processed_routes_df,
+        {
+            fields_config.sea_20dc,
+            fields_config.sea_40hc,
+            fields_config.rail_40hc,
+            fields_config.rail_20dc24t,
+            fields_config.rail_20dc28t,
+            fields_config.conversation_percents,
+        },
+    )
 
     processed_routes_df[fields_config.start_point] = (
         processed_routes_df[fields_config.start_point].apply(none_filter).str.strip()
