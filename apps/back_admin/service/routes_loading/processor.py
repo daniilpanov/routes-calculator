@@ -223,6 +223,31 @@ def merge_points_with_terminal(
     ))
 
 
+def points_city_concat_terminal(points_df_merged_with_terminal: DataFrame, fields_config: UploaderFieldsConfig):
+    points_df_merged_with_terminal = points_df_merged_with_terminal[list(
+        set(points_df_merged_with_terminal.columns)
+        - {fields_config.start_point, fields_config.end_point}
+    )].drop_duplicates()
+
+    points_df_merged_with_terminal["city"] = (
+        points_df_merged_with_terminal["city"]
+        + " ("
+        + points_df_merged_with_terminal[fields_config.terminal]
+        + ")"
+    )
+    points_df_merged_with_terminal["RU_city"] = (
+        points_df_merged_with_terminal["RU_city"]
+        + " ("
+        + points_df_merged_with_terminal[fields_config.terminal]
+        + ")"
+    )
+
+    return points_df_merged_with_terminal[list(
+        set(points_df_merged_with_terminal.columns)
+        - {fields_config.terminal}
+    )]
+
+
 async def load_data(
     db_session,
     sea_routes_df: DataFrame,
@@ -274,29 +299,10 @@ async def load_data(
         ),
     ))
 
-    points_df_merged_with_terminal = points_df_merged_with_terminal[list(
-        set(points_df_merged_with_terminal.columns)
-        - {fields_config.start_point, fields_config.end_point}
-    )].drop_duplicates()
-    points_df_merged_with_terminal["city"] = (
-        points_df_merged_with_terminal["city"]
-        + " ("
-        + points_df_merged_with_terminal[fields_config.terminal]
-        + ")"
-    )
-
-    points_df_merged_with_terminal["RU_city"] = (
-        points_df_merged_with_terminal["RU_city"]
-        + " ("
-        + points_df_merged_with_terminal[fields_config.terminal]
-        + ")"
-    )
-    points_df_merged_with_terminal = points_df_merged_with_terminal[list(
-        set(points_df_merged_with_terminal.columns)
-        - {fields_config.terminal}
-    )]
-
-    points_df = pd.concat((points_df, points_df_merged_with_terminal)).drop_duplicates()
+    points_df = pd.concat((
+        points_df,
+        points_city_concat_terminal(points_df_merged_with_terminal, fields_config),
+    )).drop_duplicates()
     del points_df_merged_with_terminal
 
     # add terminal to the start/end point in routes
