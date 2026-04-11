@@ -281,6 +281,21 @@ async def load_data(
     points_df = pd.concat((points_df, points_df_merged_with_transit)).drop_duplicates()
     del routes_with_transit, points_df_merged_with_transit
 
+    # add terminal to the start/end point in routes
+    mask = routes_df[fields_config.terminal].notna()
+    mask &= routes_df[fields_config.terminal].str.strip() != ""
+
+    sea_mask = (routes_df.index.get_level_values(fields_config.route_type) == RouteType.SEA) & mask
+    routes_df.loc[sea_mask, fields_config.end_point] = (
+        routes_df.loc[sea_mask, fields_config.end_point] + " (" + routes_df.loc[sea_mask, fields_config.terminal] + ")"
+    )
+
+    rail_mask = (routes_df.index.get_level_values(fields_config.route_type) == RouteType.RAIL) & mask
+    routes_df.loc[rail_mask, fields_config.start_point] = (
+        routes_df.loc[rail_mask, fields_config.start_point]
+        + " (" + routes_df.loc[rail_mask, fields_config.terminal] + ")"
+    )
+
     # load points
     points_data = await load_points(db_session, points_df) or []
     del points_df
