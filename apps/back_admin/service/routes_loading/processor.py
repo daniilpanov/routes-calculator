@@ -201,6 +201,28 @@ def process_routes_df(processed_routes_df, route_type: RouteType, warnings, fiel
     return processed_routes_df
 
 
+def merge_points_with_terminal(
+    points_df: DataFrame,
+    data_df: DataFrame,
+    fields_config: UploaderFieldsConfig,
+    concat_field: str,
+):
+    return pd.concat((
+        pd.merge(
+            points_df.copy(),
+            data_df[[concat_field, fields_config.terminal]],
+            left_on="city",
+            right_on=concat_field,
+        ),
+        pd.merge(
+            points_df.copy(),
+            data_df[[concat_field, fields_config.terminal]],
+            left_on="RU_city",
+            right_on=concat_field,
+        ),
+    ))
+
+
 async def load_data(
     db_session,
     sea_routes_df: DataFrame,
@@ -231,75 +253,51 @@ async def load_data(
     del sea_routes_df, rail_routes_df
 
     # Merging points with terminals
-    routes_with_transit = routes_df.dropna(subset=[fields_config.terminal])[[
+    routes_with_terminal = routes_df.dropna(subset=[fields_config.terminal])[[
         fields_config.start_point,
         fields_config.end_point,
         fields_config.terminal,
     ]]
 
-    points_df_merged_with_transit = pd.concat((
-        pd.merge(
-            points_df.copy(),
-            routes_with_transit.loc[[RouteType.SEA]][[
-                fields_config.end_point,
-                fields_config.terminal,
-            ]],
-            left_on="city",
-            right_on=fields_config.end_point,
+    points_df_merged_with_terminal = pd.concat((
+        merge_points_with_terminal(
+            points_df,
+            routes_with_terminal.loc[[RouteType.SEA]],
+            fields_config,
+            fields_config.end_point,
         ),
-        pd.merge(
-            points_df.copy(),
-            routes_with_transit.loc[[RouteType.SEA]][[
-                fields_config.end_point,
-                fields_config.terminal,
-            ]],
-            left_on="RU_city",
-            right_on=fields_config.end_point,
-        ),
-        pd.merge(
-            points_df.copy(),
-            routes_with_transit.loc[[RouteType.RAIL]][[
-                fields_config.start_point,
-                fields_config.terminal,
-            ]],
-            left_on="city",
-            right_on=fields_config.start_point,
-        ),
-        pd.merge(
-            points_df.copy(),
-            routes_with_transit.loc[[RouteType.RAIL]][[
-                fields_config.start_point,
-                fields_config.terminal,
-            ]],
-            left_on="RU_city",
-            right_on=fields_config.start_point,
+        merge_points_with_terminal(
+            points_df,
+            routes_with_terminal.loc[[RouteType.RAIL]],
+            fields_config,
+            fields_config.start_point,
         ),
     ))
 
-    points_df_merged_with_transit = points_df_merged_with_transit[list(
-        set(points_df_merged_with_transit.columns)
+    points_df_merged_with_terminal = points_df_merged_with_terminal[list(
+        set(points_df_merged_with_terminal.columns)
         - {fields_config.start_point, fields_config.end_point}
     )].drop_duplicates()
-    points_df_merged_with_transit["city"] = (
-        points_df_merged_with_transit["city"]
+    points_df_merged_with_terminal["city"] = (
+        points_df_merged_with_terminal["city"]
         + " ("
-        + points_df_merged_with_transit[fields_config.terminal]
+        + points_df_merged_with_terminal[fields_config.terminal]
         + ")"
     )
 
-    points_df_merged_with_transit["RU_city"] = (
-        points_df_merged_with_transit["RU_city"]
+    points_df_merged_with_terminal["RU_city"] = (
+        points_df_merged_with_terminal["RU_city"]
         + " ("
-        + points_df_merged_with_transit[fields_config.terminal]
+        + points_df_merged_with_terminal[fields_config.terminal]
         + ")"
     )
-    points_df_merged_with_transit = points_df_merged_with_transit[list(
-        set(points_df_merged_with_transit.columns)
+    points_df_merged_with_terminal = points_df_merged_with_terminal[list(
+        set(points_df_merged_with_terminal.columns)
         - {fields_config.terminal}
     )]
 
-    points_df = pd.concat((points_df, points_df_merged_with_transit)).drop_duplicates()
-    del routes_with_transit, points_df_merged_with_transit
+    points_df = pd.concat((points_df, points_df_merged_with_terminal)).drop_duplicates()
+    del points_df_merged_with_terminal
 
     # add terminal to the start/end point in routes
     mask = routes_df[fields_config.terminal].notna()
