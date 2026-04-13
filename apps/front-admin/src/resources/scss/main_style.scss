@@ -4,6 +4,10 @@ body, html, #root, .app-container {
   min-height: 100dvh;
 }
 
+.app-container {
+  display: flex;
+}
+
 .in_development {
   text-transform: uppercase;
   font-size: larger;
