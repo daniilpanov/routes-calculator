@@ -40,8 +40,8 @@ export default function Sidebar() {
 
             <div className="nav-block">
                 <NavLink to={ ROUTES.DASHBOARD } className="nav-btn">Панель инструментов</NavLink>
-                <NavLink to={ ROUTES.ROUTES_MANAGEMENT } className="nav-btn">Управление маршрутами</NavLink>
-                <NavLink to={ ROUTES.POINTS_MANAGEMENT } className="nav-btn">Управление точками</NavLink>
+                <div className="nav-btn disabled">Управление маршрутами</div>
+                <div className="nav-btn disabled">Управление точками</div>
                 <NavLink to={ ROUTES.DATA_IMPORT } className="nav-btn">Загрузка данных</NavLink>
             </div>
 

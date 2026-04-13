@@ -78,6 +78,12 @@
     background-color: rgb(255, 255, 255, 0.9);
     color: variables.$base_background;
   }
+
+  &.disabled {
+    cursor: default;
+    opacity: 0.5;
+    pointer-events: none;
+  }
 }
 
 .authentication-block {
