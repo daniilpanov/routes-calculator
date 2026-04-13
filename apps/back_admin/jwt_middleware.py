@@ -12,9 +12,20 @@ from fastapi_another_jwt_auth.exceptions import AuthJWTException
 class JWTAuthMiddleware(BaseHTTPMiddleware):
     """Middleware to check JWT token in all requests."""
 
+    # Unprotected endpoints that don't require JWT authorization
+    UNPROTECTED_PATHS = {
+        "/docs",
+        "/redoc",
+        "/openapi.json",
+    }
+
     async def dispatch(self, request: Request, call_next):
         """Check JWT token and pass request if valid."""
         settings = get_settings()
+
+        # Skip JWT validation for unprotected endpoints
+        if request.url.path in self.UNPROTECTED_PATHS:
+            return await call_next(request)
 
         # Get token from cookies (configured in settings)
         access_token = request.cookies.get("access_token_cookie")
