@@ -8,6 +8,7 @@ import gspread
 from back_admin.config import get_settings
 from back_admin.models.upoader_fields_config import UploaderFieldsConfig
 from back_admin.service.routes_loading.errors import (
+    InvalidDroppRow,
     InvalidRouteConditionException,
     InvalidRouteTypeException,
     NoPriceInRouteException,
@@ -38,6 +39,7 @@ async def update_from_gsheets(
     gsheets_url: str = settings.DEFAULT_GSHEETS_URL,
     sea_routes_ws_name: str = settings.DEFAULT_SEA_ROUTES_WS,
     rail_routes_ws_name: str = settings.DEFAULT_RAIL_ROUTES_WS,
+    dropp_routes_ws_name: str = settings.DEFAULT_DROPP_ROUTES_WS,
     points_ws_name: str | None = settings.DEFAULT_POINTS_WS,
     load_on_warnings: bool = True,
 ):
@@ -47,6 +49,7 @@ async def update_from_gsheets(
         gsheets_url,
         sea_routes_ws_name,
         rail_routes_ws_name,
+        dropp_routes_ws_name,
         points_ws_name,
         load_on_warnings,
     )
@@ -59,6 +62,7 @@ async def update_from_gsheets_with_custom_fields(
     gsheets_url: str = settings.DEFAULT_GSHEETS_URL,
     sea_routes_ws_name: str = settings.DEFAULT_SEA_ROUTES_WS,
     rail_routes_ws_name: str = settings.DEFAULT_RAIL_ROUTES_WS,
+    dropp_routes_ws_name: str = settings.DEFAULT_DROPP_ROUTES_WS,
     points_ws_name: str | None = settings.DEFAULT_POINTS_WS,
     load_on_warnings: bool = True,
 ):
@@ -75,6 +79,10 @@ async def update_from_gsheets_with_custom_fields(
         sources_gs.worksheet(rail_routes_ws_name),
         evaluate_formulas=True,
     )
+    dropp_routes_df = get_as_dataframe(
+        sources_gs.worksheet(dropp_routes_ws_name),
+        evaluate_formulas=True,
+    )
     points_df = get_as_dataframe(
         sources_gs.worksheet(points_ws_name),
         evaluate_formulas=True,
@@ -86,6 +94,7 @@ async def update_from_gsheets_with_custom_fields(
             db_session,
             sea_routes_df,
             rail_routes_df,
+            dropp_routes_df,
             points_df,
             fields_config,
             load_on_warnings,
@@ -131,7 +140,7 @@ def parse_all_warning_types(warnings, fc):
 
 def parse_error(error, row_number, routes_ws_type):
     row_number += 2
-    routes_ws = {RouteType.SEA: "МОРЕ", RouteType.RAIL: "ЖД"}.get(routes_ws_type, "Неизвестный")
+    routes_ws = {RouteType.SEA: "МОРЕ", RouteType.RAIL: "ЖД", None: "ДРОПП"}.get(routes_ws_type, "Неизвестный")
 
     if isinstance(error, InvalidRouteConditionException):
         return f"Неверные условия поставки: '{error.condition}' (лист {routes_ws}, строка {row_number})"
@@ -144,6 +153,9 @@ def parse_error(error, row_number, routes_ws_type):
 
     elif isinstance(error, NoPriceInRouteException):
         return f"Отсутствуют цены в маршруте (лист {routes_ws}, строка {row_number})"
+
+    elif isinstance(error, InvalidDroppRow):
+        return f"Неверный формат данных в листе {routes_ws} на строке {row_number}"
 
     return f"Неизвестная ошибка {type(error).__name__}: '{error}' (лист {routes_ws}, строка {row_number})"
 

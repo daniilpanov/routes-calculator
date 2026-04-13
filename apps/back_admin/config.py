@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     DEFAULT_GSHEETS_URL: str
     DEFAULT_SEA_ROUTES_WS: str
     DEFAULT_RAIL_ROUTES_WS: str
+    DEFAULT_DROPP_ROUTES_WS: str
     DEFAULT_POINTS_WS: str
 
     GOOGLE_SERVICE_ACCOUNT_RESOURCE_NAME: str = "google_service_account.json"

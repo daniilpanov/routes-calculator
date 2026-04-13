@@ -1,3 +1,5 @@
+from collections.abc import Iterable
+
 import pandas as pd
 from back_admin.models.upoader_fields_config import UploaderFieldsConfig
 from shared.models import (
@@ -7,6 +9,7 @@ from shared.models import (
     ContainerShipmentTerms,
     ContainerTransferTerms,
     ContainerType,
+    DropModel,
     PointModel,
     PriceModel,
     RouteModel,
@@ -15,7 +18,12 @@ from shared.models import (
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
-from .errors import InvalidRouteTypeException, NoPriceInRouteException, PointNotFoundException
+from .errors import (
+    InvalidDroppRow,
+    InvalidRouteTypeException,
+    NoPriceInRouteException,
+    PointNotFoundException,
+)
 from .helpers import nan_to_none_mapper
 
 ContainerRawType = dict[str, str | int | ContainerType]
@@ -210,6 +218,49 @@ def create_route(  # noqa: C901
     return route
 
 
+def create_dropp(
+    containers: ContainerStore,
+    services: ServicesStore,
+    points: PointsHashedStore,
+    row,
+    fc: UploaderFieldsConfig,
+):
+    service = services.get(row[fc.service].upper())
+    start_point = points.get(row[fc.start_point].lower())
+    end_point = points.get(row[fc.end_point].lower())
+    effective_from = row[fc.effective_from]
+    effective_to = row[fc.effective_to]
+
+    currency = "USD"
+    price_20dc = row[fc.drop20]
+    price_40hc = row[fc.drop40]
+    conversation_percents = row[fc.conversation_percents]
+
+    if not all((service, start_point, end_point, effective_from, effective_to)):
+        raise InvalidDroppRow
+
+    base_config = {
+        "start_point": start_point,
+        "end_point": end_point,
+        "company": service,
+        "effective_from": effective_from,
+        "effective_to": effective_to,
+        "conversation_percents": conversation_percents,
+        "currency": currency,
+    }
+
+    all_dropp: list[DropModel] = []
+    if price_20dc and not pd.isna(price_20dc):
+        all_dropp.extend((
+            DropModel(**base_config, price=price_20dc, container=containers[(20, 0, 24)]),
+            DropModel(**base_config, price=price_20dc, container=containers[(20, 24, 28)]),
+        ))
+    if price_40hc and not pd.isna(price_40hc):
+        all_dropp.append(DropModel(**base_config, price=price_40hc, container=containers[(40, 0, 28)]))
+
+    return all_dropp
+
+
 async def load_routes(db_session, routes):
     existing_routes = (await db_session.execute(select(RouteModel).options(
         joinedload(RouteModel.start_point),
@@ -238,5 +289,41 @@ async def load_routes(db_session, routes):
 
         await db_session.merge(route)
         existing_routes_set.add(route_key)
+
+    await db_session.commit()
+
+
+async def load_dropp(db_session, dropp: list[Iterable[DropModel]]):
+    existing_dropp = (await db_session.execute(select(DropModel).options(
+        joinedload(DropModel.start_point),
+        joinedload(DropModel.end_point),
+        joinedload(DropModel.company),
+        joinedload(DropModel.container),
+    ))).scalars().all()
+
+    existing_dropp_set = {(  # noqa: ECE001
+        item.start_point.city,
+        item.end_point.city,
+        item.company.name,
+        (item.container.size, item.container.weight_from, item.container.weight_to),
+        item.effective_from if isinstance(item.effective_from, str) else item.effective_from.date().isoformat(),
+        item.effective_to if isinstance(item.effective_to, str) else item.effective_to.date().isoformat(),
+    ) for item in existing_dropp}
+
+    for items_group in dropp:
+        for item in items_group:
+            dropp_key = (
+                item.start_point.city,
+                item.end_point.city,
+                item.company.name,
+                (item.container.size, item.container.weight_from, item.container.weight_to),
+                item.effective_from if isinstance(item.effective_from, str) else item.effective_from.date().isoformat(),
+                item.effective_to if isinstance(item.effective_to, str) else item.effective_to.date().isoformat(),
+            )
+            if dropp_key in existing_dropp_set:
+                continue
+
+            await db_session.merge(item)
+            existing_dropp_set.add(dropp_key)
 
     await db_session.commit()

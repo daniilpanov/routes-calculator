@@ -9,7 +9,15 @@ from shared.models import ContainerOwner, ContainerShipmentTerms, ContainerTrans
 
 from .errors import InvalidRouteTypeException, LoadingErrorException, PointsWithNanException
 from .helpers import format_date, none_filter, price_filter
-from .uploader import create_route, load_containers, load_points, load_routes, load_services
+from .uploader import (
+    create_dropp,
+    create_route,
+    load_containers,
+    load_dropp,
+    load_points,
+    load_routes,
+    load_services,
+)
 
 
 def remove_extra_spaces(value):
@@ -93,6 +101,60 @@ def process_conversion_percents(processed_df: DataFrame, fields_config: Uploader
         )
     )
     return processed_df
+
+
+def process_dropp_df(processed_dropp_df: DataFrame, warnings, fields_config: UploaderFieldsConfig):
+    processed_dropp_df = select_cols(processed_dropp_df, fields_config.model_dump().values())
+    processed_dropp_df = process_numeric_and_string_cols(
+        processed_dropp_df,
+        {
+            fields_config.drop20,
+            fields_config.drop40,
+            fields_config.conversation_percents,
+        },
+    )
+
+    processed_dropp_df[fields_config.drop20] = processed_dropp_df[fields_config.drop20].apply(price_filter)
+    processed_dropp_df[fields_config.drop40] = processed_dropp_df[fields_config.drop40].apply(price_filter)
+
+    processed_dropp_df = process_points_services_effectivity(processed_dropp_df, warnings, fields_config, "DROPP")
+    processed_dropp_df = process_conversion_percents(processed_dropp_df, fields_config)
+    processed_dropp_df[fields_config.container_condition] = (
+        processed_dropp_df[fields_config.container_condition].apply(none_filter)
+    )
+
+    missing_info_about_id = defaultdict(list)
+    df_dropna_subset = [
+        fields_config.start_point,
+        fields_config.end_point,
+        fields_config.effective_from,
+        fields_config.effective_to,
+        fields_config.service,
+    ]
+
+    for col in df_dropna_subset:
+        missing_idx = processed_dropp_df[processed_dropp_df[col].isna()].index.tolist()
+        for _id in missing_idx:
+            missing_info_about_id[_id].append(col)
+
+    missing_info = tuple(
+        {"row_index": row_id, "skipped_columns": columns}
+        for row_id, columns in missing_info_about_id.items()
+    )
+
+    if missing_info:
+        warnings.append(("MissingRouteDataException", missing_info, "DROPP"))
+
+    processed_dropp_df = processed_dropp_df.dropna(subset=df_dropna_subset)
+
+    processed_dropp_df = processed_dropp_df.astype({
+        fields_config.container_condition: "str",
+    })
+    processed_dropp_df.loc[
+        processed_dropp_df[fields_config.container_condition].isna(), fields_config.container_condition
+    ] = ContainerOwner.COC.value
+
+    return processed_dropp_df
 
 
 def process_routes_df(processed_routes_df, route_type: RouteType, warnings, fields_config: UploaderFieldsConfig):
@@ -248,10 +310,11 @@ def points_city_concat_terminal(points_df_merged_with_terminal: DataFrame, field
     )]
 
 
-async def load_data(
+async def load_data(  # noqa: C901
     db_session,
     sea_routes_df: DataFrame,
     rail_routes_df: DataFrame,
+    dropp_df: DataFrame,
     points_df: DataFrame,
     fields_config: UploaderFieldsConfig,
     load_on_warnings: bool = False,
@@ -277,8 +340,16 @@ async def load_data(
     routes_df: DataFrame = pd.concat((sea_routes_df, rail_routes_df), ignore_index=False)
     del sea_routes_df, rail_routes_df
 
+    # cleanup dropp
+    dropp_df = process_dropp_df(dropp_df, warnings, fields_config)
+
     # Merging points with terminals
     routes_with_terminal = routes_df.dropna(subset=[fields_config.terminal])[[
+        fields_config.start_point,
+        fields_config.end_point,
+        fields_config.terminal,
+    ]]
+    dropp_with_terminal = dropp_df.dropna(subset=[fields_config.terminal])[[
         fields_config.start_point,
         fields_config.end_point,
         fields_config.terminal,
@@ -294,6 +365,12 @@ async def load_data(
         merge_points_with_terminal(
             points_df,
             routes_with_terminal.loc[[RouteType.RAIL]],
+            fields_config,
+            fields_config.start_point,
+        ),
+        merge_points_with_terminal(
+            points_df,
+            dropp_with_terminal,
             fields_config,
             fields_config.start_point,
         ),
@@ -320,6 +397,14 @@ async def load_data(
         + " (" + routes_df.loc[rail_mask, fields_config.terminal] + ")"
     )
 
+    # do the same for dropp off
+    mask = dropp_df[fields_config.terminal].notna()
+    mask &= dropp_df[fields_config.terminal].str.strip() != ""
+
+    dropp_df.loc[mask, fields_config.start_point] = (
+        dropp_df.loc[mask, fields_config.start_point] + " (" + dropp_df.loc[mask, fields_config.terminal] + ")"
+    )
+
     # load points
     points_data = await load_points(db_session, points_df) or []
     del points_df
@@ -331,7 +416,10 @@ async def load_data(
     points = hashed_points
 
     # load services
-    services = await load_services(db_session, set(routes_df[fields_config.service].tolist()))
+    services = await load_services(
+        db_session,
+        set(routes_df[fields_config.service].tolist()) | set(dropp_df[fields_config.service].tolist()),
+    )
 
     # load containers
     containers = await load_containers(db_session, [
@@ -355,8 +443,26 @@ async def load_data(
             routes_lst.append(route)
 
     del routes_df
+
+    # load dropp
+    dropp_lst = []
+
+    for i, row in dropp_df.iterrows():
+        try:
+            drop = create_dropp(containers, services, points, row, fields_config)
+        except (LoadingErrorException, ValueError) as e:
+            raise e
+            warnings.append((e, i, None))
+            continue
+
+        if drop:
+            dropp_lst.append(drop)
+
+    del dropp_df
+
     if warnings and not load_on_warnings:
         return False, len(routes_lst), warnings
 
     await load_routes(db_session, routes_lst)
+    await load_dropp(db_session, dropp_lst)
     return True, len(routes_lst), warnings
