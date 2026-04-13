@@ -28,6 +28,10 @@ class PointsWithNanException(LoadingErrorException):
         self.row_numbers = row_numbers
 
 
+class InvalidDroppRow(LoadingErrorException):
+    pass
+
+
 class NotFoundException(LoadingErrorException):
     pass
 

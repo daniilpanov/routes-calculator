@@ -9,7 +9,15 @@ from shared.models import ContainerOwner, ContainerShipmentTerms, ContainerTrans
 
 from .errors import InvalidRouteTypeException, LoadingErrorException, PointsWithNanException
 from .helpers import format_date, none_filter, price_filter
-from .uploader import create_route, load_containers, load_points, load_routes, load_services
+from .uploader import (
+    create_dropp,
+    create_route,
+    load_containers,
+    load_dropp,
+    load_points,
+    load_routes,
+    load_services,
+)
 
 
 def remove_extra_spaces(value):
@@ -18,79 +26,168 @@ def remove_extra_spaces(value):
     return value
 
 
-def process_routes_df(processed_routes_df, route_type: RouteType, warnings, fields_config: UploaderFieldsConfig):
-    processed_routes_df = processed_routes_df[
-        processed_routes_df.columns.intersection(fields_config.model_dump().values())
-    ]
+def select_cols(processed_df: DataFrame, cols: list[str]):
+    return processed_df[processed_df.columns.intersection(cols)]
 
-    numeric_cols = {
-        fields_config.sea_20dc,
-        fields_config.sea_40hc,
-        fields_config.rail_40hc,
-        fields_config.rail_20dc24t,
-        fields_config.rail_20dc28t,
-        fields_config.conversation_percents,
-        fields_config.drop20,
-        fields_config.drop40,
-    }
 
-    string_cols = {col for col in processed_routes_df.columns if col not in numeric_cols}
-    numeric_cols = {col for col in numeric_cols if col in processed_routes_df.columns}
+def process_numeric_and_string_cols(processed_df: DataFrame, numeric_cols: set[str]):
+    string_cols = {col for col in processed_df.columns if col not in numeric_cols}
+    numeric_cols = {col for col in numeric_cols if col in processed_df.columns}
 
     if string_cols:
         string_cols_list = list(string_cols)
-        processed_routes_df[string_cols_list] = (  # noqa: ECE001
-            processed_routes_df[string_cols_list]
+        processed_df[string_cols_list] = (  # noqa: ECE001
+            processed_df[string_cols_list]
             .apply(lambda x: x.str.strip() if x.dtype == "str" else x)
             .apply(remove_extra_spaces)
         )
 
     if numeric_cols:
         numeric_cols_list = list(numeric_cols)
-        processed_routes_df[numeric_cols_list] = processed_routes_df[numeric_cols_list].map(  # noqa: ECE001
+        processed_df[numeric_cols_list] = processed_df[numeric_cols_list].map(  # noqa: ECE001
             lambda x: (
                 remove_extra_spaces(x.replace("%", "").replace("$", "")).strip()
                 if isinstance(x, str) else x
             )
         )
 
-    processed_routes_df[fields_config.start_point] = (
-        processed_routes_df[fields_config.start_point].apply(none_filter).str.strip()
+    return processed_df
+
+
+def process_points_services_effectivity(
+    processed_df: DataFrame,
+    warnings,
+    fields_config:
+    UploaderFieldsConfig,
+    ws_name: str,
+):
+    processed_df[fields_config.service] = processed_df[fields_config.service].apply(none_filter).str.strip()
+
+    processed_df[fields_config.start_point] = processed_df[fields_config.start_point].apply(none_filter).str.strip()
+    processed_df[fields_config.end_point] = processed_df[fields_config.end_point].apply(none_filter).str.strip()
+    processed_df[fields_config.terminal] = processed_df[fields_config.terminal].str.strip().str.upper()  # noqa: ECE001
+
+    processed_df[fields_config.effective_from] = (
+        processed_df[fields_config.effective_from].apply(none_filter).apply(format_date)
     )
-    processed_routes_df[fields_config.end_point] = (
-        processed_routes_df[fields_config.end_point].apply(none_filter).str.strip()
-    )
-    processed_routes_df[fields_config.effective_from] = (
-        processed_routes_df[fields_config.effective_from].apply(none_filter)
-    )
-    processed_routes_df[fields_config.effective_to] = (
-        processed_routes_df[fields_config.effective_to].apply(none_filter)
-    )
-    processed_routes_df[fields_config.container_condition] = (
-        processed_routes_df[fields_config.container_condition].apply(none_filter)
-    )
-    processed_routes_df[fields_config.service] = (
-        processed_routes_df[fields_config.service].apply(none_filter)
-    )
-    processed_routes_df[fields_config.container_transfer_terms] = (
-        processed_routes_df[fields_config.container_transfer_terms].apply(none_filter)
-    )
-    processed_routes_df[fields_config.container_shipment_terms] = (
-        processed_routes_df[fields_config.container_shipment_terms].apply(none_filter)
-    )
-    processed_routes_df[fields_config.service] = processed_routes_df[fields_config.service].str.strip()
-    processed_routes_df[fields_config.terminal] = (  # noqa: ECE001
-        processed_routes_df[fields_config.terminal].str.strip().str.upper()
+    processed_df[fields_config.effective_to] = (
+        processed_df[fields_config.effective_to].apply(none_filter).apply(format_date)
     )
 
-    processed_routes_df[fields_config.conversation_percents] = (  # noqa: ECE001
-        processed_routes_df[fields_config.conversation_percents].apply(
+    # remove rows without dates
+    df_dropna_subset = [
+        fields_config.effective_from,
+        fields_config.effective_to,
+    ]
+
+    missing_idx = []
+    for col in df_dropna_subset:
+        missing_idx += processed_df[processed_df[col].isna()].index.tolist()
+
+    if missing_idx:
+        warnings.append(("UnsupportedDateFormat", tuple(row_idx for row_idx in missing_idx), ws_name))
+
+    return processed_df.dropna(ignore_index=False, subset=df_dropna_subset)
+
+
+def process_conversion_percents(processed_df: DataFrame, fields_config: UploaderFieldsConfig):
+    processed_df[fields_config.conversation_percents] = (  # noqa: ECE001
+        processed_df[fields_config.conversation_percents].apply(
             lambda x: (
                 remove_extra_spaces(x.strip()).rstrip("%").rstrip()
                 if isinstance(x, str) else
                 x * 100 if isinstance(x, float) else x
             )
         )
+    )
+    return processed_df
+
+
+def process_dropp_df(processed_dropp_df: DataFrame, warnings, fields_config: UploaderFieldsConfig):
+    processed_dropp_df = select_cols(processed_dropp_df, fields_config.model_dump().values())
+    processed_dropp_df = process_numeric_and_string_cols(
+        processed_dropp_df,
+        {
+            fields_config.drop20,
+            fields_config.drop40,
+            fields_config.conversation_percents,
+        },
+    )
+
+    processed_dropp_df[fields_config.drop20] = processed_dropp_df[fields_config.drop20].apply(price_filter)
+    processed_dropp_df[fields_config.drop40] = processed_dropp_df[fields_config.drop40].apply(price_filter)
+
+    processed_dropp_df = process_points_services_effectivity(processed_dropp_df, warnings, fields_config, "DROPP")
+    processed_dropp_df = process_conversion_percents(processed_dropp_df, fields_config)
+    processed_dropp_df[fields_config.container_condition] = (
+        processed_dropp_df[fields_config.container_condition].apply(none_filter)
+    )
+
+    missing_info_about_id = defaultdict(list)
+    df_dropna_subset = [
+        fields_config.start_point,
+        fields_config.end_point,
+        fields_config.effective_from,
+        fields_config.effective_to,
+        fields_config.service,
+    ]
+
+    for col in df_dropna_subset:
+        missing_idx = processed_dropp_df[processed_dropp_df[col].isna()].index.tolist()
+        for _id in missing_idx:
+            missing_info_about_id[_id].append(col)
+
+    missing_info = tuple(
+        {"row_index": row_id, "skipped_columns": columns}
+        for row_id, columns in missing_info_about_id.items()
+    )
+
+    if missing_info:
+        warnings.append(("MissingRouteDataException", missing_info, "DROPP"))
+
+    processed_dropp_df = processed_dropp_df.dropna(subset=df_dropna_subset)
+
+    processed_dropp_df = processed_dropp_df.astype({
+        fields_config.container_condition: "str",
+    })
+    processed_dropp_df.loc[
+        processed_dropp_df[fields_config.container_condition].isna(), fields_config.container_condition
+    ] = ContainerOwner.COC.value
+
+    return processed_dropp_df
+
+
+def process_routes_df(processed_routes_df, route_type: RouteType, warnings, fields_config: UploaderFieldsConfig):
+    processed_routes_df = select_cols(processed_routes_df, fields_config.model_dump().values())
+
+    processed_routes_df = process_numeric_and_string_cols(
+        processed_routes_df,
+        {
+            fields_config.sea_20dc,
+            fields_config.sea_40hc,
+            fields_config.rail_40hc,
+            fields_config.rail_20dc24t,
+            fields_config.rail_20dc28t,
+            fields_config.conversation_percents,
+        },
+    )
+
+    processed_routes_df = process_points_services_effectivity(
+        processed_routes_df,
+        warnings,
+        fields_config,
+        route_type.value,
+    )
+    processed_routes_df = process_conversion_percents(processed_routes_df, fields_config)
+
+    processed_routes_df[fields_config.container_condition] = (
+        processed_routes_df[fields_config.container_condition].apply(none_filter)
+    )
+    processed_routes_df[fields_config.container_transfer_terms] = (
+        processed_routes_df[fields_config.container_transfer_terms].apply(none_filter)
+    )
+    processed_routes_df[fields_config.container_shipment_terms] = (
+        processed_routes_df[fields_config.container_shipment_terms].apply(none_filter)
     )
 
     routes_df_dropna_subset = [
@@ -166,10 +263,58 @@ def process_routes_df(processed_routes_df, route_type: RouteType, warnings, fiel
     return processed_routes_df
 
 
-async def load_data(
+def merge_points_with_terminal(
+    points_df: DataFrame,
+    data_df: DataFrame,
+    fields_config: UploaderFieldsConfig,
+    concat_field: str,
+):
+    return pd.concat((
+        pd.merge(
+            points_df.copy(),
+            data_df[[concat_field, fields_config.terminal]],
+            left_on="city",
+            right_on=concat_field,
+        ),
+        pd.merge(
+            points_df.copy(),
+            data_df[[concat_field, fields_config.terminal]],
+            left_on="RU_city",
+            right_on=concat_field,
+        ),
+    ))
+
+
+def points_city_concat_terminal(points_df_merged_with_terminal: DataFrame, fields_config: UploaderFieldsConfig):
+    points_df_merged_with_terminal = points_df_merged_with_terminal[list(
+        set(points_df_merged_with_terminal.columns)
+        - {fields_config.start_point, fields_config.end_point}
+    )].drop_duplicates()
+
+    points_df_merged_with_terminal["city"] = (
+        points_df_merged_with_terminal["city"]
+        + " ("
+        + points_df_merged_with_terminal[fields_config.terminal]
+        + ")"
+    )
+    points_df_merged_with_terminal["RU_city"] = (
+        points_df_merged_with_terminal["RU_city"]
+        + " ("
+        + points_df_merged_with_terminal[fields_config.terminal]
+        + ")"
+    )
+
+    return points_df_merged_with_terminal[list(
+        set(points_df_merged_with_terminal.columns)
+        - {fields_config.terminal}
+    )]
+
+
+async def load_data(  # noqa: C901
     db_session,
     sea_routes_df: DataFrame,
     rail_routes_df: DataFrame,
+    dropp_df: DataFrame,
     points_df: DataFrame,
     fields_config: UploaderFieldsConfig,
     load_on_warnings: bool = False,
@@ -177,7 +322,6 @@ async def load_data(
     warnings: list[Any] = []
     # cleanup DF points
     points_df = points_df.apply(lambda x: x.str.strip() if x.dtype == "str" else x)
-    points_df = points_df.apply(lambda x: x.str.title() if x.dtype == "str" else x)
     points_df = points_df.drop_duplicates(subset=["city", "country"], ignore_index=False)
 
     points_rows_with_nan = [i + 2 for i in points_df[points_df.isna().any(axis=1)].index.tolist()]  # noqa: ECE001
@@ -196,93 +340,70 @@ async def load_data(
     routes_df: DataFrame = pd.concat((sea_routes_df, rail_routes_df), ignore_index=False)
     del sea_routes_df, rail_routes_df
 
-    # parse dates
-    routes_df[fields_config.effective_from] = routes_df[fields_config.effective_from].apply(format_date)
-    routes_df[fields_config.effective_to] = routes_df[fields_config.effective_to].apply(format_date)
-    routes_df_dropna_subset = [
-        fields_config.effective_from,
-        fields_config.effective_to,
-    ]
-    routes_df = routes_df.dropna(ignore_index=False, subset=routes_df_dropna_subset)
-
-    missing_idx = []
-
-    for col in routes_df_dropna_subset:
-        missing_idx += routes_df[routes_df[col].isna()].index.tolist()
-
-    if missing_idx:
-        warnings.append(("UnsupportedDateFormat", tuple(row_idx for row_idx in missing_idx), None))
+    # cleanup dropp
+    dropp_df = process_dropp_df(dropp_df, warnings, fields_config)
 
     # Merging points with terminals
-    routes_with_transit = routes_df.dropna(subset=[fields_config.terminal])[[
+    routes_with_terminal = routes_df.dropna(subset=[fields_config.terminal])[[
+        fields_config.start_point,
+        fields_config.end_point,
+        fields_config.terminal,
+    ]]
+    dropp_with_terminal = dropp_df.dropna(subset=[fields_config.terminal])[[
         fields_config.start_point,
         fields_config.end_point,
         fields_config.terminal,
     ]]
 
-    points_df_merged_with_transit = pd.concat((
-        pd.merge(
-            points_df.copy(),
-            routes_with_transit.loc[[RouteType.SEA]][[
-                fields_config.end_point,
-                fields_config.terminal,
-            ]],
-            left_on="city",
-            right_on=fields_config.end_point,
+    points_df_merged_with_terminal = pd.concat((
+        merge_points_with_terminal(
+            points_df,
+            routes_with_terminal.loc[[RouteType.SEA]],
+            fields_config,
+            fields_config.end_point,
         ),
-        pd.merge(
-            points_df.copy(),
-            routes_with_transit.loc[[RouteType.SEA]][[
-                fields_config.end_point,
-                fields_config.terminal,
-            ]],
-            left_on="RU_city",
-            right_on=fields_config.end_point,
+        merge_points_with_terminal(
+            points_df,
+            routes_with_terminal.loc[[RouteType.RAIL]],
+            fields_config,
+            fields_config.start_point,
         ),
-        pd.merge(
-            points_df.copy(),
-            routes_with_transit.loc[[RouteType.RAIL]][[
-                fields_config.start_point,
-                fields_config.terminal,
-            ]],
-            left_on="city",
-            right_on=fields_config.start_point,
-        ),
-        pd.merge(
-            points_df.copy(),
-            routes_with_transit.loc[[RouteType.RAIL]][[
-                fields_config.start_point,
-                fields_config.terminal,
-            ]],
-            left_on="RU_city",
-            right_on=fields_config.start_point,
+        merge_points_with_terminal(
+            points_df,
+            dropp_with_terminal,
+            fields_config,
+            fields_config.start_point,
         ),
     ))
 
-    points_df_merged_with_transit = points_df_merged_with_transit[list(
-        set(points_df_merged_with_transit.columns)
-        - {fields_config.start_point, fields_config.end_point}
-    )].drop_duplicates()
-    points_df_merged_with_transit["city"] = (
-        points_df_merged_with_transit["city"]
-        + " ("
-        + points_df_merged_with_transit[fields_config.terminal]
-        + ")"
+    points_df = pd.concat((
+        points_df,
+        points_city_concat_terminal(points_df_merged_with_terminal, fields_config),
+    )).drop_duplicates()
+    del points_df_merged_with_terminal
+
+    # add terminal to the start/end point in routes
+    mask = routes_df[fields_config.terminal].notna()
+    mask &= routes_df[fields_config.terminal].str.strip() != ""
+
+    sea_mask = (routes_df.index.get_level_values(fields_config.route_type) == RouteType.SEA) & mask
+    routes_df.loc[sea_mask, fields_config.end_point] = (
+        routes_df.loc[sea_mask, fields_config.end_point] + " (" + routes_df.loc[sea_mask, fields_config.terminal] + ")"
     )
 
-    points_df_merged_with_transit["RU_city"] = (
-        points_df_merged_with_transit["RU_city"]
-        + " ("
-        + points_df_merged_with_transit[fields_config.terminal]
-        + ")"
+    rail_mask = (routes_df.index.get_level_values(fields_config.route_type) == RouteType.RAIL) & mask
+    routes_df.loc[rail_mask, fields_config.start_point] = (
+        routes_df.loc[rail_mask, fields_config.start_point]
+        + " (" + routes_df.loc[rail_mask, fields_config.terminal] + ")"
     )
-    points_df_merged_with_transit = points_df_merged_with_transit[list(
-        set(points_df_merged_with_transit.columns)
-        - {fields_config.terminal}
-    )]
 
-    points_df = pd.concat((points_df, points_df_merged_with_transit)).drop_duplicates()
-    del routes_with_transit, points_df_merged_with_transit
+    # do the same for dropp off
+    mask = dropp_df[fields_config.terminal].notna()
+    mask &= dropp_df[fields_config.terminal].str.strip() != ""
+
+    dropp_df.loc[mask, fields_config.start_point] = (
+        dropp_df.loc[mask, fields_config.start_point] + " (" + dropp_df.loc[mask, fields_config.terminal] + ")"
+    )
 
     # load points
     points_data = await load_points(db_session, points_df) or []
@@ -295,7 +416,10 @@ async def load_data(
     points = hashed_points
 
     # load services
-    services = await load_services(db_session, set(routes_df[fields_config.service].tolist()))
+    services = await load_services(
+        db_session,
+        set(routes_df[fields_config.service].tolist()) | set(dropp_df[fields_config.service].tolist()),
+    )
 
     # load containers
     containers = await load_containers(db_session, [
@@ -310,17 +434,35 @@ async def load_data(
     for index, row in routes_df.iterrows():
         route_type, i = index
         try:
-            route_drop = create_route(containers, services, points, row, fields_config, route_type)
+            route = create_route(containers, services, points, row, fields_config, route_type)
         except (LoadingErrorException, ValueError) as e:
             warnings.append((e, i, route_type))
             continue
 
-        if route_drop:
-            routes_lst.append(route_drop)
+        if route:
+            routes_lst.append(route)
 
     del routes_df
+
+    # load dropp
+    dropp_lst = []
+
+    for i, row in dropp_df.iterrows():
+        try:
+            drop = create_dropp(containers, services, points, row, fields_config)
+        except (LoadingErrorException, ValueError) as e:
+            raise e
+            warnings.append((e, i, None))
+            continue
+
+        if drop:
+            dropp_lst.append(drop)
+
+    del dropp_df
+
     if warnings and not load_on_warnings:
         return False, len(routes_lst), warnings
 
     await load_routes(db_session, routes_lst)
+    await load_dropp(db_session, dropp_lst)
     return True, len(routes_lst), warnings
