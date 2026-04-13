@@ -9,6 +9,8 @@ def get_settings():
 
 
 class Settings(BaseSettings):
+    ENVIRONMENT: str = "dev"
+
     DEFAULT_GSHEETS_URL: str
     DEFAULT_SEA_ROUTES_WS: str
     DEFAULT_RAIL_ROUTES_WS: str
