@@ -1,9 +1,10 @@
 import { API_ENDPOINTS } from "./ApiConfig";
 import ExecuteProtectedRequest from "@/services/ExecuteProtectedRequest";
 import axios from "axios";
+import { UpdateResponse } from "@/interfaces/Data";
 
-export async function updateFromGsheets(): Promise<void> {
-    await ExecuteProtectedRequest<void>(
+export async function updateFromGsheets(): Promise<UpdateResponse> {
+    const response = await ExecuteProtectedRequest<UpdateResponse>(
         async () => axios.post(
             `${API_ENDPOINTS.DATA.UPDATE_FROM_GSHEETS}`,
             null,
@@ -12,6 +13,7 @@ export async function updateFromGsheets(): Promise<void> {
             },
         ),
     );
+    return response.data;
 }
 
 export async function deleteAllData(): Promise<void> {
