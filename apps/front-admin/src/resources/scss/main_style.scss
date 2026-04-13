@@ -18,6 +18,16 @@ body, html, #root, .app-container {
   height: calc(100dvh - 6rem);
 }
 
+.absolute-centered {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin: auto;
+  height: fit-content;
+}
+
 .mobile-space {
   display: none;
   width: 100%;

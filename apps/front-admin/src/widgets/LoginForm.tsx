@@ -44,7 +44,7 @@ export default function LoginForm() {
     };
 
     return (
-        <form onSubmit={ handleSubmit } className="form">
+        <form onSubmit={ handleSubmit } className="form absolute-centered">
             <h2 className="form-header">Авторизация</h2>
             <FormInput
                 type="text"
