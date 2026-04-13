@@ -322,13 +322,13 @@ async def load_data(
     for index, row in routes_df.iterrows():
         route_type, i = index
         try:
-            route_drop = create_route(containers, services, points, row, fields_config, route_type)
+            route = create_route(containers, services, points, row, fields_config, route_type)
         except (LoadingErrorException, ValueError) as e:
             warnings.append((e, i, route_type))
             continue
 
-        if route_drop:
-            routes_lst.append(route_drop)
+        if route:
+            routes_lst.append(route)
 
     del routes_df
     if warnings and not load_on_warnings:
