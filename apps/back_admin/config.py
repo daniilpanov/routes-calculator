@@ -17,3 +17,15 @@ class Settings(BaseSettings):
 
     GOOGLE_SERVICE_ACCOUNT_RESOURCE_NAME: str = "google_service_account.json"
     DEFAULT_UPLOADER_FIELDS_CONFIG_RESOURCE_NAME: str = "uploader_fields_config.json"
+
+    # JWT Configuration
+    jwt_algorithm: str
+    authjwt_secret_key: str
+    access_token_expire_minutes: int
+    # Configure application to store and get JWT from cookies.
+    authjwt_token_location: set = {"cookies"}
+    # HTTPS only?
+    authjwt_cookie_secure: bool = False
+    # CSRF double submit protection.
+    authjwt_cookie_csrf_protect: bool = False
+    authjwt_cookie_samesite: str = "lax"
