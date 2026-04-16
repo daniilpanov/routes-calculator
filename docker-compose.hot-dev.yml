@@ -76,7 +76,7 @@ services:
       - "./apps/new-frontend/vite.config.ts:/app/vite.config.ts:ro"
       - "./apps/new-frontend/env.d.ts:/app/end.d.ts:ro"
       - "./apps/new-frontend/package.json:/app/package.json:ro"
-      - "./apps/front-admin/package-lock.json:/app/package-lock.json:ro"
+      - "./apps/new-frontend/package-lock.json:/app/package-lock.json:ro"
     expose:
       - ${FRONTEND_PORT}
     ports:
