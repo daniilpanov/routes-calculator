@@ -57,6 +57,7 @@ services:
   ### FRONT
   frontend:
     build:
+      context: "./Node/"
       target: "frontend"
     environment:
       - PORT=${ADMIN_FRONT_PORT}
@@ -87,6 +88,7 @@ services:
 
   adminfront:
     build:
+      context: "./Node/"
       target: "frontadmin"
     environment:
       - DANGEROUSLY_DISABLE_HOST_CHECK=true

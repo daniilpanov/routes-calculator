@@ -66,8 +66,6 @@ services:
   ### BACK
   calculator:
     image: danielgreen1806/calculator-python-apps:${DOCKER_PROD_IMAGES_TAG}
-    build:
-      target: "python-apps"
     env_file:
       - ".env"
     depends_on:
@@ -93,8 +91,6 @@ services:
       - "8080"
   auth:
     image: danielgreen1806/calculator-python-apps:${DOCKER_PROD_IMAGES_TAG}
-    build:
-      target: "python-apps"
     env_file:
       - ".env"
     restart: always
@@ -118,8 +114,6 @@ services:
       - "8081"
   backadmin:
     image: danielgreen1806/calculator-python-apps:${DOCKER_PROD_IMAGES_TAG}
-    build:
-      target: "python-apps"
     env_file:
       - ".env"
     restart: always
@@ -145,8 +139,6 @@ services:
   ### PROXY
   reverseproxy:
     image: danielgreen1806/calculator-reverseproxy:${DOCKER_PROD_IMAGES_TAG}
-    build:
-      target: "reverseproxy"
     env_file:
       - ".env"
     depends_on:
