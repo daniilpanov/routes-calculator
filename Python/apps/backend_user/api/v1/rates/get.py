@@ -2,7 +2,7 @@ import datetime
 
 from fastapi import APIRouter
 
-from backend_user.services.custom.get_rates import get_rates as _get_rates
+from backend_user.services.get_rates import get_rates as _get_rates
 
 router = APIRouter(prefix="/v1/rates", tags=["v1", "rates"])
 

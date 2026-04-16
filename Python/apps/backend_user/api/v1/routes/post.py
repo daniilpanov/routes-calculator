@@ -2,7 +2,8 @@ import datetime
 
 from fastapi import APIRouter
 
-from backend_user.services import custom, fesco
+from backend_user.services import fesco
+from module_data_internal import aggregators
 
 from .models.form_requests import CalculateFormRequest
 
@@ -54,7 +55,7 @@ async def calculate(request: CalculateFormRequest):
     for departureId, destinationId in points:
         routes.extend(
             await _get_routes(
-                custom,
+                aggregators,
                 request.dispatchDate,
                 departureId,
                 destinationId,
