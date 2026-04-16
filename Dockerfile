@@ -48,7 +48,7 @@ RUN ["python3", "-m", "pip", "install", "--no-deps", "--no-cache-dir", "-r", "re
 WORKDIR "${APP_DIR}"
 # run
 COPY ./alembic.ini ./alembic.ini
-COPY ./alembic/ ./alembic/
+COPY ./Python/alembic/ ./alembic/
 COPY ./Python/apps/ ./apps/
 
 ENTRYPOINT ["python3", "-m", "alembic"]

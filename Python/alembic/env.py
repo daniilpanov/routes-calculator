@@ -8,17 +8,17 @@ from alembic import context
 try:
     from dotenv import load_dotenv
     # Try to load local environment, not for Docker
-    load_dotenv(".env.local") or load_dotenv("../.env.local") or load_dotenv()
+    load_dotenv(".env.local") or load_dotenv("../.env.local") or load_dotenv("../../.env.local") or load_dotenv()
 except ImportError as e:
     load_dotenv = None
 
-from Python.apps.module_shared.config import get_settings
-from Python.apps.module_shared.database import Base
-from Python.apps.module_shared.models.company import CompanyModel
-from Python.apps.module_shared.models.container import ContainerModel
-from Python.apps.module_shared.models.drop import DropModel
-from Python.apps.module_shared.models.point import PointModel
-from Python.apps.module_shared.models.route import PriceModel, RouteModel
+from apps.module_shared.config import get_settings
+from apps.module_shared.database import Base
+from apps.module_shared.models.company import CompanyModel
+from apps.module_shared.models.container import ContainerModel
+from apps.module_shared.models.drop import DropModel
+from apps.module_shared.models.point import PointModel
+from apps.module_shared.models.route import PriceModel, RouteModel
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
