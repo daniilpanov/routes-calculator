@@ -28,6 +28,14 @@ def _map_segment(route: RouteModel):
             "currency": price.currency,
             "conversation_percents": price.conversation_percents,
         } for price in route.prices],
+
+        "services": [{
+            "name": service.service.name,
+            "description": service.service.description,
+            "hint": service.service.hint,
+            "currency": service.currency,
+            "price": service.price,
+        } for service in route.services],
     }
 
 
