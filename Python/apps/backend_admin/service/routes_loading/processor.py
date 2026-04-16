@@ -4,7 +4,7 @@ from typing import Any
 
 import pandas as pd
 from backend_admin.models.upoader_fields_config import UploaderFieldsConfig
-from module_shared.models import (
+from module_data_internal.schemas import (
     ContainerOwner,
     ContainerShipmentTerms,
     ContainerTransferTerms,

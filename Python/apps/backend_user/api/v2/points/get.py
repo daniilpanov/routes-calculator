@@ -12,7 +12,7 @@ from backend_user.services import custom, fesco
 from backend_user.services.custom.mappers.points import map_points_v2 as map_custom
 from backend_user.services.fesco.mappers.points import map_points_v2 as map_fesco
 from backend_user.utils.group_points import group_companies, group_transfers, raw_point_from_dict
-from module_shared.models import CompanyModel, PointModel
+from module_data_internal.schemas import CompanyModel, PointModel
 
 router = APIRouter(prefix="/v2/points", tags=["v2", "points"])
 

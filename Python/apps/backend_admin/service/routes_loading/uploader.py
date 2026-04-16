@@ -2,7 +2,7 @@ from collections.abc import Iterable
 
 import pandas as pd
 from backend_admin.models.upoader_fields_config import UploaderFieldsConfig
-from module_shared.models import (
+from module_data_internal.schemas import (
     CompanyModel,
     ContainerModel,
     ContainerOwner,

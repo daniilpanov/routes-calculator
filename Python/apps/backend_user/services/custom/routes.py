@@ -2,8 +2,14 @@ import asyncio
 import datetime
 
 from backend_user.mapper_decorator import apply_mapper
+from module_data_internal.schemas import (
+    ContainerOwner,
+    DropModel,
+    PriceModel,
+    RouteModel,
+    RouteType,
+)
 from module_shared.database import Base, get_database
-from module_shared.models import ContainerOwner, DropModel, PriceModel, RouteModel, RouteType
 from sqlalchemy import and_, desc, or_, select
 from sqlalchemy.orm import aliased, contains_eager, joinedload
 
