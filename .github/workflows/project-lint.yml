@@ -27,12 +27,12 @@ jobs:
 
       - name: Install dependencies
         run: |
-          cd apps/front-admin
+          cd Node/apps/front-admin
           npm install
 
       - name: Run ESLint
         run: |
-          cd apps/front-admin
+          cd Node/apps/front-admin
           npm run lint
 
   eslint:
@@ -46,10 +46,10 @@ jobs:
 
     - name: Install dependencies
       run: |
-        cd apps/new-frontend
+        cd Node/apps/new-frontend
         npm install
 
     - name: Run ESLint
       run: |
-        cd apps/new-frontend
+        cd Node/apps/new-frontend
         npm run lint
