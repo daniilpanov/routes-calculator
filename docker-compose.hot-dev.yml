@@ -19,11 +19,11 @@ services:
   ### BACK
   calculator:
     volumes:
-      - "./Python/apps/backend/:/apps/backend/:ro"
-      - "./Python/apps/shared/:/apps/shared/:ro"
+      - "./Python/apps/backend_user/:/apps/backend_user/:ro"
+      - "./Python/apps/module_shared/:/apps/module_shared/:ro"
       - "./resources/:/apps/resources/:rw"
     command:
-      - "backend.main:app"
+      - "backend_user.main:app"
       - "--host"
       - "0.0.0.0"
       - "--port"
@@ -31,11 +31,11 @@ services:
       - "--reload"
   auth:
     volumes:
-      - "./Python/apps/auth/:/apps/auth/:ro"
-      - "./Python/apps/shared/:/apps/shared/:ro"
+      - "./Python/apps/backend_auth/:/apps/backend_auth/:ro"
+      - "./Python/apps/module_shared/:/apps/module_shared/:ro"
       - "./resources/:/apps/resources/:rw"
     command:
-      - "auth.main:app"
+      - "backend_auth.main:app"
       - "--host"
       - "0.0.0.0"
       - "--port"
@@ -43,11 +43,11 @@ services:
       - "--reload"
   backadmin:
     volumes:
-      - "./Python/apps/back_admin/:/apps/back_admin/:ro"
-      - "./Python/apps/shared/:/apps/shared/:ro"
+      - "./Python/apps/backend_admin/:/apps/backend_admin/:ro"
+      - "./Python/apps/module_shared/:/apps/module_shared/:ro"
       - "./resources/:/apps/resources/:rw"
     command:
-      - "back_admin.main:app"
+      - "backend_admin.main:app"
       - "--host"
       - "0.0.0.0"
       - "--port"

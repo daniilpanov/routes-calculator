@@ -12,13 +12,13 @@ try:
 except ImportError as e:
     load_dotenv = None
 
-from Python.apps.shared.config import get_settings
-from Python.apps.shared.database import Base
-from Python.apps.shared.models.company import CompanyModel
-from Python.apps.shared.models.container import ContainerModel
-from Python.apps.shared.models.drop import DropModel
-from Python.apps.shared.models.point import PointModel
-from Python.apps.shared.models.route import PriceModel, RouteModel
+from Python.apps.module_shared.config import get_settings
+from Python.apps.module_shared.database import Base
+from Python.apps.module_shared.models.company import CompanyModel
+from Python.apps.module_shared.models.container import ContainerModel
+from Python.apps.module_shared.models.drop import DropModel
+from Python.apps.module_shared.models.point import PointModel
+from Python.apps.module_shared.models.route import PriceModel, RouteModel
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

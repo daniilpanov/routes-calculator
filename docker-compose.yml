@@ -86,7 +86,7 @@ services:
     volumes:
       - "./resources/:/apps/resources/:rw"
     command:
-      - "backend.main:app"
+      - "backend_user.main:app"
       - "--host"
       - "0.0.0.0"
       - "--port"
@@ -111,7 +111,7 @@ services:
     volumes:
       - "./resources/:/apps/resources/:rw"
     command:
-      - "auth.main:app"
+      - "backend_auth.main:app"
       - "--host"
       - "0.0.0.0"
       - "--port"
@@ -136,7 +136,7 @@ services:
     volumes:
       - "./resources/:/apps/resources/:rw"
     command:
-      - "back_admin.main:app"
+      - "backend_admin.main:app"
       - "--host"
       - "0.0.0.0"
       - "--port"
