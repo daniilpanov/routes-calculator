@@ -3,9 +3,9 @@ import json
 
 from fastapi import APIRouter
 
-from backend_user.services import fesco
-from backend_user.services.fesco.mappers.points import map_points_v1 as map_fesco
 from backend_user.utils.string_formatters import union_country_and_name
+from module_data_fesco_api_adapter import api_client
+from module_data_fesco_api_adapter.api_client.mappers.points import map_points_v1 as map_fesco
 from module_data_internal import aggregators
 from module_data_internal.aggregators.mappers.points import map_points_v1 as map_custom
 
@@ -33,7 +33,7 @@ async def _add_data(main_dict, data, mapper):
 async def all_departure_by_date(date: datetime.date):
     prepared_from: dict[str, dict] = {}
     # from FESCO
-    await _add_data(prepared_from, fesco.get_departure_points_by_date(date), map_fesco)
+    await _add_data(prepared_from, api_client.get_departure_points_by_date(date), map_fesco)
     # from CUSTOM
     await _add_data(prepared_from, aggregators.get_departure_points(), map_custom)
 
@@ -52,7 +52,7 @@ async def all_destination_by_date(date: datetime.date, departure_point_id: str):
     if "FESCO" in departure_ids:
         await _add_data(
             prepared_to,
-            fesco.get_destination_points_by_date(date, departure_ids.pop("FESCO")),
+            api_client.get_destination_points_by_date(date, departure_ids.pop("FESCO")),
             map_fesco,
         )
     # from CUSTOM

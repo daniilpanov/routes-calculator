@@ -2,7 +2,7 @@ import datetime
 
 from fastapi import APIRouter
 
-from backend_user.services import fesco
+from module_data_fesco_api_adapter import api_client
 from module_data_internal import aggregators
 
 from .models.form_requests import CalculateFormRequest
@@ -38,7 +38,7 @@ async def calculate(request: CalculateFormRequest):
     if "FESCO" in request.destinationId:
         routes.extend(
             await _get_routes(
-                fesco,
+                api_client,
                 request.dispatchDate,
                 request.departureId.pop("FESCO"),
                 request.destinationId.pop("FESCO"),
