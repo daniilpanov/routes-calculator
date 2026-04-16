@@ -1,3 +1,5 @@
+from module_shared.database import Base
+
 from .company import CompanyModel
 from .container import ContainerModel, ContainerType
 from .drop import DropModel
