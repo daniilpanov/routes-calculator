@@ -12,3 +12,4 @@ from .route import (
     RouteModel,
     RouteType,
 )
+from .service import ServiceModel, ServicePriceModel

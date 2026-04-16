@@ -5,7 +5,7 @@ from module_shared.database import Base
 from sqlalchemy import DateTime, Enum, ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from . import CompanyModel, ContainerModel
+from . import CompanyModel, ContainerModel, ServicePriceModel
 from .point import PointModel
 
 
@@ -115,3 +115,4 @@ class RouteModel(Base):
     end_point: Mapped[PointModel] = relationship(PointModel, foreign_keys=[end_point_id])
     company: Mapped[CompanyModel] = relationship()
     prices: Mapped[list[PriceModel]] = relationship("PriceModel", back_populates="route")
+    services: Mapped[list[ServicePriceModel]] = relationship("ServicePriceModel", back_populates="route")
