@@ -7,7 +7,8 @@ from module_data_internal.schemas import (
     DropModel,
     PriceModel,
     RouteModel,
-    RouteType, ServicePriceModel,
+    RouteType,
+    ServicePriceModel,
 )
 from module_shared.database import Base, get_database
 from sqlalchemy import and_, desc, or_, select

@@ -8,6 +8,7 @@ from .containers import _map_container
 
 def _map_segment(route: RouteModel):
     return {
+        "id": route.id,
         "company": route.company.name,
         "type": route.type.name,
         "effectiveFrom": route.effective_from,
