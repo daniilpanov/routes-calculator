@@ -14,11 +14,8 @@ except ImportError as e:
 
 from apps.module_shared.config import get_settings
 from apps.module_shared.database import Base
-from apps.module_shared.models.company import CompanyModel
-from apps.module_shared.models.container import ContainerModel
-from apps.module_shared.models.drop import DropModel
-from apps.module_shared.models.point import PointModel
-from apps.module_shared.models.route import PriceModel, RouteModel
+
+import apps.module_shared.models
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
