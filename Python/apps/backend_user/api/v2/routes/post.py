@@ -3,7 +3,8 @@ import datetime
 
 from fastapi import APIRouter
 
-from backend_user.services import custom, fesco
+from module_data_fesco_api_adapter import api_client
+from module_data_internal import aggregators
 
 from .models.form_requests import CalculateFormRequest
 
@@ -40,7 +41,7 @@ async def calculate(request: CalculateFormRequest):
     for destinationId in request.destinationExternalIds:
         for departureId in request.departureExternalIds:
             coros.append(_get_routes(
-                fesco,
+                api_client,
                 request.dispatchDate,
                 departureId,
                 destinationId,
@@ -51,7 +52,7 @@ async def calculate(request: CalculateFormRequest):
     for destinationId in request.destinationInternalIds:
         for departureId in request.departureInternalIds:
             coros.append(_get_routes(
-                custom,
+                aggregators,
                 request.dispatchDate,
                 departureId,
                 destinationId,

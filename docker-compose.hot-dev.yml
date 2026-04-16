@@ -20,6 +20,8 @@ services:
   calculator:
     volumes:
       - "./Python/apps/backend_user/:/apps/backend_user/:ro"
+      - "./Python/apps/module_data_fesco_api_adapter/:/apps/module_data_fesco_api_adapter/:ro"
+      - "./Python/apps/module_data_internal/:/apps/module_data_internal/:ro"
       - "./Python/apps/module_shared/:/apps/module_shared/:ro"
       - "./resources/:/apps/resources/:rw"
     command:
@@ -44,6 +46,8 @@ services:
   backadmin:
     volumes:
       - "./Python/apps/backend_admin/:/apps/backend_admin/:ro"
+      - "./Python/apps/module_data_fesco_api_adapter/:/apps/module_data_fesco_api_adapter/:ro"
+      - "./Python/apps/module_data_internal/:/apps/module_data_internal/:ro"
       - "./Python/apps/module_shared/:/apps/module_shared/:ro"
       - "./resources/:/apps/resources/:rw"
     command:

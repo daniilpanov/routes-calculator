@@ -1,7 +1,7 @@
 from functools import partial
 
+from module_data_internal.schemas import CompanyModel, PointModel, RouteModel
 from module_shared.database import get_database
-from module_shared.models import CompanyModel, PointModel, RouteModel
 from sqlalchemy import select
 
 

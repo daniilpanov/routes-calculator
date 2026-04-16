@@ -17,8 +17,8 @@ from backend_admin.service.routes_loading.errors import (
 )
 from backend_admin.service.routes_loading.processor import load_data
 from gspread_dataframe import get_as_dataframe
+from module_data_internal.schemas import RouteType
 from module_shared.database import get_database
-from module_shared.models import RouteType
 from module_shared.resources import Resources
 from sqlalchemy.ext.asyncio import AsyncSession
 

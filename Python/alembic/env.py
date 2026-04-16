@@ -15,7 +15,7 @@ except ImportError as e:
 from apps.module_shared.config import get_settings
 from apps.module_shared.database import Base
 
-import apps.module_shared.models
+import apps.module_data_internal.schemas
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

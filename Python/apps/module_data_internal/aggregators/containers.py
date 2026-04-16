@@ -1,8 +1,8 @@
 import datetime
 
 from backend_user.mapper_decorator import apply_mapper
+from module_data_internal.schemas import ContainerModel
 from module_shared.database import get_database
-from module_shared.models import ContainerModel
 from sqlalchemy import select
 
 from .mappers.containers import map_containers

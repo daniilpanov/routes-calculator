@@ -1,7 +1,7 @@
 from typing import Any
 
+from module_data_internal.schemas import DropModel, RouteModel
 from module_shared.database import Base
-from module_shared.models import DropModel, RouteModel
 
 from .containers import _map_container
 
