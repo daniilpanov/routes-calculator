@@ -21,7 +21,7 @@ RUN ["python3", "-m", "pip", "install", "--no-deps", "--no-cache-dir", "-r", "re
 
 WORKDIR "${APP_DIR}"
 # run
-COPY ./apps/ ./
+COPY ./Python/apps/ ./
 ENTRYPOINT ["python3", "-m", "uvicorn"]
 
 FROM python:3.12-slim AS db-migration
@@ -49,7 +49,7 @@ WORKDIR "${APP_DIR}"
 # run
 COPY ./alembic.ini ./alembic.ini
 COPY ./alembic/ ./alembic/
-COPY ./apps/ ./apps/
+COPY ./Python/apps/ ./apps/
 
 ENTRYPOINT ["python3", "-m", "alembic"]
 
