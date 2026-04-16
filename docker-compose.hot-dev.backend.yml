@@ -25,11 +25,11 @@ services:
       service: calculator
       file: docker-compose.yml
     volumes:
-      - "./apps/backend/:/apps/backend/:ro"
-      - "./apps/shared/:/apps/shared/:ro"
+      - "./Python/apps/backend_user/:/apps/backend_user/:ro"
+      - "./Python/apps/module_shared/:/apps/module_shared/:ro"
       - "./resources/:/apps/resources/:rw"
     command:
-      - "backend.main:app"
+      - "backend_user.main:app"
       - "--host"
       - "0.0.0.0"
       - "--port"
@@ -40,11 +40,11 @@ services:
       service: auth
       file: docker-compose.yml
     volumes:
-      - "./apps/auth/:/apps/auth/:ro"
-      - "./apps/shared/:/apps/shared/:ro"
+      - "./Python/apps/backend_auth/:/apps/backend_auth/:ro"
+      - "./Python/apps/module_shared/:/apps/module_shared/:ro"
       - "./resources/:/apps/resources/:rw"
     command:
-      - "auth.main:app"
+      - "backend_auth.main:app"
       - "--host"
       - "0.0.0.0"
       - "--port"
@@ -55,11 +55,11 @@ services:
       service: backadmin
       file: docker-compose.yml
     volumes:
-      - "./apps/back_admin/:/apps/back_admin/:ro"
-      - "./apps/shared/:/apps/shared/:ro"
+      - "./Python/apps/backend_admin/:/apps/backend_admin/:ro"
+      - "./Python/apps/module_shared/:/apps/module_shared/:ro"
       - "./resources/:/apps/resources/:rw"
     command:
-      - "back_admin.main:app"
+      - "backend_admin.main:app"
       - "--host"
       - "0.0.0.0"
       - "--port"
@@ -81,7 +81,7 @@ services:
     volumes:
       - "./config/nginx/conf/nginx-dev-backend.conf.template:/etc/nginx/templates/default.conf.template:ro"
       - "./config/nginx/conf/mime.types:/etc/nginx/conf.d/mime.types:ro"
-      - "./apps/frontend/:/www/old-frontend/:ro"
+      - "./Node/apps/old-user-frontend/:/www/old-frontend/:ro"
 
 networks:
   reverseproxy:

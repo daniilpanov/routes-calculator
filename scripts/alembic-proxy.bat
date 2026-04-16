@@ -1,0 +1,3 @@
+cd .\Python
+alembic %*
+cd ..

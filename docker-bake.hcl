@@ -7,34 +7,30 @@ group "default" {
 }
 
 target "python-apps" {
-  context = "."
-  dockerfile = "Dockerfile"
+  context = "./Python/"
   target = "python-apps"
   tags = ["danielgreen1806/calculator-python-apps:${TAG}"]
 }
 
 target "db-migration" {
-  context = "."
-  dockerfile = "Dockerfile"
+  context = "./Python/"
   target = "db-migration"
   tags = ["danielgreen1806/calculator-db-migration:${TAG}"]
 }
 
 target "frontend-builder" {
-  context = "."
-  dockerfile = "Dockerfile"
+  context = "./Node/"
   target = "frontend-builder"
 }
 
 target "frontadmin-builder" {
-  context = "."
+  context = "./Node/"
   dockerfile = "Dockerfile"
   target = "frontadmin-builder"
 }
 
 target "reverseproxy" {
   context = "."
-  dockerfile = "Dockerfile"
   target = "reverseproxy"
   tags = ["danielgreen1806/calculator-reverseproxy:${TAG}"]
   contexts = {
