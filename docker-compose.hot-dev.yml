@@ -66,17 +66,17 @@ services:
       - no-new-privileges
     user: "node"
     volumes:
-      - "./Node/apps/new-frontend/public:/app/public:ro"
-      - "./Node/apps/new-frontend/src:/app/src:ro"
-      - "./Node/apps/new-frontend/index.html:/app/index.html:ro"
-      - "./Node/apps/new-frontend/tsconfig.json:/app/tsconfig.json:ro"
-      - "./Node/apps/new-frontend/tsconfig.app.json:/app/tsconfig.app.json:ro"
-      - "./Node/apps/new-frontend/tsconfig.node.json:/app/tsconfig.node.json:ro"
-      - "./Node/apps/new-frontend/eslint.config.ts:/app/eslint.config.ts:ro"
-      - "./Node/apps/new-frontend/vite.config.ts:/app/vite.config.ts:ro"
-      - "./Node/apps/new-frontend/env.d.ts:/app/end.d.ts:ro"
-      - "./Node/apps/new-frontend/package.json:/app/package.json:ro"
-      - "./Node/apps/new-frontend/package-lock.json:/app/package-lock.json:ro"
+      - "./Node/apps/user-frontend/public:/app/public:ro"
+      - "./Node/apps/user-frontend/src:/app/src:ro"
+      - "./Node/apps/user-frontend/index.html:/app/index.html:ro"
+      - "./Node/apps/user-frontend/tsconfig.json:/app/tsconfig.json:ro"
+      - "./Node/apps/user-frontend/tsconfig.app.json:/app/tsconfig.app.json:ro"
+      - "./Node/apps/user-frontend/tsconfig.node.json:/app/tsconfig.node.json:ro"
+      - "./Node/apps/user-frontend/eslint.config.ts:/app/eslint.config.ts:ro"
+      - "./Node/apps/user-frontend/vite.config.ts:/app/vite.config.ts:ro"
+      - "./Node/apps/user-frontend/env.d.ts:/app/end.d.ts:ro"
+      - "./Node/apps/user-frontend/package.json:/app/package.json:ro"
+      - "./Node/apps/user-frontend/package-lock.json:/app/package-lock.json:ro"
     expose:
       - ${FRONTEND_PORT}
     ports:
@@ -99,14 +99,14 @@ services:
       - no-new-privileges
     user: "node"
     volumes:
-      - "./Node/apps/front-admin/public:/app/public:ro"
-      - "./Node/apps/front-admin/src:/app/src:ro"
-      - "./Node/apps/front-admin/index.html:/app/index.html:ro"
-      - "./Node/apps/front-admin/tsconfig.json:/app/tsconfig.json:ro"
-      - "./Node/apps/front-admin/eslint.config.mjs:/app/eslint.config.mjs:ro"
-      - "./Node/apps/front-admin/vite.config.js:/app/vite.config.js:ro"
-      - "./Node/apps/front-admin/package.json:/app/package.json:ro"
-      - "./Node/apps/front-admin/package-lock.json:/app/package-lock.json:ro"
+      - "./Node/apps/admin-frontend/public:/app/public:ro"
+      - "./Node/apps/admin-frontend/src:/app/src:ro"
+      - "./Node/apps/admin-frontend/index.html:/app/index.html:ro"
+      - "./Node/apps/admin-frontend/tsconfig.json:/app/tsconfig.json:ro"
+      - "./Node/apps/admin-frontend/eslint.config.mjs:/app/eslint.config.mjs:ro"
+      - "./Node/apps/admin-frontend/vite.config.js:/app/vite.config.js:ro"
+      - "./Node/apps/admin-frontend/package.json:/app/package.json:ro"
+      - "./Node/apps/admin-frontend/package-lock.json:/app/package-lock.json:ro"
     expose:
       - ${ADMIN_FRONT_PORT}
     ports:
@@ -131,4 +131,4 @@ services:
     volumes:
       - "./config/nginx/conf/nginx-dev.conf.template:/etc/nginx/templates/default.conf.template:ro"
       - "./config/nginx/conf/mime.types:/etc/nginx/conf.d/mime.types:ro"
-      - "./Node/apps/frontend/:/www/old-frontend/:ro"
+      - "./Node/apps/old-user-frontend/:/www/old-frontend/:ro"

@@ -59,11 +59,11 @@ USER "node"
 
 WORKDIR "/app"
 # install
-COPY ./Node/apps/new-frontend/package.json ./package.json
-COPY ./Node/apps/new-frontend/package-lock.json ./package-lock.json
+COPY Node/apps/user-frontend/package.json ./package.json
+COPY Node/apps/user-frontend/package-lock.json ./package-lock.json
 RUN ["npm", "ci"]
 # run
-COPY ./Node/apps/new-frontend/ ./
+COPY Node/apps/user-frontend/ ./
 ENTRYPOINT ["npm"]
 
 
@@ -77,11 +77,11 @@ USER "node"
 
 WORKDIR "/app"
 # install
-COPY ./Node/apps/front-admin/package.json ./package.json
-COPY ./Node/apps/front-admin/package-lock.json ./package-lock.json
+COPY Node/apps/admin-frontend/package.json ./package.json
+COPY Node/apps/admin-frontend/package-lock.json ./package-lock.json
 RUN ["npm", "ci"]
 # run
-COPY ./Node/apps/front-admin/ ./
+COPY Node/apps/admin-frontend/ ./
 ENTRYPOINT ["npm"]
 
 
@@ -97,7 +97,7 @@ FROM nginx:alpine AS reverseproxy
 COPY ./config/nginx/conf/mime.types /etc/nginx/conf.d/mime.types
 COPY config/nginx/conf/nginx.conf.template /etc/nginx/templates/default.conf.template
 # old frontend
-COPY ./Node/apps/frontend/ /www/old-frontend/
+COPY Node/apps/old-user-frontend/ /www/old-frontend/
 # frontend
 COPY --from=frontend-builder /app/dist/ /www/frontend/
 # admin frontend
