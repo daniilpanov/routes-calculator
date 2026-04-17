@@ -30,6 +30,8 @@ def _map_service(service):
         "name": service["ServiceType"][0]["ServiceTypeName"] if service["ServiceType"] else service["ServiceName"],
         "description": service["ServiceName"],
         "hint": service["ServiceComment"] or None,
+        "default": service["checked"],
+        "mandatory": service["Default"] and service["InclMainServicePrice"],
         "currency": service["ContPrice"][0]["Currency"] if service["ContPrice"] else None,
         "price": (
             service["ContPrice"][0]["Price"] * service["ContPrice"][0]["Quantity"] if service["ContPrice"] else None
