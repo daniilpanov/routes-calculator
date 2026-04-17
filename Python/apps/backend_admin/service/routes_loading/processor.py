@@ -456,7 +456,6 @@ async def load_data(  # noqa: C901
         try:
             drop = create_dropp(containers, services, points, row, fields_config)
         except (LoadingErrorException, ValueError) as e:
-            raise e
             warnings.append((e, i, None))
             continue
 
