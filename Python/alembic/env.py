@@ -1,4 +1,6 @@
+import sys
 from logging.config import fileConfig
+from pathlib import Path
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
@@ -12,10 +14,17 @@ try:
 except ImportError as e:
     load_dotenv = None
 
+
+project_root = str(Path(__file__).parent.parent.absolute() / "apps")
+if project_root not in sys.path:
+    sys.path.append(project_root)
+
+
 from apps.module_shared.config import get_settings
-from apps.module_shared.database import Base
 
 import apps.module_data_internal.schemas
+from apps.module_data_internal.schemas import Base
+
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

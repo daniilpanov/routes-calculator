@@ -8,6 +8,7 @@ from module_data_internal.schemas import (
     PriceModel,
     RouteModel,
     RouteType,
+    ServicePriceModel,
 )
 from module_shared.database import Base, get_database
 from sqlalchemy import and_, desc, or_, select
@@ -55,6 +56,7 @@ def build_usual_query(
             joinedload(RouteModel.start_point),
             joinedload(RouteModel.end_point),
             joinedload(RouteModel.company),
+            joinedload(RouteModel.services).joinedload(ServicePriceModel.service),
             contains_eager(RouteModel.prices).joinedload(PriceModel.container),
         )
     )
@@ -138,10 +140,12 @@ def build_base_sea_rail_query(
             joinedload(SeaRoute.start_point),
             joinedload(SeaRoute.end_point),
             joinedload(SeaRoute.company),
+            joinedload(SeaRoute.services).joinedload(ServicePriceModel.service),
             contains_eager(SeaRoute.prices, alias=SeaPrice).joinedload(PriceModel.container),
             joinedload(RailRoute.start_point),
             joinedload(RailRoute.end_point),
             joinedload(RailRoute.company),
+            joinedload(RailRoute.services).joinedload(ServicePriceModel.service),
             contains_eager(RailRoute.prices, alias=RailPrice).joinedload(PriceModel.container),
         )
     )

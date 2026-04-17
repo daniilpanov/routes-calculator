@@ -8,6 +8,7 @@ from .containers import _map_container
 
 def _map_segment(route: RouteModel):
     return {
+        "id": route.id,
         "company": route.company.name,
         "type": route.type.name,
         "effectiveFrom": route.effective_from,
@@ -28,6 +29,14 @@ def _map_segment(route: RouteModel):
             "currency": price.currency,
             "conversation_percents": price.conversation_percents,
         } for price in route.prices],
+
+        "services": [{
+            "name": service.service.name,
+            "description": service.service.description,
+            "hint": service.service.hint,
+            "currency": service.currency,
+            "price": service.price,
+        } for service in route.services],
     }
 
 
@@ -38,7 +47,13 @@ def _map_route(route_and_drop_and_datecheck: tuple[list[Base], bool]):
         drop = segments[-1]
         segments = segments[:-1]
 
-    mapped_segments = list(map(_map_segment, segments))
+    mapped_segments = [None] * len(segments)
+    services: list[dict[str, Any]] = []
+
+    for i, segment in enumerate(map(_map_segment, segments)):
+        services.extend({"segment_id": segment["id"], **service} for service in segment["services"])
+        del segment["services"]
+        mapped_segments[i] = segment
 
     return (
         mapped_segments,
@@ -48,6 +63,7 @@ def _map_route(route_and_drop_and_datecheck: tuple[list[Base], bool]):
             "currency": drop.currency,
         } if drop else None,
         may_route_be_invalid,
+        services,
     )
 
 
