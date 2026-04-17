@@ -13,6 +13,7 @@ def _check_currency(currency):
 
 def _map_segment(segment):
     return {
+        "id": segment["SegmentUID"],
         "type": _segment_types.get(segment["SegmentType"]),
         "startPointCountry": segment["BeginCountryName"],
         "startPointName": segment["BeginLocName"],
@@ -23,7 +24,22 @@ def _map_segment(segment):
     }
 
 
+def _map_service(service):
+    return {
+        "segment_id": service["SegmentUID"],
+        "name": service["ServiceType"][0]["ServiceTypeName"] if service["ServiceType"] else service["ServiceName"],
+        "description": service["ServiceName"],
+        "hint": service["ServiceComment"] or None,
+        "currency": service["ContPrice"][0]["Currency"] if service["ContPrice"] else None,
+        "price": (
+            service["ContPrice"][0]["Price"] * service["ContPrice"][0]["Quantity"] if service["ContPrice"] else None
+        ),
+    }
+
+
 def _map_route(route):
+    services = list(map(_map_service, route.get("Services", [])))
+
     res = []
     for segm in map(_map_segment, route.get("Segments", [])):
         item = {
@@ -42,7 +58,7 @@ def _map_route(route):
                 }
             )
         res.append(item)
-    return res, None, False
+    return res, None, False, services
 
 
 def map_routes(routes):
