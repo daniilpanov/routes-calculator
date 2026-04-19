@@ -10,6 +10,7 @@ def get_settings():
 
 class Settings(BaseSettings):
     ENVIRONMENT: str = "dev"
+    DISABLE_ADMIN_AUTH_CHECK: bool = False
 
     DEFAULT_GSHEETS_URL: str
     DEFAULT_SEA_ROUTES_WS: str
