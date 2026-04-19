@@ -15,7 +15,7 @@ class UploaderFieldsConfig(BaseModel):
     container_shipment_terms: str
     container_condition: str
 
-    service: str
+    company: str
     comment: str
     is_through: str
 

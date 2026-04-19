@@ -17,11 +17,11 @@ from .helpers import format_date, none_filter, price_filter
 from .uploader import (
     create_dropp,
     create_route,
+    load_companies,
     load_containers,
     load_dropp,
     load_points,
     load_routes,
-    load_services,
 )
 
 
@@ -66,7 +66,7 @@ def process_points_services_effectivity(
     UploaderFieldsConfig,
     ws_name: str,
 ):
-    processed_df[fields_config.service] = processed_df[fields_config.service].apply(none_filter).str.strip()
+    processed_df[fields_config.company] = processed_df[fields_config.company].apply(none_filter).str.strip()
 
     processed_df[fields_config.start_point] = processed_df[fields_config.start_point].apply(none_filter).str.strip()
     processed_df[fields_config.end_point] = processed_df[fields_config.end_point].apply(none_filter).str.strip()
@@ -134,7 +134,7 @@ def process_dropp_df(processed_dropp_df: DataFrame, warnings, fields_config: Upl
         fields_config.end_point,
         fields_config.effective_from,
         fields_config.effective_to,
-        fields_config.service,
+        fields_config.company,
     ]
 
     for col in df_dropna_subset:
@@ -200,7 +200,7 @@ def process_routes_df(processed_routes_df, route_type: RouteType, warnings, fiel
         fields_config.end_point,
         fields_config.effective_from,
         fields_config.effective_to,
-        fields_config.service,
+        fields_config.company,
     ]
     missing_info_about_id = defaultdict(list)
 
@@ -222,7 +222,7 @@ def process_routes_df(processed_routes_df, route_type: RouteType, warnings, fiel
     processed_routes_df[fields_config.start_point] = processed_routes_df[fields_config.start_point].str.title()
     processed_routes_df[fields_config.end_point] = processed_routes_df[fields_config.end_point].str.title()
     processed_routes_df[fields_config.terminal] = processed_routes_df[fields_config.terminal].str.upper()
-    processed_routes_df[fields_config.service] = processed_routes_df[fields_config.service].str.upper()
+    processed_routes_df[fields_config.company] = processed_routes_df[fields_config.company].str.upper()
 
     if route_type is RouteType.SEA:
         processed_routes_df[fields_config.sea_20dc] = (
@@ -420,10 +420,10 @@ async def load_data(  # noqa: C901
         hashed_points[point.city.lower()] = hashed_points[point.RU_city.lower()] = point
     points = hashed_points
 
-    # load services
-    services = await load_services(
+    # load companies
+    companies = await load_companies(
         db_session,
-        set(routes_df[fields_config.service].tolist()) | set(dropp_df[fields_config.service].tolist()),
+        set(routes_df[fields_config.company].tolist()) | set(dropp_df[fields_config.company].tolist()),
     )
 
     # load containers
@@ -439,7 +439,7 @@ async def load_data(  # noqa: C901
     for index, row in routes_df.iterrows():
         route_type, i = index
         try:
-            route = create_route(containers, services, points, row, fields_config, route_type)
+            route = create_route(containers, companies, points, row, fields_config, route_type)
         except (LoadingErrorException, ValueError) as e:
             warnings.append((e, i, route_type))
             continue
@@ -454,7 +454,7 @@ async def load_data(  # noqa: C901
 
     for i, row in dropp_df.iterrows():
         try:
-            drop = create_dropp(containers, services, points, row, fields_config)
+            drop = create_dropp(containers, companies, points, row, fields_config)
         except (LoadingErrorException, ValueError) as e:
             warnings.append((e, i, None))
             continue
