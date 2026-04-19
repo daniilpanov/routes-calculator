@@ -22,6 +22,7 @@ from .uploader import (
     load_dropp,
     load_points,
     load_routes,
+    load_services,
 )
 
 
@@ -320,6 +321,7 @@ async def load_data(  # noqa: C901
     sea_routes_df: DataFrame,
     rail_routes_df: DataFrame,
     dropp_df: DataFrame,
+    services_df: DataFrame,
     points_df: DataFrame,
     fields_config: UploaderFieldsConfig,
     load_on_warnings: bool = False,
@@ -332,6 +334,16 @@ async def load_data(  # noqa: C901
     points_rows_with_nan = [i + 2 for i in points_df[points_df.isna().any(axis=1)].index.tolist()]  # noqa: ECE001
     if points_rows_with_nan:
         raise PointsWithNanException(points_rows_with_nan)
+
+    # cleanup DF services
+    services_df = services_df.apply(lambda x: x.str.strip() if x.dtype == "str" else x)
+
+    services_fingerprint = [
+        fields_config.column_name,
+        fields_config.service_name,
+    ]
+    services_df = services_df.dropna(ignore_index=False, subset=services_fingerprint)
+    services_df = services_df.drop_duplicates(subset=services_fingerprint, ignore_index=False)
 
     # process routes and setup new index for correct concatenation
     sea_routes_df = process_routes_df(sea_routes_df, RouteType.SEA, warnings, fields_config)
@@ -432,6 +444,10 @@ async def load_data(  # noqa: C901
         {"size": 20, "weight_from": 24, "weight_to": 28, "type": "DC", "name": "20DC 24-28t"},
         {"size": 40, "weight_from": 0, "weight_to": 28, "type": "HC", "name": "40HC≤28t"},
     ])
+
+    # load services
+    await load_services(db_session, services_df, fields_config)
+    del services_df
 
     # load routes
     routes_lst = []

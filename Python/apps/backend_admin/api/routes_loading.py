@@ -41,6 +41,7 @@ async def update_from_gsheets(
     rail_routes_ws_name: str = settings.DEFAULT_RAIL_ROUTES_WS,
     dropp_routes_ws_name: str = settings.DEFAULT_DROPP_ROUTES_WS,
     points_ws_name: str | None = settings.DEFAULT_POINTS_WS,
+    services_ws_name: str | None = settings.DEFAULT_SERVICES_WS,
     load_on_warnings: bool = True,
 ):
     return await update_from_gsheets_with_custom_fields(
@@ -51,6 +52,7 @@ async def update_from_gsheets(
         rail_routes_ws_name,
         dropp_routes_ws_name,
         points_ws_name,
+        services_ws_name,
         load_on_warnings,
     )
 
@@ -64,6 +66,7 @@ async def update_from_gsheets_with_custom_fields(
     rail_routes_ws_name: str = settings.DEFAULT_RAIL_ROUTES_WS,
     dropp_routes_ws_name: str = settings.DEFAULT_DROPP_ROUTES_WS,
     points_ws_name: str | None = settings.DEFAULT_POINTS_WS,
+    services_ws_name: str | None = settings.DEFAULT_SERVICES_WS,
     load_on_warnings: bool = True,
 ):
     gs = gspread.service_account(
@@ -83,6 +86,10 @@ async def update_from_gsheets_with_custom_fields(
         sources_gs.worksheet(dropp_routes_ws_name),
         evaluate_formulas=True,
     )
+    services_df = get_as_dataframe(
+        sources_gs.worksheet(services_ws_name),
+        evaluate_formulas=True,
+    )
     points_df = get_as_dataframe(
         sources_gs.worksheet(points_ws_name),
         evaluate_formulas=True,
@@ -95,6 +102,7 @@ async def update_from_gsheets_with_custom_fields(
             sea_routes_df,
             rail_routes_df,
             dropp_routes_df,
+            services_df,
             points_df,
             fields_config,
             load_on_warnings,

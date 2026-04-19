@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     DEFAULT_RAIL_ROUTES_WS: str
     DEFAULT_DROPP_ROUTES_WS: str
     DEFAULT_POINTS_WS: str
+    DEFAULT_SERVICES_WS: str
 
     GOOGLE_SERVICE_ACCOUNT_RESOURCE_NAME: str = "google_service_account.json"
     DEFAULT_UPLOADER_FIELDS_CONFIG_RESOURCE_NAME: str = "uploader_fields_config.json"

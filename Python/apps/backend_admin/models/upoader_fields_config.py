@@ -2,6 +2,12 @@ from pydantic import BaseModel
 
 
 class UploaderFieldsConfig(BaseModel):
+    # SERVICES
+    column_name: str
+    service_name: str
+    description: str
+
+    # ROUTES
     route_type: str = "_route_type"
 
     start_point: str

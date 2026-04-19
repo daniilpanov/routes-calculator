@@ -14,7 +14,9 @@ from module_data_internal.schemas import (
     PriceModel,
     RouteModel,
     RouteType,
+    ServiceModel,
 )
+from pandas import DataFrame
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
@@ -31,6 +33,8 @@ ContainerUid = tuple[int, int, int]
 ContainerStore = dict[ContainerUid, ContainerModel]
 
 CompaniesStore = dict[str, CompanyModel]
+
+ServicesStore = dict[str, ServiceModel]
 
 PointsStore = list[PointModel]
 PointsHashedStore = dict[str, PointModel]
@@ -75,6 +79,30 @@ async def load_points(db_session, df) -> PointsStore:
 
     await db_session.commit()
     return models  # type: ignore[return-value]
+
+
+async def load_services(db_session, df: DataFrame, fc: UploaderFieldsConfig) -> ServicesStore:
+    models = {}
+    existing_models = (await db_session.execute(select(ServiceModel))).scalars().all()
+
+    for service in existing_models:
+        models[service.internal_name] = service
+
+    for _, row in df.iterrows():
+        internal_name = row[fc.column_name]
+
+        if not models.get(internal_name):
+            models[internal_name] = await db_session.merge(
+                ServiceModel(
+                    name=row[fc.service_name],
+                    internal_name=internal_name,
+                    description=nan_to_none_mapper(row[fc.description]) or "",
+                ),
+                load=True,
+            )
+
+    await db_session.commit()
+    return models
 
 
 async def load_containers(db_session, containers: list[ContainerRawType]) -> ContainerStore:
