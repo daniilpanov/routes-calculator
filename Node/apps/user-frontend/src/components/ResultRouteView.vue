@@ -24,17 +24,17 @@ const ratesStore = useRates();
 const currentRate = computed((): string => ratesStore.currentRate);
 
 const segments = computed(
-    () => props.route[0]
+    () => props.route[0][0]
 );
 const drop = computed(
-    () => props.route[1]
+    () => props.route[0][1]
 );
 
 const editMode: Ref<boolean> = inject("editable") || ref(false);
 const printMode: Ref<boolean> = inject("printMode") || ref(false);
 const allRoutesSelected: Ref<boolean> = inject("allRoutesSelected") || ref(false);
 const allRoutesSelectedSignalRef: Ref<boolean> = inject("allRoutesSelectedSignal") || ref(false);
-const routeSelected = ref<boolean>(props.route[5]);
+const routeSelected = ref<boolean>(props.route[1][2]);
 
 let quiteSelect: boolean = false;
 
@@ -46,7 +46,7 @@ watch(routeSelected, (newVal: boolean) => {
 
 watch(() => props.route, async (newRoute: RouteExtendedDescriptor) => {
     quiteSelect = true;
-    routeSelected.value = newRoute[5];
+    routeSelected.value = newRoute[1][2];
 
     await nextTick();
     quiteSelect = false;
@@ -60,7 +60,7 @@ watch(allRoutesSelectedSignalRef, () => (routeSelected.value = allRoutesSelected
         <label v-if="editMode"><input type="checkbox" v-model="routeSelected" class="select-route-checkbox"></label>
         <b v-else-if="!routeSelected">Маршрут не будет отображаться в КП</b>
 
-        <div v-if="props.route[2]" class="alert alert-warning d-flex align-items-center" role="alert">
+        <div v-if="props.route[0][2]" class="alert alert-warning d-flex align-items-center" role="alert">
             <svg class="flex-shrink-0 me-2" width="24" height="24" role="img" aria-label="Warning:"><use xlink:href="#exclamation-triangle-fill"/></svg>
             <div>
                 Маршрут может быть неактуален
@@ -112,13 +112,13 @@ watch(allRoutesSelectedSignalRef, () => (routeSelected.value = allRoutesSelected
                 Суммарная стоимость:
             </div>
             <div class="col-md-5">
-                <b v-if="Number.isNaN(route[3])">
-                    <PriceWithCurrency :price="(route[3] as PriceRange)[0]" :currency="currentRate" />
+                <b v-if="Number.isNaN(route[1][0])">
+                    <PriceWithCurrency :price="(route[1][0] as PriceRange)[0]" :currency="currentRate" />
                     &nbsp;&ndash;&nbsp;
-                    <PriceWithCurrency :price="(route[3] as PriceRange)[1]" :currency="currentRate" />
+                    <PriceWithCurrency :price="(route[1][0] as PriceRange)[1]" :currency="currentRate" />
                 </b>
                 <b v-else>
-                    <PriceWithCurrency :price="route[3] as number" :currency="currentRate" />
+                    <PriceWithCurrency :price="route[1][0] as number" :currency="currentRate" />
                 </b>
             </div>
 
@@ -126,13 +126,13 @@ watch(allRoutesSelectedSignalRef, () => (routeSelected.value = allRoutesSelected
                 Оплата в рублях по курсу ЦБ на дату выставления счёта:
             </div>
             <div class="col-md-5">
-                <b v-if="Number.isNaN(route[4])">
-                    <PriceWithCurrency :price="(route[4] as PriceRange)[0]" :currency="currentRate" />
+                <b v-if="Number.isNaN(route[1][1])">
+                    <PriceWithCurrency :price="(route[1][1] as PriceRange)[0]" :currency="currentRate" />
                     -
-                    <PriceWithCurrency :price="(route[4] as PriceRange)[1]" :currency="currentRate" />
+                    <PriceWithCurrency :price="(route[1][1] as PriceRange)[1]" :currency="currentRate" />
                 </b>
                 <b v-else>
-                    <PriceWithCurrency :price="route[4] as number" :currency="currentRate" />
+                    <PriceWithCurrency :price="route[1][1] as number" :currency="currentRate" />
                 </b>
             </div>
         </div>

@@ -114,7 +114,9 @@ function processRoutes(routes: (RouteDescriptor | RouteExtendedDescriptor)[], so
         let minSumPrice: number = 0, minSumPriceWithConv: number = 0;
         let maxSumPrice: number = 0, maxSumPriceWithConv: number = 0;
 
-        for (const segment of route[0]) {
+        const routeDescriptor = route.length === 2 ? (route as RouteExtendedDescriptor)[0] : (route as RouteDescriptor);
+
+        for (const segment of routeDescriptor[0]) {
             if ((segment as ISinglePriceSegment).price) {
                 const singlePriceSegment = segment as ISinglePriceSegment;
 
@@ -167,7 +169,7 @@ function processRoutes(routes: (RouteDescriptor | RouteExtendedDescriptor)[], so
             }
         }
 
-        const drop = route[1];
+        const drop = routeDescriptor[1];
         if (drop?.price) {
             const [inc, incWithConv] = convertToCurrentRate(drop.price, drop.currency, drop.conversation_percents);
 
@@ -184,23 +186,23 @@ function processRoutes(routes: (RouteDescriptor | RouteExtendedDescriptor)[], so
         maxSumPriceWithConv = roundPrice(maxSumPriceWithConv);
 
         result[key] = [
-            route[0],
-            route[1],
-            route[2],
-            (maxSumPrice - minSumPrice > Number.EPSILON
-                ? [minSumPrice, maxSumPrice]
-                : minSumPrice) as PriceDescriptor,
-            (maxSumPriceWithConv - minSumPriceWithConv > Number.EPSILON
-                ? [minSumPriceWithConv, maxSumPriceWithConv]
-                : minSumPriceWithConv) as PriceDescriptor,
-            route.length >= 5 ? (route as RouteExtendedDescriptor)[5] : false,
+            routeDescriptor,
+            [
+                (maxSumPrice - minSumPrice > Number.EPSILON
+                    ? [minSumPrice, maxSumPrice]
+                    : minSumPrice) as PriceDescriptor,
+                (maxSumPriceWithConv - minSumPriceWithConv > Number.EPSILON
+                    ? [minSumPriceWithConv, maxSumPriceWithConv]
+                    : minSumPriceWithConv) as PriceDescriptor,
+                route.length === 2 ? (route as RouteExtendedDescriptor)[1][2] : false,
+            ],
         ];
     }
 
     if (sort)
         result.sort((a: RouteExtendedDescriptor, b: RouteExtendedDescriptor) =>
-            (Number.isNaN(a[4]) ? (a[4] as PriceRange)[0] : a[4] as number)
-            - (Number.isNaN(b[4]) ? (b[4] as PriceRange)[0] : b[4] as number));
+            (Number.isNaN(a[1][1]) ? (a[1][1] as PriceRange)[0] : a[1][1] as number)
+            - (Number.isNaN(b[1][1]) ? (b[1][1] as PriceRange)[0] : b[1][1] as number));
 
     return result;
 }
