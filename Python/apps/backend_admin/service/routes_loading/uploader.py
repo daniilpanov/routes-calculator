@@ -15,6 +15,7 @@ from module_data_internal.schemas import (
     RouteModel,
     RouteType,
     ServiceModel,
+    ServicePriceModel,
 )
 from pandas import DataFrame
 from sqlalchemy import select
@@ -133,10 +134,38 @@ async def load_containers(db_session, containers: list[ContainerRawType]) -> Con
     return models
 
 
+def create_route_services(
+    route: RouteModel,
+    services: ServicesStore,
+    row,
+    fc: UploaderFieldsConfig,
+):
+    for service_column_name in fc.services:
+        price_column = getattr(fc, service_column_name)
+        currency_column = getattr(fc, f"{service_column_name}_currency")
+
+        service = services.get(price_column)
+        if not service:
+            continue
+
+        currency = row[currency_column]
+        price = nan_to_none_mapper(row[price_column])
+        if not price:
+            continue
+
+        ServicePriceModel(
+            route=route,
+            service=service,
+            currency=nan_to_none_mapper(currency) or "USD",
+            price=float(price),
+        )
+
+
 def create_route(  # noqa: C901
     containers: ContainerStore,
     companies: CompaniesStore,
     points: PointsHashedStore,
+    services: ServicesStore,
     row,
     fc: UploaderFieldsConfig,
     route_type: RouteType,
@@ -242,6 +271,8 @@ def create_route(  # noqa: C901
             value=hc40,
             conversation_percents=conversation,
         )
+
+    create_route_services(route, services, row, fc)
 
     return route
 

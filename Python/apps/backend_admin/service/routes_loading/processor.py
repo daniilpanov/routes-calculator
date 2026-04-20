@@ -110,7 +110,7 @@ def process_conversion_percents(processed_df: DataFrame, fields_config: Uploader
 
 
 def process_dropp_df(processed_dropp_df: DataFrame, warnings, fields_config: UploaderFieldsConfig):
-    processed_dropp_df = select_cols(processed_dropp_df, fields_config.model_dump().values())
+    processed_dropp_df = select_cols(processed_dropp_df, fields_config.model_dump(exclude={"services"}).values())
     processed_dropp_df = process_numeric_and_string_cols(
         processed_dropp_df,
         {
@@ -164,7 +164,7 @@ def process_dropp_df(processed_dropp_df: DataFrame, warnings, fields_config: Upl
 
 
 def process_routes_df(processed_routes_df, route_type: RouteType, warnings, fields_config: UploaderFieldsConfig):
-    processed_routes_df = select_cols(processed_routes_df, fields_config.model_dump().values())
+    processed_routes_df = select_cols(processed_routes_df, fields_config.model_dump(exclude={"services"}).values())
 
     processed_routes_df = process_numeric_and_string_cols(
         processed_routes_df,
@@ -175,6 +175,7 @@ def process_routes_df(processed_routes_df, route_type: RouteType, warnings, fiel
             fields_config.rail_20dc24t,
             fields_config.rail_20dc28t,
             fields_config.conversation_percents,
+            *(getattr(fields_config, service_column) for service_column in fields_config.services),
         },
     )
 
@@ -446,7 +447,7 @@ async def load_data(  # noqa: C901
     ])
 
     # load services
-    await load_services(db_session, services_df, fields_config)
+    services = await load_services(db_session, services_df, fields_config)
     del services_df
 
     # load routes
@@ -455,7 +456,7 @@ async def load_data(  # noqa: C901
     for index, row in routes_df.iterrows():
         route_type, i = index
         try:
-            route = create_route(containers, companies, points, row, fields_config, route_type)
+            route = create_route(containers, companies, points, services, row, fields_config, route_type)
         except (LoadingErrorException, ValueError) as e:
             warnings.append((e, i, route_type))
             continue
