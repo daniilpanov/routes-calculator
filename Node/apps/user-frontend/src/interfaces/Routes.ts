@@ -1,8 +1,13 @@
-// boolean = selected in commercial proposal
-export type RouteExtendedDescriptor = [...RouteDescriptor, PriceDescriptor, PriceDescriptor, boolean];
+import type { IService } from "./Service";
+
+export type RouteExtendedDescriptor = [
+    RouteDescriptor,
+    // boolean = selected in commercial proposal
+    [PriceDescriptor, PriceDescriptor, boolean],
+];
 export type PriceDescriptor = number | PriceRange;
 export type PriceRange = [number, number];
-export type RouteDescriptor = [Route, IDrop, boolean];  // boolean = isEffective
+export type RouteDescriptor = [Route, IDrop, boolean, IService[]];  // boolean = isEffective
 export type Route = (ISinglePriceSegment | IMultiPriceSegment)[];
 
 export enum RouteType {

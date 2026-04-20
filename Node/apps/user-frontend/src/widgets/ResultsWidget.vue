@@ -19,7 +19,7 @@ const props = defineProps<{
 
 const editMode: Ref<boolean> = inject("editable") || ref(false);
 const printMode: Ref<boolean> = inject("printMode") || ref(false);
-const filterSelected = (routes: RouteExtendedDescriptor[]) => routes.filter(r => r[5]);
+const filterSelected = (routes: RouteExtendedDescriptor[]) => routes.filter(r => r[1][2]);
 const filterSelectedIfPrintMode = (routes: RouteExtendedDescriptor[], printMode: boolean) =>
     printMode ? filterSelected(routes) : routes;
 
@@ -41,7 +41,7 @@ const buildErrorMessage = (
 
 const allRoutesSelected = (routes: RouteExtendedDescriptor[]) => {
     for (const route of routes)
-        if (!route[5]) return false;
+        if (!route[1][2]) return false;
 
     return true;
 }
@@ -57,7 +57,7 @@ function updateSinglePrice(
     segmentIndex: number,
     routeIndex: number,
 ) {
-    const route = props.routes[routeIndex]?.[0];
+    const route = props.routes[routeIndex]?.[0][0];
     if (!route)
         throw new Error(buildErrorMessage(val, routeIndex, segmentIndex));
 
@@ -75,7 +75,7 @@ function updateMultiPrice(
     segmentIndex: number,
     routeIndex: number,
 ) {
-    const route = props.routes[routeIndex]?.[0];
+    const route = props.routes[routeIndex]?.[0][0];
     if (!route)
         throw new Error(buildErrorMessage(val, routeIndex, segmentIndex, priceIndex));
 
@@ -95,7 +95,7 @@ function setIsRouteSelected(val: boolean, routeIndex: number) {
     if (!route)
         throw new Error(`Can not ${val ? "" : "un"}select route with index ${routeIndex}: undefined`);
 
-    route[5] = val;
+    route[1][2] = val;
 
     if (!val && areAllRoutesSelected.value) {
         quietAllRoutesSelectedChange = true;
