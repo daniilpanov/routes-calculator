@@ -180,6 +180,17 @@ function processRoutes(routes: (RouteDescriptor | RouteExtendedDescriptor)[], so
             maxSumPriceWithConv += incWithConv;
         }
 
+        const services = routeDescriptor[3];
+        for (const service of services) {
+            const [inc, incWithConv] = convertToCurrentRate(service.price, service.currency);
+
+            minSumPrice += inc;
+            maxSumPrice += inc;
+
+            minSumPriceWithConv += incWithConv;
+            maxSumPriceWithConv += incWithConv;
+        }
+
         minSumPrice = roundPrice(minSumPrice);
         maxSumPrice = roundPrice(maxSumPrice);
         minSumPriceWithConv = roundPrice(minSumPriceWithConv);
