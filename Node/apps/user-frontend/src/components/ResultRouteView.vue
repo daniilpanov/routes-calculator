@@ -13,6 +13,7 @@ import { useRates } from "@/stores/rates";
 import { computed, inject, nextTick, ref, watch } from "vue";
 
 import type { Ref } from "vue";
+import ServicesView from "@/components/ServicesView.vue";
 
 const props = defineProps<{
     route: RouteExtendedDescriptor,
@@ -136,6 +137,8 @@ watch(allRoutesSelectedSignalRef, () => (routeSelected.value = allRoutesSelected
                 </b>
             </div>
         </div>
+
+        <ServicesView v-if="route[0][3]?.length" :services="route[0][3]" />
     </div>
 </template>
 
