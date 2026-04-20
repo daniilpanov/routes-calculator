@@ -2,6 +2,12 @@ from pydantic import BaseModel
 
 
 class UploaderFieldsConfig(BaseModel):
+    # SERVICES
+    column_name: str
+    service_name: str
+    description: str
+
+    # ROUTES
     route_type: str = "_route_type"
 
     start_point: str
@@ -15,7 +21,7 @@ class UploaderFieldsConfig(BaseModel):
     container_shipment_terms: str
     container_condition: str
 
-    service: str
+    company: str
     comment: str
     is_through: str
 
@@ -32,3 +38,32 @@ class UploaderFieldsConfig(BaseModel):
     rail_40hc_currency: str
     drop20: str
     drop40: str
+
+    # SERVICE PRICES
+    # rail
+    exp: str
+    exp_currency: str
+    de_creditation: str
+    de_creditation_currency: str
+    # sea
+    dthc: str
+    dthc_currency: str
+    # all
+    docs: str
+    docs_currency: str
+    release: str
+    release_currency: str
+    tao: str
+    tao_currency: str
+    prr: str
+    prr_currency: str
+
+    services: set[str] = {
+        "exp",
+        "de_creditation",
+        "dthc",
+        "docs",
+        "release",
+        "tao",
+        "prr",
+    }

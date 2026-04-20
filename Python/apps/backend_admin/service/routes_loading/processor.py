@@ -17,6 +17,7 @@ from .helpers import format_date, none_filter, price_filter
 from .uploader import (
     create_dropp,
     create_route,
+    load_companies,
     load_containers,
     load_dropp,
     load_points,
@@ -66,7 +67,7 @@ def process_points_services_effectivity(
     UploaderFieldsConfig,
     ws_name: str,
 ):
-    processed_df[fields_config.service] = processed_df[fields_config.service].apply(none_filter).str.strip()
+    processed_df[fields_config.company] = processed_df[fields_config.company].apply(none_filter).str.strip()
 
     processed_df[fields_config.start_point] = processed_df[fields_config.start_point].apply(none_filter).str.strip()
     processed_df[fields_config.end_point] = processed_df[fields_config.end_point].apply(none_filter).str.strip()
@@ -109,7 +110,7 @@ def process_conversion_percents(processed_df: DataFrame, fields_config: Uploader
 
 
 def process_dropp_df(processed_dropp_df: DataFrame, warnings, fields_config: UploaderFieldsConfig):
-    processed_dropp_df = select_cols(processed_dropp_df, fields_config.model_dump().values())
+    processed_dropp_df = select_cols(processed_dropp_df, fields_config.model_dump(exclude={"services"}).values())
     processed_dropp_df = process_numeric_and_string_cols(
         processed_dropp_df,
         {
@@ -134,7 +135,7 @@ def process_dropp_df(processed_dropp_df: DataFrame, warnings, fields_config: Upl
         fields_config.end_point,
         fields_config.effective_from,
         fields_config.effective_to,
-        fields_config.service,
+        fields_config.company,
     ]
 
     for col in df_dropna_subset:
@@ -163,7 +164,7 @@ def process_dropp_df(processed_dropp_df: DataFrame, warnings, fields_config: Upl
 
 
 def process_routes_df(processed_routes_df, route_type: RouteType, warnings, fields_config: UploaderFieldsConfig):
-    processed_routes_df = select_cols(processed_routes_df, fields_config.model_dump().values())
+    processed_routes_df = select_cols(processed_routes_df, fields_config.model_dump(exclude={"services"}).values())
 
     processed_routes_df = process_numeric_and_string_cols(
         processed_routes_df,
@@ -174,6 +175,7 @@ def process_routes_df(processed_routes_df, route_type: RouteType, warnings, fiel
             fields_config.rail_20dc24t,
             fields_config.rail_20dc28t,
             fields_config.conversation_percents,
+            *(getattr(fields_config, service_column) for service_column in fields_config.services),
         },
     )
 
@@ -200,7 +202,7 @@ def process_routes_df(processed_routes_df, route_type: RouteType, warnings, fiel
         fields_config.end_point,
         fields_config.effective_from,
         fields_config.effective_to,
-        fields_config.service,
+        fields_config.company,
     ]
     missing_info_about_id = defaultdict(list)
 
@@ -222,7 +224,7 @@ def process_routes_df(processed_routes_df, route_type: RouteType, warnings, fiel
     processed_routes_df[fields_config.start_point] = processed_routes_df[fields_config.start_point].str.title()
     processed_routes_df[fields_config.end_point] = processed_routes_df[fields_config.end_point].str.title()
     processed_routes_df[fields_config.terminal] = processed_routes_df[fields_config.terminal].str.upper()
-    processed_routes_df[fields_config.service] = processed_routes_df[fields_config.service].str.upper()
+    processed_routes_df[fields_config.company] = processed_routes_df[fields_config.company].str.upper()
 
     if route_type is RouteType.SEA:
         processed_routes_df[fields_config.sea_20dc] = (
@@ -320,6 +322,7 @@ async def load_data(  # noqa: C901
     sea_routes_df: DataFrame,
     rail_routes_df: DataFrame,
     dropp_df: DataFrame,
+    services_df: DataFrame,
     points_df: DataFrame,
     fields_config: UploaderFieldsConfig,
     load_on_warnings: bool = False,
@@ -332,6 +335,16 @@ async def load_data(  # noqa: C901
     points_rows_with_nan = [i + 2 for i in points_df[points_df.isna().any(axis=1)].index.tolist()]  # noqa: ECE001
     if points_rows_with_nan:
         raise PointsWithNanException(points_rows_with_nan)
+
+    # cleanup DF services
+    services_df = services_df.apply(lambda x: x.str.strip() if x.dtype == "str" else x)
+
+    services_fingerprint = [
+        fields_config.column_name,
+        fields_config.service_name,
+    ]
+    services_df = services_df.dropna(ignore_index=False, subset=services_fingerprint)
+    services_df = services_df.drop_duplicates(subset=services_fingerprint, ignore_index=False)
 
     # process routes and setup new index for correct concatenation
     sea_routes_df = process_routes_df(sea_routes_df, RouteType.SEA, warnings, fields_config)
@@ -420,10 +433,10 @@ async def load_data(  # noqa: C901
         hashed_points[point.city.lower()] = hashed_points[point.RU_city.lower()] = point
     points = hashed_points
 
-    # load services
-    services = await load_services(
+    # load companies
+    companies = await load_companies(
         db_session,
-        set(routes_df[fields_config.service].tolist()) | set(dropp_df[fields_config.service].tolist()),
+        set(routes_df[fields_config.company].tolist()) | set(dropp_df[fields_config.company].tolist()),
     )
 
     # load containers
@@ -433,13 +446,17 @@ async def load_data(  # noqa: C901
         {"size": 40, "weight_from": 0, "weight_to": 28, "type": "HC", "name": "40HC≤28t"},
     ])
 
+    # load services
+    services = await load_services(db_session, services_df, fields_config)
+    del services_df
+
     # load routes
     routes_lst = []
 
     for index, row in routes_df.iterrows():
         route_type, i = index
         try:
-            route = create_route(containers, services, points, row, fields_config, route_type)
+            route = create_route(containers, companies, points, services, row, fields_config, route_type)
         except (LoadingErrorException, ValueError) as e:
             warnings.append((e, i, route_type))
             continue
@@ -454,7 +471,7 @@ async def load_data(  # noqa: C901
 
     for i, row in dropp_df.iterrows():
         try:
-            drop = create_dropp(containers, services, points, row, fields_config)
+            drop = create_dropp(containers, companies, points, row, fields_config)
         except (LoadingErrorException, ValueError) as e:
             warnings.append((e, i, None))
             continue

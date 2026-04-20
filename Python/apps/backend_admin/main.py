@@ -24,18 +24,17 @@ openapi_url = "/openapi.json" if settings.ENVIRONMENT != "prod" else None
 
 app = FastAPI(docs_url=docs_url, redoc_url=redoc_url, openapi_url=openapi_url)
 
-# Configure AuthJWT with settings
-AuthJWT.load_config(get_settings)
+if not get_settings().DISABLE_ADMIN_AUTH_CHECK:
+    # Configure AuthJWT with settings
+    AuthJWT.load_config(get_settings)
 
+    # Exception handler for JWT errors
+    @app.exception_handler(AuthJWTException)
+    def authjwt_exception_handler(request: Request, exc: AuthJWTException):
+        return JSONResponse(status_code=exc.status_code, content={"detail": exc.message})
 
-# Exception handler for JWT errors
-@app.exception_handler(AuthJWTException)
-def authjwt_exception_handler(request: Request, exc: AuthJWTException):
-    return JSONResponse(status_code=exc.status_code, content={"detail": exc.message})
-
-
-# Add JWT middleware to all routes
-app.add_middleware(JWTAuthMiddleware)
+    # Add JWT middleware to all routes
+    app.add_middleware(JWTAuthMiddleware)
 
 routers = api_discover()
 for router in routers:

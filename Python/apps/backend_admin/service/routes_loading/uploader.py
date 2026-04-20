@@ -14,7 +14,10 @@ from module_data_internal.schemas import (
     PriceModel,
     RouteModel,
     RouteType,
+    ServiceModel,
+    ServicePriceModel,
 )
+from pandas import DataFrame
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
@@ -30,23 +33,25 @@ ContainerRawType = dict[str, str | int | ContainerType]
 ContainerUid = tuple[int, int, int]
 ContainerStore = dict[ContainerUid, ContainerModel]
 
-ServicesStore = dict[str, CompanyModel]
+CompaniesStore = dict[str, CompanyModel]
+
+ServicesStore = dict[str, ServiceModel]
 
 PointsStore = list[PointModel]
 PointsHashedStore = dict[str, PointModel]
 
 
-async def load_services(db_session, services) -> ServicesStore:
+async def load_companies(db_session, companies) -> CompaniesStore:
     models = {}
     existing_models = (await db_session.execute(select(CompanyModel))).scalars().all()
 
-    for service in existing_models:
-        models[service.name] = service
+    for company in existing_models:
+        models[company.name] = company
 
-    for service in services:
-        if not models.get(service):
-            models[service] = await db_session.merge(
-                CompanyModel(name=service),
+    for company in companies:
+        if not models.get(company):
+            models[company] = await db_session.merge(
+                CompanyModel(name=company),
                 load=True,
             )
 
@@ -77,6 +82,30 @@ async def load_points(db_session, df) -> PointsStore:
     return models  # type: ignore[return-value]
 
 
+async def load_services(db_session, df: DataFrame, fc: UploaderFieldsConfig) -> ServicesStore:
+    models = {}
+    existing_models = (await db_session.execute(select(ServiceModel))).scalars().all()
+
+    for service in existing_models:
+        models[service.internal_name] = service
+
+    for _, row in df.iterrows():
+        internal_name = row[fc.column_name]
+
+        if not models.get(internal_name):
+            models[internal_name] = await db_session.merge(
+                ServiceModel(
+                    name=row[fc.service_name],
+                    internal_name=internal_name,
+                    description=nan_to_none_mapper(row[fc.description]) or "",
+                ),
+                load=True,
+            )
+
+    await db_session.commit()
+    return models
+
+
 async def load_containers(db_session, containers: list[ContainerRawType]) -> ContainerStore:
     models = {}
     existing_models = (await db_session.execute(select(ContainerModel))).scalars().all()
@@ -105,10 +134,38 @@ async def load_containers(db_session, containers: list[ContainerRawType]) -> Con
     return models
 
 
+def create_route_services(
+    route: RouteModel,
+    services: ServicesStore,
+    row,
+    fc: UploaderFieldsConfig,
+):
+    for service_column_name in fc.services:
+        price_column = getattr(fc, service_column_name)
+        currency_column = getattr(fc, f"{service_column_name}_currency")
+
+        service = services.get(price_column)
+        if not service:
+            continue
+
+        currency = row[currency_column]
+        price = nan_to_none_mapper(row[price_column])
+        if not price:
+            continue
+
+        ServicePriceModel(
+            route=route,
+            service=service,
+            currency=nan_to_none_mapper(currency) or "USD",
+            price=float(price),
+        )
+
+
 def create_route(  # noqa: C901
     containers: ContainerStore,
-    services: ServicesStore,
+    companies: CompaniesStore,
     points: PointsHashedStore,
+    services: ServicesStore,
     row,
     fc: UploaderFieldsConfig,
     route_type: RouteType,
@@ -143,7 +200,7 @@ def create_route(  # noqa: C901
     else:
         raise InvalidRouteTypeException(route_type)
 
-    service = services[row[fc.service].upper()]
+    company = companies[row[fc.company].upper()]
 
     try:
         start_point = points[row[fc.start_point].lower()]
@@ -156,7 +213,7 @@ def create_route(  # noqa: C901
 
     route = RouteModel(
         type=RouteType(route_type),
-        company=service,
+        company=company,
         start_point=start_point,
         end_point=end_point,
         effective_from=effective_from,
@@ -215,17 +272,19 @@ def create_route(  # noqa: C901
             conversation_percents=conversation,
         )
 
+    create_route_services(route, services, row, fc)
+
     return route
 
 
 def create_dropp(
     containers: ContainerStore,
-    services: ServicesStore,
+    companies: CompaniesStore,
     points: PointsHashedStore,
     row,
     fc: UploaderFieldsConfig,
 ):
-    service = services.get(row[fc.service].upper())
+    company = companies.get(row[fc.company].upper())
     start_point = points.get(row[fc.start_point].lower())
     end_point = points.get(row[fc.end_point].lower())
     effective_from = row[fc.effective_from]
@@ -236,13 +295,13 @@ def create_dropp(
     price_40hc = row[fc.drop40]
     conversation_percents = row[fc.conversation_percents]
 
-    if not all((service, start_point, end_point, effective_from, effective_to)):
+    if not all((company, start_point, end_point, effective_from, effective_to)):
         raise InvalidDroppRow
 
     base_config = {
         "start_point": start_point,
         "end_point": end_point,
-        "company": service,
+        "company": company,
         "effective_from": effective_from,
         "effective_to": effective_to,
         "conversation_percents": conversation_percents,

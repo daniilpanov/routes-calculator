@@ -10,5 +10,6 @@ class ServiceModel(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
     name: Mapped[str] = mapped_column(String(150), unique=True, nullable=False)
+    internal_name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
     description: Mapped[str] = mapped_column(String(255), nullable=False)
     hint: Mapped[str | None] = mapped_column(String(255), nullable=True)
