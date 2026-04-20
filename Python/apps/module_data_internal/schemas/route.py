@@ -137,5 +137,5 @@ class ServicePriceModel(Base):
     currency: Mapped[str] = mapped_column(String(10), nullable=False)
     price: Mapped[float] = mapped_column(nullable=False)
 
-    route: Mapped[RouteModel] = relationship()
+    route: Mapped[RouteModel] = relationship(back_populates="services")
     service: Mapped[ServiceModel] = relationship()
