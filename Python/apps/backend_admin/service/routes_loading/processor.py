@@ -52,7 +52,7 @@ def process_numeric_and_string_cols(processed_df: DataFrame, numeric_cols: set[s
         numeric_cols_list = list(numeric_cols)
         processed_df[numeric_cols_list] = processed_df[numeric_cols_list].map(  # noqa: ECE001
             lambda x: (
-                remove_extra_spaces(x.replace("%", "").replace("$", "")).strip()
+                x.replace("%", "").replace("$", "").replace(" ", "")
                 if isinstance(x, str) else x
             )
         )
