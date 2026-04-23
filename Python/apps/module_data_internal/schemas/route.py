@@ -57,6 +57,7 @@ class RouteModel(Base):
         "company_id",
         "start_point_id",
         "end_point_id",
+        "dropp_off_point_id",
         "effective_from",
         "effective_to",
         "container_shipment_terms",
@@ -73,6 +74,11 @@ class RouteModel(Base):
     company_id: Mapped[int] = mapped_column(ForeignKey("companies.id", name="fk__route_company"))
     start_point_id: Mapped[int] = mapped_column(ForeignKey("points.id", name="fk__route_point__start"))
     end_point_id: Mapped[int] = mapped_column(ForeignKey("points.id", name="fk__route_point__end"))
+
+    dropp_off_point_id: Mapped[int | None] = mapped_column(
+        ForeignKey("points.id", name="fk__route_point__dropp_off"),
+        nullable=True,
+    )
 
     effective_from: Mapped[datetime.date] = mapped_column(DateTime(timezone=False))
     effective_to: Mapped[datetime.date] = mapped_column(DateTime(timezone=False))
@@ -115,6 +121,7 @@ class RouteModel(Base):
 
     start_point: Mapped[PointModel] = relationship(PointModel, foreign_keys=[start_point_id])
     end_point: Mapped[PointModel] = relationship(PointModel, foreign_keys=[end_point_id])
+    dropp_off_point: Mapped[PointModel] = relationship(PointModel, foreign_keys=[dropp_off_point_id])
     company: Mapped[CompanyModel] = relationship()
     prices: Mapped[list[PriceModel]] = relationship("PriceModel", back_populates="route")
     services: Mapped[list['ServicePriceModel']] = relationship("ServicePriceModel", back_populates="route")
