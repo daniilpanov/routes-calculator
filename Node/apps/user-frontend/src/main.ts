@@ -1,4 +1,5 @@
 import "@/styles/bootstrap-imports.scss";
+import "@/styles/print.scss";
 import * as bootstrap from "bootstrap";
 
 import { createApp } from "vue";

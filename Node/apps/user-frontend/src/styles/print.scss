@@ -1,0 +1,4 @@
+@media print {
+    a[href]:after { content: none; }
+    @page { margin: 0; }
+}
