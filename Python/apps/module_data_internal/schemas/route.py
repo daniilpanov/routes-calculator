@@ -21,6 +21,8 @@ class ContainerTransferTerms(enum.Enum):
 
 class ContainerShipmentTerms(enum.Enum):
     FOR = "FOR"
+    FOB = "FOB"
+    FCA = "FCA"
 
 
 class ContainerOwner(enum.Enum):
