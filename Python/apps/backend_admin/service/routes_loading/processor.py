@@ -75,6 +75,11 @@ def process_points_services_effectivity(
     processed_df[fields_config.end_point] = processed_df[fields_config.end_point].apply(none_filter).str.strip()
     processed_df[fields_config.terminal] = processed_df[fields_config.terminal].str.strip().str.upper()  # noqa: ECE001
 
+    if fields_config.dropp_off_point in processed_df.columns:
+        processed_df[fields_config.dropp_off_point] = (
+            processed_df[fields_config.dropp_off_point].apply(none_filter).str.strip()
+        )
+
     processed_df[fields_config.effective_from] = (
         processed_df[fields_config.effective_from].apply(none_filter).apply(format_date)
     )
