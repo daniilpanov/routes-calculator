@@ -117,7 +117,10 @@ def process_conversion_percents(processed_df: DataFrame, fields_config: Uploader
 
 
 def process_dropp_df(processed_dropp_df: DataFrame, warnings, fields_config: UploaderFieldsConfig):
-    processed_dropp_df = select_cols(processed_dropp_df, fields_config.model_dump(exclude={"services"}).values())
+    processed_dropp_df = select_cols(
+        processed_dropp_df,
+        fields_config.model_dump(exclude={"services", "services_with_container"}).values(),
+    )
     processed_dropp_df = process_numeric_and_string_cols(
         processed_dropp_df,
         {
@@ -171,7 +174,10 @@ def process_dropp_df(processed_dropp_df: DataFrame, warnings, fields_config: Upl
 
 
 def process_routes_df(processed_routes_df, route_type: RouteType, warnings, fields_config: UploaderFieldsConfig):
-    processed_routes_df = select_cols(processed_routes_df, fields_config.model_dump(exclude={"services"}).values())
+    processed_routes_df = select_cols(
+        processed_routes_df,
+        fields_config.model_dump(exclude={"services", "services_with_container"}).values(),
+    )
 
     processed_routes_df = process_numeric_and_string_cols(
         processed_routes_df,
@@ -183,6 +189,7 @@ def process_routes_df(processed_routes_df, route_type: RouteType, warnings, fiel
             fields_config.rail_20dc28t,
             fields_config.conversation_percents,
             *(getattr(fields_config, service_column) for service_column in fields_config.services),
+            *(getattr(fields_config, service_column) for service_column in fields_config.services_with_container),
         },
     )
 
