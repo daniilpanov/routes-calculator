@@ -205,6 +205,10 @@ def create_route(  # noqa: C901
     try:
         start_point = points[row[fc.start_point].lower()]
         end_point = points[row[fc.end_point].lower()]
+        dropp_off_point = (
+            None if fc.dropp_off_point not in set(row.index.tolist()) or pd.isna(row[fc.dropp_off_point])
+            else points[row[fc.dropp_off_point].lower()]
+        )
     except KeyError as e:
         raise PointNotFoundException(e.args[0]) from e
 
@@ -216,6 +220,7 @@ def create_route(  # noqa: C901
         company=company,
         start_point=start_point,
         end_point=end_point,
+        dropp_off_point=dropp_off_point,
         effective_from=effective_from,
         effective_to=effective_to,
         comment=nan_to_none_mapper(row[fc.comment]),

@@ -12,6 +12,7 @@ class UploaderFieldsConfig(BaseModel):
 
     start_point: str
     end_point: str
+    dropp_off_point: str
     terminal: str
 
     effective_from: str

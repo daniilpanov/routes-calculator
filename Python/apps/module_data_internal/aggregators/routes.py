@@ -37,6 +37,7 @@ def build_usual_query(
         RouteModel.start_point_id == start_point_id,
         RouteModel.end_point_id == end_point_id,
         RouteModel.type == route_type,
+        RouteModel.dropp_off_point_id.is_(None),
     )
 
     return (
@@ -111,6 +112,7 @@ def build_base_sea_rail_query(
     )
 
     drop_join_clause = and_(
+        SeaRoute.dropp_off_point_id.is_(None),  # if not, drop is already included!
         # Points
         RailRoute.start_point_id == DropModel.start_point_id,
         RailRoute.end_point_id == DropModel.end_point_id,
@@ -129,7 +131,13 @@ def build_base_sea_rail_query(
         select(SeaRoute, RailRoute, DropModel)
         .where(where_clause)
         .join(SeaPrice, SeaRoute.id == SeaPrice.route_id)
-        .join(RailRoute, SeaRoute.end_point_id == RailRoute.start_point_id)
+        .join(RailRoute, and_(
+            SeaRoute.end_point_id == RailRoute.start_point_id,
+            or_(
+                SeaRoute.dropp_off_point_id.is_(None),
+                SeaRoute.dropp_off_point_id == RailRoute.end_point_id,
+            ),
+        ))
         .join(RailPrice, RailRoute.id == RailPrice.route_id)
         .outerjoin(DropModel, drop_join_clause)
         .order_by(desc(SeaRoute.effective_to), desc(RailRoute.effective_to))
