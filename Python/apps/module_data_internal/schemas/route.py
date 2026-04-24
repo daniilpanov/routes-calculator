@@ -128,7 +128,7 @@ class RouteModel(Base):
 
 
 class ServicePriceModel(Base):
-    uid = ("route_id", "service_id")
+    uid = ("route_id", "service_id", "container_id")
 
     __tablename__ = "service_prices"
 
@@ -142,9 +142,15 @@ class ServicePriceModel(Base):
         ForeignKey(f"{ServiceModel.__tablename__}.id", name="fk__service_prices_service"),
         nullable=False,
     )
+    container_id: Mapped[int | None] = mapped_column(
+        ForeignKey(f"{ContainerModel.__tablename__}.id", name="fk__service_prices_container"),
+        nullable=True,
+        default=None,
+    )
 
     currency: Mapped[str] = mapped_column(String(10), nullable=False)
     price: Mapped[float] = mapped_column(nullable=False)
 
     route: Mapped[RouteModel] = relationship(back_populates="services")
     service: Mapped[ServiceModel] = relationship()
+    container: Mapped[ContainerModel | None] = relationship()
