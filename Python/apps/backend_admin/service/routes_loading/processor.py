@@ -67,7 +67,9 @@ def process_points_services_effectivity(
     UploaderFieldsConfig,
     ws_name: str,
 ):
-    processed_df[fields_config.company] = processed_df[fields_config.company].apply(none_filter).str.strip()
+    processed_df[fields_config.company] = (  # noqa: ECE001
+        processed_df[fields_config.company].apply(none_filter).str.strip().str.upper()
+    )
 
     processed_df[fields_config.start_point] = processed_df[fields_config.start_point].apply(none_filter).str.strip()
     processed_df[fields_config.end_point] = processed_df[fields_config.end_point].apply(none_filter).str.strip()
@@ -220,11 +222,6 @@ def process_routes_df(processed_routes_df, route_type: RouteType, warnings, fiel
         warnings.append(("MissingRoutesDataException", missing_info, route_type.value))
 
     processed_routes_df = processed_routes_df.dropna(subset=routes_df_dropna_subset)
-
-    processed_routes_df[fields_config.start_point] = processed_routes_df[fields_config.start_point].str.title()
-    processed_routes_df[fields_config.end_point] = processed_routes_df[fields_config.end_point].str.title()
-    processed_routes_df[fields_config.terminal] = processed_routes_df[fields_config.terminal].str.upper()
-    processed_routes_df[fields_config.company] = processed_routes_df[fields_config.company].str.upper()
 
     if route_type is RouteType.SEA:
         processed_routes_df[fields_config.sea_20dc] = (
