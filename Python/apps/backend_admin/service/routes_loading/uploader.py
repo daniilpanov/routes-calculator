@@ -134,31 +134,50 @@ async def load_containers(db_session, containers: list[ContainerRawType]) -> Con
     return models
 
 
+def create_route_service(
+    route: RouteModel,
+    services: ServicesStore,
+    container: ContainerModel | None,
+    service_column_name: str,
+    row,
+    fc: UploaderFieldsConfig,
+):
+    price_column = getattr(fc, service_column_name)
+    currency_column = getattr(fc, f"{service_column_name}_currency")
+
+    internal_service_name = price_column.split("#")[0].strip()
+    service = services.get(internal_service_name)
+    if not service:
+        return
+
+    currency = row[currency_column]
+    price = nan_to_none_mapper(row[price_column])
+    if not price:
+        return
+
+    return ServicePriceModel(
+        route=route,
+        service=service,
+        container=container,
+        currency=nan_to_none_mapper(currency) or "USD",
+        price=float(price),
+    )
+
+
 def create_route_services(
     route: RouteModel,
     services: ServicesStore,
+    containers: ContainerStore,
     row,
     fc: UploaderFieldsConfig,
 ):
     for service_column_name in fc.services:
-        price_column = getattr(fc, service_column_name)
-        currency_column = getattr(fc, f"{service_column_name}_currency")
+        create_route_service(route, services, None, service_column_name, row, fc)
 
-        service = services.get(price_column)
-        if not service:
-            continue
-
-        currency = row[currency_column]
-        price = nan_to_none_mapper(row[price_column])
-        if not price:
-            continue
-
-        ServicePriceModel(
-            route=route,
-            service=service,
-            currency=nan_to_none_mapper(currency) or "USD",
-            price=float(price),
-        )
+    for service_column_name, container_descriptor in fc.services_with_container.items():
+        container = containers.get(container_descriptor)
+        if container:
+            create_route_service(route, services, container, service_column_name, row, fc)
 
 
 def create_route(  # noqa: C901
@@ -277,7 +296,7 @@ def create_route(  # noqa: C901
             conversation_percents=conversation,
         )
 
-    create_route_services(route, services, row, fc)
+    create_route_services(route, services, containers, row, fc)
 
     return route
 

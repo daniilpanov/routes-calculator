@@ -12,7 +12,7 @@ from module_data_internal.schemas import (
 )
 from module_shared.database import Base, get_database
 from sqlalchemy import and_, desc, or_, select
-from sqlalchemy.orm import aliased, contains_eager, joinedload
+from sqlalchemy.orm import aliased, contains_eager, joinedload, selectinload
 
 from .mappers.routes import map_routes
 
@@ -40,7 +40,7 @@ def build_usual_query(
         RouteModel.dropp_off_point_id.is_(None),
     )
 
-    return (
+    return (  # noqa: ECE001
         select(RouteModel)
         .where(where_clause)
         .join(
@@ -51,13 +51,23 @@ def build_usual_query(
                 RouteModel.container_owner == container_ownership,
             ),
         )
+        .outerjoin(
+            ServicePriceModel,
+            and_(
+                RouteModel.id == ServicePriceModel.route_id,
+                or_(
+                    ServicePriceModel.container_id.is_(None),
+                    ServicePriceModel.container_id.in_(container_ids),
+                ),
+            ),
+        )
         .order_by(desc(RouteModel.effective_to))
         # note: I tried using 'group by' statement, but it cuts off prices
         .options(
             joinedload(RouteModel.start_point),
             joinedload(RouteModel.end_point),
             joinedload(RouteModel.company),
-            joinedload(RouteModel.services).joinedload(ServicePriceModel.service),
+            contains_eager(RouteModel.services).joinedload(ServicePriceModel.service),
             contains_eager(RouteModel.prices).joinedload(PriceModel.container),
         )
     )
@@ -68,7 +78,9 @@ def _create_aliases():
     RailRoute = aliased(RouteModel, name="rail_route")
     SeaPrice = aliased(PriceModel, name="sea_price")
     RailPrice = aliased(PriceModel, name="rail_price")
-    return SeaRoute, RailRoute, SeaPrice, RailPrice
+    SeaServicePrice = aliased(ServicePriceModel, name="sea_service_price")
+    RailServicePrice = aliased(ServicePriceModel, name="rail_service_price")
+    return SeaRoute, RailRoute, SeaPrice, RailPrice, SeaServicePrice, RailServicePrice
 
 
 def build_base_sea_rail_query(
@@ -77,7 +89,7 @@ def build_base_sea_rail_query(
     end_point_id: int,
     container_ids: list[int],
 ) -> tuple:
-    SeaRoute, RailRoute, SeaPrice, RailPrice = _create_aliases()
+    SeaRoute, RailRoute, SeaPrice, RailPrice, SeaServicePrice, RailServicePrice = _create_aliases()
     where_clause = and_(
         # Types
         SeaRoute.type == RouteType.SEA,
@@ -148,13 +160,27 @@ def build_base_sea_rail_query(
             joinedload(SeaRoute.start_point),
             joinedload(SeaRoute.end_point),
             joinedload(SeaRoute.company),
-            joinedload(SeaRoute.services).joinedload(ServicePriceModel.service),
             contains_eager(SeaRoute.prices, alias=SeaPrice).joinedload(PriceModel.container),
+            selectinload(SeaRoute.services.of_type(SeaServicePrice)).joinedload(SeaServicePrice.service),
+            # note: with_loader_criteria does not work properly with cache (first start - ok, next - ignored)
+            # so we need filter it after we've got a response
+            # the code:
+            # `with_loader_criteria(SeaServicePrice, or_(`
+            #     `SeaServicePrice.container_id.is_(None),`
+            #     `SeaServicePrice.container_id.in_(container_ids),`
+            # `)),`
             joinedload(RailRoute.start_point),
             joinedload(RailRoute.end_point),
             joinedload(RailRoute.company),
-            joinedload(RailRoute.services).joinedload(ServicePriceModel.service),
             contains_eager(RailRoute.prices, alias=RailPrice).joinedload(PriceModel.container),
+            selectinload(RailRoute.services.of_type(RailServicePrice)).joinedload(RailServicePrice.service),
+            # note: with_loader_criteria does not work properly with cache (first start - ok, next - ignored)
+            # so we need filter it after we've got a response
+            # the code:
+            # `with_loader_criteria(RailServicePrice, or_(`
+            #     `RailServicePrice.container_id.is_(None),`
+            #     `RailServicePrice.container_id.in_(container_ids),`
+            # `)),`
         )
     )
 
@@ -162,6 +188,7 @@ def build_base_sea_rail_query(
 def process_results(
     results: list[list[list[Base]] | BaseException],
     date: datetime.date,
+    container_ids: list[int],
 ) -> list[tuple[list[Base], bool]]:
     flat_result: list = []
     seen_ids: set[tuple[tuple[int, int, int], ...]] = set()
@@ -189,6 +216,12 @@ def process_results(
 
             may_route_be_invalid = False
             for segment in routes:
+                # TODO: find another way...
+                segment.services = [
+                    service for service in segment.services
+                    if service.container_id is None or service.container_id in container_ids
+                ]
+
                 if segment.effective_to.date() < date:
                     may_route_be_invalid = True
                     break
@@ -239,4 +272,4 @@ async def find_all_paths(
     coroutines = [_execute_query(query) for query in all_queries]
     results = await asyncio.gather(*coroutines, return_exceptions=True)
 
-    return process_results(results, date)
+    return process_results(results, date, container_ids)

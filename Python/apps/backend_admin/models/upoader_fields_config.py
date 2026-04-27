@@ -42,6 +42,12 @@ class UploaderFieldsConfig(BaseModel):
 
     # SERVICE PRICES
     # rail
+    guard20_24: str
+    guard20_24_currency: str
+    guard20_28: str
+    guard20_28_currency: str
+    guard40: str
+    guard40_currency: str
     exp: str
     exp_currency: str
     de_creditation: str
@@ -67,4 +73,9 @@ class UploaderFieldsConfig(BaseModel):
         "release",
         "tao",
         "prr",
+    }
+    services_with_container: dict[str, tuple[int, int, int]] = {
+        "guard20_24": (20, 0, 24),
+        "guard20_28": (20, 24, 28),
+        "guard40": (40, 0, 28),
     }

@@ -41,10 +41,8 @@ class JWTAuthMiddleware(BaseHTTPMiddleware):
             jwt.decode(
                 access_token,
                 settings.authjwt_secret_key,
-                algorithms=[settings.jwt_algorithm]
+                algorithms=[settings.jwt_algorithm],
             )
-            # Token is valid, continue with request
-            return await call_next(request)
         except jwt.ExpiredSignatureError:
             return JSONResponse(
                 status_code=401,
@@ -65,3 +63,6 @@ class JWTAuthMiddleware(BaseHTTPMiddleware):
                 status_code=500,
                 content={"detail": "Unknown error"}
             )
+
+        # Token is valid, continue with request
+        return await call_next(request)

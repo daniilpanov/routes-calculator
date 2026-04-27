@@ -10,6 +10,8 @@ _last_update = None
 def get_rates(dt_now: datetime.datetime | None = None):
     global _rates, _last_update
 
+    # FOR DEBUG: return {"RUB": 1, "RUR": 1, "РУБ": 1, "USD": 75}
+
     if dt_now is None:
         dt_now = datetime.datetime.now()
 
