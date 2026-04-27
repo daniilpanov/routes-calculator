@@ -38,7 +38,7 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(['route_id'], ['routes.id'], name='fk__service_prices_route'),
         sa.ForeignKeyConstraint(['service_id'], ['services.id'], name='fk__service_prices_service'),
         sa.PrimaryKeyConstraint('id'),
-        sa.UniqueConstraint('route_id', 'service_id')
+        sa.UniqueConstraint('route_id', 'service_id', name='uk__fingerprint')
     )
 
 
