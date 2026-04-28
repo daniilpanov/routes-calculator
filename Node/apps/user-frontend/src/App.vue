@@ -49,25 +49,6 @@ watch(printMode, (val: boolean) => {
     <ThemeSwitcher v-show="!printMode" v-model="theme" />
 
     <main class="container">
-        <div v-show="!printMode" class="alert alert-warning align-items-center" role="alert">
-            <div>
-                <p>
-                    <svg
-                        class="bi flex-shrink-0 me-2"
-                        width="24"
-                        height="24"
-                        role="img"
-                        aria-label="Warning:"
-                    >
-                        <use xlink:href="#exclamation-triangle-fill"></use>
-                    </svg>
-                    Сервис находится на стадии бета-тестирования. Некоторые функции могут работать
-                    нестабильно. Пожалуйста, сообщите нам, если заметите ошибку.
-                </p>
-                <p><a href="/old">Вернуться на старую версию сайта</a></p>
-            </div>
-        </div>
-
         <router-view />
     </main>
 </template>
