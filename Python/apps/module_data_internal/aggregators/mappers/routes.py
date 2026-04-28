@@ -36,6 +36,8 @@ def _map_segment(route: RouteModel):
             "hint": service.service.hint,
             "currency": service.currency,
             "price": service.price,
+            "checked": service.service.default,
+            "mandatory": service.service.mandatory,
         } for service in route.services],
     }
 

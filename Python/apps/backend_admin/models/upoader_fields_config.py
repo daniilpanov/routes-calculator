@@ -6,6 +6,7 @@ class UploaderFieldsConfig(BaseModel):
     column_name: str
     service_name: str
     description: str
+    including: str
 
     # ROUTES
     route_type: str = "_route_type"

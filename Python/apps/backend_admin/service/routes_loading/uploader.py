@@ -93,11 +93,22 @@ async def load_services(db_session, df: DataFrame, fc: UploaderFieldsConfig) -> 
         internal_name = row[fc.column_name]
 
         if not models.get(internal_name):
+            including = row[fc.including]
+            if not including or pd.isna(including):
+                mandatory = default = False
+            elif including == 1:
+                default = True
+                mandatory = False
+            else:
+                mandatory = default = True
+
             models[internal_name] = await db_session.merge(
                 ServiceModel(
                     name=row[fc.service_name],
                     internal_name=internal_name,
                     description=nan_to_none_mapper(row[fc.description]) or "",
+                    mandatory=mandatory,
+                    default=default,
                 ),
                 load=True,
             )
