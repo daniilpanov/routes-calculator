@@ -19,7 +19,7 @@ const props = defineProps<{
     route: RouteExtendedDescriptor,
 }>();
 
-const emit = defineEmits(["update:singlePrice", "update:multiPrice", "setSelected"]);
+const emit = defineEmits(["update:singlePrice", "update:multiPrice", "update:serviceChecked", "setSelected"]);
 
 const ratesStore = useRates();
 const currentRate = computed((): string => ratesStore.currentRate);
@@ -138,7 +138,11 @@ watch(allRoutesSelectedSignalRef, () => (routeSelected.value = allRoutesSelected
             </div>
         </div>
 
-        <ServicesView v-if="route[0][3]?.length" :services="route[0][3]" />
+        <ServicesView
+            v-if="route[0][3]?.length"
+            :services="route[0][3]"
+            @update:checked="(val: boolean, serviceIndex: number) => $emit('update:serviceChecked', val, serviceIndex)"
+        />
     </div>
 </template>
 

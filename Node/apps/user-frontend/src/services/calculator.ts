@@ -182,6 +182,9 @@ function processRoutes(routes: (RouteDescriptor | RouteExtendedDescriptor)[], so
 
         const services = routeDescriptor[3];
         for (const service of services) {
+            if (!service.checked)
+                continue;
+
             const [inc, incWithConv] = convertToCurrentRate(service.price, service.currency);
 
             minSumPrice += inc;

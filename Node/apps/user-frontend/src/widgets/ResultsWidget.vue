@@ -109,6 +109,15 @@ function setIsRouteSelected(val: boolean, routeIndex: number) {
     }
 }
 
+function updateServiceChecked(val: boolean, serviceIndex: number, routeIndex: number) {
+    const service = props.routes[routeIndex]?.[0][3][serviceIndex];
+    if (!service)
+        throw new Error(`Service [${serviceIndex}] not found in route [${routeIndex}]`);
+
+    service.checked = val;
+    revalidateRoutes(false);
+}
+
 watch(areAllRoutesSelected, () => {
     if (quietAllRoutesSelectedChange) quietAllRoutesSelectedChange = false;
     else areAllRoutesSelectedSignalRef.value = !areAllRoutesSelectedSignalRef.value;
@@ -133,6 +142,7 @@ watch(areAllRoutesSelected, () => {
             @update:single-price="(val: number, segId: number) => updateSinglePrice(val, segId, index)"
             @update:multi-price="(val: number, segId: number, routeId: number) => updateMultiPrice(val, segId, routeId, index)"
             @set-selected="(val: boolean) => setIsRouteSelected(val, index)"
+            @update:serviceChecked="(val: boolean, serviceIndex: number) => updateServiceChecked(val, serviceIndex, index)"
         />
     </div>
     <div v-else>

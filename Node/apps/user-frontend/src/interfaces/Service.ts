@@ -4,4 +4,6 @@ export interface IService {
     description: string;
     currency: string;
     price: number;
+    checked: boolean;
+    mandatory: boolean;
 }
