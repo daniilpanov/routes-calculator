@@ -5,6 +5,10 @@ export interface ICalculatorResult {
     routes: RouteDescriptor[];
 }
 
+export interface ILoginResponse {
+    status: string;
+}
+
 export interface IError {
     source?: string;
     error_text: string;
