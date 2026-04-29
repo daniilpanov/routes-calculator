@@ -6,6 +6,7 @@ import { lockRates, updateRates } from "@/services/rates";
 import { useRates } from "@/stores/rates";
 import { useRouter } from "@/stores/router";
 import { getCurrentTheme, setCurrentTheme, Theme } from "@/services/theme";
+import { mountAuthProvider } from "@/providers/auth";
 
 import { computed, onMounted, provide, ref, watch } from "vue";
 import { useRouter as useVueRouter } from "vue-router";
@@ -21,6 +22,7 @@ provide("printMode", printMode);
 
 onMounted(() => {
     useRouter().setRouter(useVueRouter());
+    mountAuthProvider();
 });
 
 watch(theme, (newTheme: Theme) => {
