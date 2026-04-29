@@ -4,8 +4,11 @@ import ThemeSwitcher from "@/widgets/ThemeSwitcher.vue";
 
 import { lockRates, updateRates } from "@/services/rates";
 import { useRates } from "@/stores/rates";
+import { useRouter } from "@/stores/router";
 import { getCurrentTheme, setCurrentTheme, Theme } from "@/services/theme";
-import { computed, provide, ref, watch } from "vue";
+
+import { computed, onMounted, provide, ref, watch } from "vue";
+import { useRouter as useVueRouter } from "vue-router";
 
 lockRates(updateRates());
 
@@ -15,6 +18,10 @@ const theme = ref<Theme>(getCurrentTheme());
 let oldTheme: Theme = theme.value;
 
 provide("printMode", printMode);
+
+onMounted(() => {
+    useRouter().setRouter(useVueRouter());
+});
 
 watch(theme, (newTheme: Theme) => {
     document.documentElement.setAttribute("data-bs-theme", newTheme);
