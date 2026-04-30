@@ -25,13 +25,26 @@ def _map_segment(segment):
 
 
 def _map_service(service):
+    if service.get("group"):
+        if not service.get("items") or not len(service["items"]):
+            print(f"WARNING\tError in parsing FESCO service group: {service}")
+            return None
+
+        service = service["items"][0]
+
+    mandatory_keys = {"SegmentUID", "ServiceName", }
+    for key in mandatory_keys:
+        if key not in service:
+            print(f"WARNING\tError in parsing FESCO service: {service}")
+            return None
+
     return {
         "segment_id": service["SegmentUID"],
         "name": service["ServiceType"][0]["ServiceTypeName"] if service["ServiceType"] else service["ServiceName"],
         "description": service["ServiceName"],
-        "hint": service["ServiceComment"] or None,
-        "checked": service["checked"],
-        "mandatory": service["Default"] and service["InclMainServicePrice"],
+        "hint": service.get("ServiceComment") or None,
+        "checked": service.get("checked", False),
+        "mandatory": service.get("Default", False) and service.get("InclMainServicePrice", False),
         "currency": service["ContPrice"][0]["Currency"] if service["ContPrice"] else None,
         "price": (
             service["ContPrice"][0]["Price"] * service["ContPrice"][0]["Quantity"] if service["ContPrice"] else None
@@ -40,7 +53,7 @@ def _map_service(service):
 
 
 def _map_route(route):
-    services = list(map(_map_service, route.get("Services", [])))
+    services = [item for item in map(_map_service, route.get("Services", [])) if item]
 
     res = []
     for segm in map(_map_segment, route.get("Segments", [])):
