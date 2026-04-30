@@ -1,13 +1,11 @@
 from fastapi import Depends, FastAPI, HTTPException
-from starlette.requests import Request
-from starlette.responses import JSONResponse
 
 import bcrypt
 from fastapi_another_jwt_auth import AuthJWT
 from fastapi_another_jwt_auth.exceptions import AuthJWTException
+from module_shared.config import Settings, get_settings
+from module_shared.jwt_error_handler import authjwt_exception_handler
 from pydantic import BaseModel
-
-from .config import Settings, get_settings
 
 AuthJWT.load_config(get_settings)
 app = FastAPI(redirect_slashes=False)
@@ -18,9 +16,7 @@ class User(BaseModel):
     password: str
 
 
-@app.exception_handler(AuthJWTException)
-def authjwt_exception_handler(request: Request, exc: AuthJWTException):
-    return JSONResponse(status_code=exc.status_code, content={"detail": exc.message})
+app.add_exception_handler(AuthJWTException, authjwt_exception_handler)
 
 
 @app.post("/login")

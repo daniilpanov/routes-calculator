@@ -6,6 +6,7 @@ from fastapi.params import Depends, File
 from fastapi.responses import StreamingResponse
 from starlette.status import HTTP_200_OK, HTTP_500_INTERNAL_SERVER_ERROR
 
+from backend_admin.dependencies.auth import request_auth
 from backend_admin.service.db_management.db_dumper import create_db_dump
 from backend_admin.service.db_management.db_eraser import clear_database_data
 from backend_admin.service.db_management.db_loader import load_db_dump
@@ -32,7 +33,11 @@ router = APIRouter(prefix="/db")
     },
     HTTP_500_INTERNAL_SERVER_ERROR: {"model": DetailErrorResponse[ErrorDescriptor]},
 })
-async def make_db_dump(db: Annotated[Database, Depends(get_database)], structure: bool = True):
+async def make_db_dump(
+    _: Annotated[None, Depends(request_auth)],
+    db: Annotated[Database, Depends(get_database)],
+    structure: bool = True,
+):
     async with db.session_context() as session:
         try:
             return StreamingResponse(
@@ -51,7 +56,10 @@ async def make_db_dump(db: Annotated[Database, Depends(get_database)], structure
 @router.delete("/data", status_code=204, responses={
     HTTP_500_INTERNAL_SERVER_ERROR: {"model": DetailErrorResponse[ErrorDescriptor]},
 })
-async def erase_all_data(db: Annotated[Database, Depends(get_database)]):
+async def erase_all_data(
+    _: Annotated[None, Depends(request_auth)],
+    db: Annotated[Database, Depends(get_database)],
+):
     async with db.session_context() as session:
         try:
             await clear_database_data(session)
@@ -68,7 +76,11 @@ async def erase_all_data(db: Annotated[Database, Depends(get_database)]):
         "description": "If any SQL query was failed or other error was occurred",
     },
 })
-async def load_dump(dump_file: Annotated[bytes, File()], db: Annotated[Database, Depends(get_database)]):
+async def load_dump(
+    _: Annotated[None, Depends(request_auth)],
+    dump_file: Annotated[bytes, File()],
+    db: Annotated[Database, Depends(get_database)],
+):
     async with db.session_context() as session:
         errors = await load_db_dump(session, dump_file.decode())
 

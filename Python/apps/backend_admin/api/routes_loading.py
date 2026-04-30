@@ -6,6 +6,7 @@ from starlette.status import HTTP_400_BAD_REQUEST, HTTP_500_INTERNAL_SERVER_ERRO
 
 import gspread
 from backend_admin.config import get_settings
+from backend_admin.dependencies.auth import request_auth
 from backend_admin.models.upoader_fields_config import UploaderFieldsConfig
 from backend_admin.service.routes_loading.errors import (
     InvalidDroppRow,
@@ -34,6 +35,7 @@ def get_fields_config_from_file():
 
 @router.post("/update-from-gsheets")
 async def update_from_gsheets(
+    _: Annotated[None, Depends(request_auth)],
     fields_config: Annotated[UploaderFieldsConfig, Depends(get_fields_config_from_file)],
     db_session: Annotated[AsyncSession, Depends(get_database().session)],
     gsheets_url: str = settings.DEFAULT_GSHEETS_URL,
