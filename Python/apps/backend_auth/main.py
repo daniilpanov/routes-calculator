@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import Depends, FastAPI, HTTPException
 from starlette.status import HTTP_401_UNAUTHORIZED
 
@@ -21,7 +23,7 @@ app.add_exception_handler(AuthJWTException, authjwt_exception_handler)
 
 
 @app.post("/login")
-def login(user: User, Authorize: AuthJWT = Depends(), settings: Settings = Depends(get_settings)):
+def login(user: User, Authorize: Annotated[AuthJWT, Depends()], settings: Annotated[Settings, Depends(get_settings)]):
     """
     Login using username and password.
     Setting up JWT cookie if login was successful.
@@ -48,7 +50,7 @@ def login(user: User, Authorize: AuthJWT = Depends(), settings: Settings = Depen
 
 
 @app.post("/token/refresh")
-def refresh(Authorize: AuthJWT = Depends()):
+def refresh(Authorize: Annotated[AuthJWT, Depends()]):
     """Token refreshing."""
 
     Authorize.jwt_refresh_token_required()
@@ -62,7 +64,7 @@ def refresh(Authorize: AuthJWT = Depends()):
 
 
 @app.delete("/logout")
-def logout(Authorize: AuthJWT = Depends()):
+def logout(Authorize: Annotated[AuthJWT, Depends()]):
     """
     Because the JWT are stored in an httponly cookie now, we cannot
     log the user out by simply deleting the cookie in the frontend.
@@ -76,7 +78,7 @@ def logout(Authorize: AuthJWT = Depends()):
 
 
 @app.get("/me")
-def hello(Authorize: AuthJWT = Depends()):
+def hello(Authorize: Annotated[AuthJWT, Depends()]):
     """Get user info."""
 
     Authorize.jwt_required()
