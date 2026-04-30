@@ -5,9 +5,8 @@ from starlette.responses import JSONResponse
 import bcrypt
 from fastapi_another_jwt_auth import AuthJWT
 from fastapi_another_jwt_auth.exceptions import AuthJWTException
+from module_shared.config import Settings, get_settings
 from pydantic import BaseModel
-
-from .config import Settings, get_settings
 
 AuthJWT.load_config(get_settings)
 app = FastAPI(redirect_slashes=False)

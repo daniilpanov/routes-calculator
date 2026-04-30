@@ -6,6 +6,7 @@ from starlette.responses import JSONResponse
 
 from fastapi_another_jwt_auth import AuthJWT
 from fastapi_another_jwt_auth.exceptions import AuthJWTException
+from module_shared.config import get_settings as get_auth_settings
 
 from .autodiscover import api_discover
 from .config import get_settings
@@ -26,7 +27,7 @@ app = FastAPI(docs_url=docs_url, redoc_url=redoc_url, openapi_url=openapi_url, r
 
 if not get_settings().DISABLE_ADMIN_AUTH_CHECK:
     # Configure AuthJWT with settings
-    AuthJWT.load_config(get_settings)
+    AuthJWT.load_config(get_auth_settings)
 
     # Exception handler for JWT errors
     @app.exception_handler(AuthJWTException)
