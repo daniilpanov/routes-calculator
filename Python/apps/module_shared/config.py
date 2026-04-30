@@ -4,6 +4,8 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
+    ENVIRONMENT: str
+
     # DATABASE
     DB_SCHEME: str
     DB_HOST: str
