@@ -1,4 +1,5 @@
 from fastapi import Depends, FastAPI, HTTPException
+from starlette.status import HTTP_401_UNAUTHORIZED
 
 import bcrypt
 from fastapi_another_jwt_auth import AuthJWT
@@ -34,7 +35,7 @@ def login(user: User, Authorize: AuthJWT = Depends(), settings: Settings = Depen
     user_password_hash = bcrypt.hashpw(user_pass_bytes, pass_salt)
 
     if user.login != settings.admin_login or user_password_hash != admin_password_hash:
-        raise HTTPException(status_code=401, detail="Incorrect login or password")
+        raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="Incorrect login or password")
 
     access_token = Authorize.create_access_token(subject=user.login)
     refresh_token = Authorize.create_refresh_token(subject=user.login)
