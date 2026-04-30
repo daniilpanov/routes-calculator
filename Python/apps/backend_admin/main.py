@@ -3,12 +3,12 @@ from importlib.util import find_spec
 from fastapi import FastAPI
 from starlette.requests import Request
 from starlette.responses import JSONResponse
+
 from fastapi_another_jwt_auth import AuthJWT
 from fastapi_another_jwt_auth.exceptions import AuthJWTException
 
 from .autodiscover import api_discover
 from .config import get_settings
-from .jwt_middleware import JWTAuthMiddleware
 
 if find_spec("dotenv") is not None:
     from dotenv import load_dotenv
@@ -33,8 +33,6 @@ if not get_settings().DISABLE_ADMIN_AUTH_CHECK:
     def authjwt_exception_handler(request: Request, exc: AuthJWTException):
         return JSONResponse(status_code=exc.status_code, content={"detail": exc.message})
 
-    # Add JWT middleware to all routes
-    app.add_middleware(JWTAuthMiddleware)
 
 routers = api_discover()
 for router in routers:
