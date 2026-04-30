@@ -15,7 +15,14 @@ if find_spec("dotenv") is not None:
 
     load_dotenv()
 
-app = FastAPI(redirect_slashes=False)
+settings = get_shared_settings()
+
+# Disable docs in production
+docs_url = "/docs" if settings.ENVIRONMENT != "prod" else None
+redoc_url = "/redoc" if settings.ENVIRONMENT != "prod" else None
+openapi_url = "/openapi.json" if settings.ENVIRONMENT != "prod" else None
+
+app = FastAPI(docs_url=docs_url, redoc_url=redoc_url, openapi_url=openapi_url, redirect_slashes=False)
 
 if not get_settings().DISABLE_USER_AUTH_CHECK:
     # Configure AuthJWT with settings
