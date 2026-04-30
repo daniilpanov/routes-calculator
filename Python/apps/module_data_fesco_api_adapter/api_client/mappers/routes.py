@@ -25,6 +25,9 @@ def _map_segment(segment):
 
 
 def _map_service(service):
+    if service.get("group"):
+        service = service["items"][0]
+
     return {
         "segment_id": service["SegmentUID"],
         "name": service["ServiceType"][0]["ServiceTypeName"] if service["ServiceType"] else service["ServiceName"],
