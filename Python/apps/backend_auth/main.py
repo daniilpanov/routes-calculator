@@ -1,6 +1,7 @@
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException
+from fastapi.responses import JSONResponse
 from starlette.status import HTTP_401_UNAUTHORIZED
 
 import bcrypt
@@ -46,11 +47,17 @@ def login(user: User, Authorize: Annotated[AuthJWT, Depends()], settings: Annota
     Authorize.set_access_cookies(access_token)
     Authorize.set_refresh_cookies(refresh_token)
 
-    return {"status": "OK"}
+    headers = {}
+    if settings.access_token_expire_minutes:
+        headers["X-Access-Token-Expires"] = str(settings.access_token_expire_minutes)
+    if settings.refresh_token_expire_minutes:
+        headers["X-Refresh-Token-Expires"] = str(settings.refresh_token_expire_minutes)
+
+    return JSONResponse(headers=Authorize._response.headers | headers, content={"status": "OK"})
 
 
 @app.post("/token/refresh")
-def refresh(Authorize: Annotated[AuthJWT, Depends()]):
+def refresh(Authorize: Annotated[AuthJWT, Depends()], settings: Annotated[Settings, Depends(get_settings)]):
     """Token refreshing."""
 
     Authorize.jwt_refresh_token_required()
@@ -60,7 +67,13 @@ def refresh(Authorize: Annotated[AuthJWT, Depends()]):
     # Set the JWT and CSRF double submit cookies in the response
     Authorize.set_access_cookies(new_access_token)
 
-    return {"status": "OK"}
+    headers = {}
+    if settings.access_token_expire_minutes:
+        headers["X-Access-Token-Expires"] = str(settings.access_token_expire_minutes)
+    if settings.refresh_token_expire_minutes:
+        headers["X-Refresh-Token-Expires"] = str(settings.refresh_token_expire_minutes)
+
+    return JSONResponse(headers=headers, content={"status": "OK"})
 
 
 @app.delete("/logout")
