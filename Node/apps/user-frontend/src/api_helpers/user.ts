@@ -17,6 +17,16 @@ export async function login(credentials: ILoginCredentials): Promise<ILoginRespo
     return await response.json() as ILoginResponse;
 }
 
+export async function refresh() {
+    const response = await fetch("/api/user/token/refresh", { method: "POST" });
+
+    if (response.status === 401)
+        throw new Error("Unauthorized");
+
+    if (response.status !== 200)
+        throw new Error(`Unexpected error [/api/user/login]: ${response.status} ${response.statusText}`);
+}
+
 export const logout = async () =>
     (await fetch("/api/user/logout", { method: "DELETE" })).status === 200;
 

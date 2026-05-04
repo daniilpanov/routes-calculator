@@ -7,6 +7,8 @@ export interface ICalculatorResult {
 
 export interface ILoginResponse {
     status: string;
+    accessTokenExpiredInMinutes?: number;
+    refreshTokenExpiredInMinutes?: number;
 }
 
 export interface IError {

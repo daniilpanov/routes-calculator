@@ -25,4 +25,7 @@ export async function logout() {
     useUser().removeUser();
 }
 
-export const updateUser = async () => useUser().setUser(await AuthAPI.me());
+export async function updateUser(){
+    await AuthAPI.refresh();
+    useUser().setUser(await AuthAPI.me());
+}
