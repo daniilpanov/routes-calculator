@@ -5,6 +5,8 @@ import router from "@/router";
 
 async function updateUserInfo() {
     try {
+        await refresh();
+
         const response = await AuthAPI.me();
         if (getUserName() !== response.username)
             localStorage.setItem("username", response.username);
