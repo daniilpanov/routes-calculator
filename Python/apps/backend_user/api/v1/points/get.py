@@ -1,8 +1,10 @@
 import datetime
 import json
+from typing import Annotated
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
+from backend_user.dependencies.auth import request_auth
 from backend_user.utils.string_formatters import union_country_and_name
 from module_data_fesco_api_adapter import api_client
 from module_data_fesco_api_adapter.api_client.mappers.points import map_points_v1 as map_fesco
@@ -30,7 +32,7 @@ async def _add_data(main_dict, data, mapper):
 
 
 @router.get("/departures")
-async def all_departure_by_date(date: datetime.date):
+async def all_departure_by_date(date: datetime.date, _: Annotated[None, Depends(request_auth)]):
     prepared_from: dict[str, dict] = {}
     # from FESCO
     await _add_data(prepared_from, api_client.get_departure_points_by_date(date), map_fesco)
@@ -45,7 +47,11 @@ async def all_departure_by_date(date: datetime.date):
 
 
 @router.get("/destinations")
-async def all_destination_by_date(date: datetime.date, departure_point_id: str):
+async def all_destination_by_date(
+    date: datetime.date,
+    departure_point_id: str,
+    _: Annotated[None, Depends(request_auth)],
+):
     departure_ids = json.loads(departure_point_id)
     prepared_to: dict[str, dict] = {}
     # from FESCO

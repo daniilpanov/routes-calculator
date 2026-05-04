@@ -8,6 +8,7 @@ from fastapi.params import Depends, Query
 from starlette.status import HTTP_500_INTERNAL_SERVER_ERROR
 
 from aiohttp import ClientResponseError
+from backend_user.dependencies.auth import request_auth
 from backend_user.utils.group_points import group_companies, group_transfers, raw_point_from_dict
 from module_data_fesco_api_adapter import api_client
 from module_data_fesco_api_adapter.api_client.mappers.points import map_points_v2 as map_fesco
@@ -44,7 +45,7 @@ def _parse_point_ids(departure_point_ids: Annotated[str, Query]) -> tuple[list[i
 
 
 @router.get("/departures")
-async def all_departure_by_date(date: datetime.date):
+async def all_departure_by_date(date: datetime.date, _: Annotated[None, Depends(request_auth)]):
     fesco_points: Iterator[dict[str, Any]]
     custom_points: list[tuple[PointModel, CompanyModel]]
 
@@ -85,6 +86,7 @@ async def all_departure_by_date(date: datetime.date):
 async def all_destination_by_date(
     date: datetime.date,
     departure_point_ids: Annotated[tuple[list[int], list[str]], Depends(_parse_point_ids)],
+    __: Annotated[None, Depends(request_auth)],
 ):
     coros = [aggregators.get_destination_points()]
 
