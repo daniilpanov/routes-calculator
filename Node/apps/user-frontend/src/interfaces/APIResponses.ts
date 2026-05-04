@@ -5,6 +5,12 @@ export interface ICalculatorResult {
     routes: RouteDescriptor[];
 }
 
+export interface ILoginResponse {
+    status: string;
+    accessTokenExpiredInMinutes?: number;
+    refreshTokenExpiredInMinutes?: number;
+}
+
 export interface IError {
     source?: string;
     error_text: string;

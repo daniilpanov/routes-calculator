@@ -2,10 +2,16 @@
 import HeaderComponent from "@/components/HeaderComponent.vue";
 import ThemeSwitcher from "@/widgets/ThemeSwitcher.vue";
 
+import { setupRefreshingInterval } from "@/services/auth";
 import { lockRates, updateRates } from "@/services/rates";
 import { useRates } from "@/stores/rates";
+import { useRouter } from "@/stores/router";
 import { getCurrentTheme, setCurrentTheme, Theme } from "@/services/theme";
-import { computed, provide, ref, watch } from "vue";
+import { mountAuthProvider } from "@/providers/auth";
+
+import { computed, onMounted, provide, ref, watch } from "vue";
+import { useRouter as useVueRouter } from "vue-router";
+import { useUserUpdateIntervalInMinutes } from "@/stores/user.ts";
 
 lockRates(updateRates());
 
@@ -15,6 +21,16 @@ const theme = ref<Theme>(getCurrentTheme());
 let oldTheme: Theme = theme.value;
 
 provide("printMode", printMode);
+
+onMounted(() => {
+    useRouter().setRouter(useVueRouter());
+
+    const userUpdateInterval = useUserUpdateIntervalInMinutes().interval
+    if (userUpdateInterval)
+        setupRefreshingInterval(userUpdateInterval);
+
+    mountAuthProvider();
+});
 
 watch(theme, (newTheme: Theme) => {
     document.documentElement.setAttribute("data-bs-theme", newTheme);

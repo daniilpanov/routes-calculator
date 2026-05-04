@@ -26,15 +26,18 @@ watch(() => props.price, (newPrice: number) => (priceRef.value = newPrice));
 </script>
 
 <template>
-    <span v-if="currencySymbol">
+    <span v-if="currencySymbol && price >= 0">
         {{ currencySymbol }}
     </span>
 
     <input v-if="editable" v-model="priceRef" @blur="$emit('update:price', priceRef)" type="number">
     <span v-else>{{ fp(price) }}</span>
 
-    <template v-if="!currencySymbol">
+    <span v-if="!currencySymbol">
         &nbsp;
         {{ currency }}
-    </template>
+    </span>
+    <span v-else-if="currencySymbol && price < 0">
+        {{ currencySymbol }}
+    </span>
 </template>

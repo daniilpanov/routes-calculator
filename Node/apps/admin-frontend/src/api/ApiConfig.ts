@@ -1,9 +1,9 @@
 export const API_ENDPOINTS = {
     AUTH: {
-        LOGIN: "/admin/api/user/login",
-        LOGOUT: "/admin/api/user/logout",
-        REFRESH: "/admin/api/user/token/refresh",
-        ME: "/admin/api/user/me",
+        LOGIN: "/api/user/login",
+        LOGOUT: "/api/user/logout",
+        REFRESH: "/api/user/token/refresh",
+        ME: "/api/user/me",
     },
     DATA: {
         UPDATE_FROM_GSHEETS: "/admin/api/data/update-from-gsheets",

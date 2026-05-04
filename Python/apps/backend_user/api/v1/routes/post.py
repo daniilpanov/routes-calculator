@@ -1,7 +1,9 @@
 import datetime
+from typing import Annotated
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
+from backend_user.dependencies.auth import request_auth
 from module_data_fesco_api_adapter import api_client
 from module_data_internal import aggregators
 
@@ -32,7 +34,7 @@ async def _get_routes(
 
 
 @router.post("/calculate")
-async def calculate(request: CalculateFormRequest):
+async def calculate(request: CalculateFormRequest, _: Annotated[None, Depends(request_auth)]):
     routes = []
 
     if "FESCO" in request.destinationId:
