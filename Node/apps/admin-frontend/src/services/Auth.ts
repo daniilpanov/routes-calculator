@@ -21,6 +21,7 @@ function startUserInfoUpdateInterval(interval: number) {
         return false;
 
     localStorage.setItem("userInfoUpdateIntervalId", String(setInterval(updateUserInfo, interval)));
+    localStorage.setItem("userInfoUpdateInterval", String(interval));
     return true;
 }
 
@@ -33,6 +34,17 @@ function stopUserInfoUpdateIntervalId() {
     localStorage.removeItem("userInfoUpdateIntervalId");
     return true;
 }
+
+export const onStartup = () =>
+    updateUserInfo().then(() => {
+        stopUserInfoUpdateIntervalId();
+
+        const interval = localStorage.getItem("userInfoUpdateInterval");
+        if (!interval)
+            return;
+
+        startUserInfoUpdateInterval(Number(interval));
+    });
 
 export async function refresh() {
     try {
