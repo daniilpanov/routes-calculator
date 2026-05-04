@@ -25,6 +25,12 @@ def format_date(date_str, try_another_variants=True):  # noqa: C901
     if pd.isna(date_str):
         return date_str
 
+    try:
+        datetime.date.fromisoformat(date_str)
+        return date_str
+    except ValueError:
+        pass
+
     ru_month_map = {
         "янв": "01", "фев": "02", "мар": "03", "апр": "04",
         "май": "05", "июн": "06", "июл": "07", "авг": "08",
