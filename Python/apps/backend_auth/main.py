@@ -1,4 +1,8 @@
+from typing import Annotated
+
 from fastapi import Depends, FastAPI, HTTPException
+from fastapi.responses import JSONResponse
+from starlette.status import HTTP_401_UNAUTHORIZED
 
 import bcrypt
 from fastapi_another_jwt_auth import AuthJWT
@@ -20,7 +24,7 @@ app.add_exception_handler(AuthJWTException, authjwt_exception_handler)
 
 
 @app.post("/login")
-def login(user: User, Authorize: AuthJWT = Depends(), settings: Settings = Depends(get_settings)):
+def login(user: User, Authorize: Annotated[AuthJWT, Depends()], settings: Annotated[Settings, Depends(get_settings)]):
     """
     Login using username and password.
     Setting up JWT cookie if login was successful.
@@ -34,7 +38,7 @@ def login(user: User, Authorize: AuthJWT = Depends(), settings: Settings = Depen
     user_password_hash = bcrypt.hashpw(user_pass_bytes, pass_salt)
 
     if user.login != settings.admin_login or user_password_hash != admin_password_hash:
-        raise HTTPException(status_code=401, detail="Incorrect login or password")
+        raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="Incorrect login or password")
 
     access_token = Authorize.create_access_token(subject=user.login)
     refresh_token = Authorize.create_refresh_token(subject=user.login)
@@ -43,11 +47,17 @@ def login(user: User, Authorize: AuthJWT = Depends(), settings: Settings = Depen
     Authorize.set_access_cookies(access_token)
     Authorize.set_refresh_cookies(refresh_token)
 
-    return {"status": "OK"}
+    headers = {}
+    if settings.access_token_expire_minutes:
+        headers["X-Access-Token-Expires"] = str(settings.access_token_expire_minutes)
+    if settings.refresh_token_expire_minutes:
+        headers["X-Refresh-Token-Expires"] = str(settings.refresh_token_expire_minutes)
+
+    return JSONResponse(headers=Authorize._response.headers | headers, content={"status": "OK"})
 
 
 @app.post("/token/refresh")
-def refresh(Authorize: AuthJWT = Depends()):
+def refresh(Authorize: Annotated[AuthJWT, Depends()], settings: Annotated[Settings, Depends(get_settings)]):
     """Token refreshing."""
 
     Authorize.jwt_refresh_token_required()
@@ -57,11 +67,17 @@ def refresh(Authorize: AuthJWT = Depends()):
     # Set the JWT and CSRF double submit cookies in the response
     Authorize.set_access_cookies(new_access_token)
 
-    return {"status": "OK"}
+    headers = {}
+    if settings.access_token_expire_minutes:
+        headers["X-Access-Token-Expires"] = str(settings.access_token_expire_minutes)
+    if settings.refresh_token_expire_minutes:
+        headers["X-Refresh-Token-Expires"] = str(settings.refresh_token_expire_minutes)
+
+    return JSONResponse(headers=headers, content={"status": "OK"})
 
 
 @app.delete("/logout")
-def logout(Authorize: AuthJWT = Depends()):
+def logout(Authorize: Annotated[AuthJWT, Depends()]):
     """
     Because the JWT are stored in an httponly cookie now, we cannot
     log the user out by simply deleting the cookie in the frontend.
@@ -75,7 +91,7 @@ def logout(Authorize: AuthJWT = Depends()):
 
 
 @app.get("/me")
-def hello(Authorize: AuthJWT = Depends()):
+def hello(Authorize: Annotated[AuthJWT, Depends()]):
     """Get user info."""
 
     Authorize.jwt_required()

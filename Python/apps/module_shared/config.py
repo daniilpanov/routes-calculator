@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     jwt_algorithm: str
     authjwt_secret_key: str
     access_token_expire_minutes: int
+    refresh_token_expire_minutes: int
     # Configure application to store and get JWT from cookies.
     authjwt_token_location: set = {"cookies"}
     # HTTPS only?
