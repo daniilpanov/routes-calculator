@@ -5,6 +5,8 @@ import axios, { AxiosError } from "axios";
 
 interface ILoginResponse {
     status: string;
+    accessTokenExpiredIn?: number;
+    refreshTokenExpiredIn?: number;
 }
 
 interface IMeResponse {
@@ -23,7 +25,12 @@ export async function login(credentials: ILoginCredentials): Promise<ILoginRespo
                 withCredentials: true,
             },
         );
-        return response.data;
+
+        return {
+            accessTokenExpiredIn: response.headers["x-access-token-expires"],
+            refreshTokenExpiredIn: response.headers["x-refresh-token-expires"],
+            ...response.data,
+        };
     } catch (e) {
         const error = e as AxiosError;
         if (error.response?.status === 401)

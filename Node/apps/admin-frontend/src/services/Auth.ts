@@ -1,6 +1,6 @@
 import { ILoginCredentials } from "@/interfaces/Auth";
 import * as AuthAPI from "@/api/Auth";
-import { LOGIN_CHECK_INTERVAL, ROUTES } from "@/constants";
+import { ROUTES } from "@/constants";
 import router from "@/router";
 
 async function updateUserInfo() {
@@ -54,7 +54,8 @@ export async function login(credentials: ILoginCredentials) {
 
         await updateUserInfo();
 
-        startUserInfoUpdateInterval(LOGIN_CHECK_INTERVAL);
+        if (response.accessTokenExpiredIn)
+            startUserInfoUpdateInterval(response.accessTokenExpiredIn * 60 * 1000);
 
         return true;
     } catch (e) {
