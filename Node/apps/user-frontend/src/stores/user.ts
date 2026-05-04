@@ -11,3 +11,30 @@ export const useUser = defineStore("user", () => {
 
     return { user, setUser, removeUser, isAuth };
 });
+
+export const useUserUpdateIntervalId = defineStore("userUpdateIntervalId", () => {
+    const intervalId = ref<number | undefined>();
+    const setIntervalId = (newId: number) => (intervalId.value = newId);
+    const removeIntervalId = () => (intervalId.value = undefined);
+
+    return { intervalId, setIntervalId, removeIntervalId };
+});
+
+export const useUserUpdateIntervalInMinutes = defineStore("userUpdateIntervalInMinutes", () => {
+    const initialValue = localStorage.getItem("userUpdateIntervalInMinutes");
+    let parsedInitialValue = undefined;
+    if (initialValue)
+        parsedInitialValue = Number.parseInt(initialValue);
+
+    const interval = ref<number | undefined>(parsedInitialValue);
+    const setInterval = (newInterval: number) => {
+        interval.value = newInterval;
+        localStorage.setItem("userUpdateIntervalInMinutes", String(newInterval));
+    };
+    const removeInterval = () => {
+        interval.value = undefined;
+        localStorage.removeItem("userUpdateIntervalInMinutes");
+    };
+
+    return { interval, setInterval, removeInterval };
+});
