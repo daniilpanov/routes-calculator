@@ -67,7 +67,7 @@ export async function login(credentials: ILoginCredentials) {
         await updateUserInfo();
 
         if (response.accessTokenExpiredIn)
-            startUserInfoUpdateInterval(response.accessTokenExpiredIn * 60 * 1000);
+            startUserInfoUpdateInterval(Math.floor(response.accessTokenExpiredIn * 60 * 1000 / 2));
 
         return true;
     } catch (e) {
