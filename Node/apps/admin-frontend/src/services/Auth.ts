@@ -3,8 +3,6 @@ import * as AuthAPI from "@/api/Auth";
 import { LOGIN_CHECK_INTERVAL, ROUTES } from "@/constants";
 import router from "@/router";
 
-let updateUserInfoIntervalId: number | undefined;
-
 async function updateUserInfo() {
     try {
         const response = await AuthAPI.me();
@@ -13,6 +11,25 @@ async function updateUserInfo() {
     } catch (e) {
         await logout();
     }
+}
+
+function startUserInfoUpdateInterval(interval: number) {
+    const intervalId = localStorage.getItem("userInfoUpdateIntervalId");
+    if (intervalId)
+        return false;
+
+    localStorage.setItem("userInfoUpdateIntervalId", String(setInterval(updateUserInfo, interval)));
+    return true;
+}
+
+function stopUserInfoUpdateIntervalId() {
+    const intervalId = localStorage.getItem("userInfoUpdateIntervalId");
+    if (!intervalId)
+        return false;
+
+    clearInterval(Number(intervalId));
+    localStorage.removeItem("userInfoUpdateIntervalId");
+    return true;
 }
 
 export async function refresh() {
@@ -35,8 +52,7 @@ export async function login(credentials: ILoginCredentials) {
 
         await updateUserInfo();
 
-        if (updateUserInfoIntervalId === undefined)
-            updateUserInfoIntervalId = window.setInterval(updateUserInfo, LOGIN_CHECK_INTERVAL);
+        startUserInfoUpdateInterval(LOGIN_CHECK_INTERVAL);
 
         return true;
     } catch (e) {
@@ -55,12 +71,9 @@ export async function logout() {
         /** @suppress no-empty due to we don't need to log this error */
     } finally {
         localStorage.removeItem("username");
-        await router.navigate(ROUTES.LOGIN);
+        stopUserInfoUpdateIntervalId();
 
-        if (updateUserInfoIntervalId !== undefined) {
-            clearInterval(updateUserInfoIntervalId);
-            updateUserInfoIntervalId = undefined;
-        }
+        await router.navigate(ROUTES.LOGIN);
     }
 }
 
