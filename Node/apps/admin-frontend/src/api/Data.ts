@@ -17,7 +17,7 @@ export const deleteAllData = async (): Promise<void> =>
 
 export async function uploadBackup(file: File): Promise<void> {
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("dump_file", file);
 
     await axios.post(
         `${API_ENDPOINTS.DATA.DB}`,
