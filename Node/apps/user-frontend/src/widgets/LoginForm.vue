@@ -43,8 +43,8 @@ async function login(e: Event) {
 
 <style scoped>
 .form {
-    width: 35vw;
-    max-width: 350px;
+    max-width: max-content;
+
     padding: 3rem 3rem 4rem;
     border-radius: 0.5rem;
     box-shadow: 0 4px 6px var(--bs-body-color);
