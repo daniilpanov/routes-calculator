@@ -245,6 +245,9 @@ def create_route(  # noqa: C901
     effective_from = row[fc.effective_from]
     effective_to = row[fc.effective_to]
 
+    is_throw_raw = row[fc.is_through]
+    is_throw = not (pd.isna(is_throw_raw) or not is_throw_raw or is_throw_raw in {0, "0"})
+
     route = RouteModel(
         type=RouteType(route_type),
         company=company,
@@ -257,6 +260,7 @@ def create_route(  # noqa: C901
         container_transfer_terms=ctt,
         container_shipment_terms=cst,
         container_owner=co,
+        is_through=is_throw,
     )
 
     conversation = nan_to_none_mapper(row[fc.conversation_percents])
