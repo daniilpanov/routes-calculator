@@ -246,7 +246,7 @@ def create_route(  # noqa: C901
     effective_to = row[fc.effective_to]
 
     is_throw_raw = row[fc.is_through]
-    is_throw = not (pd.isna(is_throw_raw) or not is_throw_raw or is_throw_raw in {0, "0"})
+    is_throw = pd.isna(is_throw_raw) or not (is_throw_raw and is_throw_raw in {0, "0"})
 
     route = RouteModel(
         type=RouteType(route_type),
