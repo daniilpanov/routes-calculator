@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, HTTPException
 from fastapi.params import Depends
-from starlette.status import HTTP_400_BAD_REQUEST, HTTP_500_INTERNAL_SERVER_ERROR
+from starlette.status import HTTP_400_BAD_REQUEST, HTTP_500_INTERNAL_SERVER_ERROR, HTTP_503_SERVICE_UNAVAILABLE
 
 import gspread
 from backend_admin.config import get_settings
@@ -71,31 +71,38 @@ async def update_from_gsheets_with_custom_fields(
     services_ws_name: str | None = settings.DEFAULT_SERVICES_WS,
     load_on_warnings: bool = True,
 ):
-    gs = gspread.service_account(
-        filename=Resources.get(settings.GOOGLE_SERVICE_ACCOUNT_RESOURCE_NAME, scope="backend_admin").path,
-    )
-    sources_gs = gs.open_by_url(gsheets_url)
+    try:
+        gs = gspread.service_account(
+            filename=Resources.get(settings.GOOGLE_SERVICE_ACCOUNT_RESOURCE_NAME, scope="backend_admin").path,
+        )
+        sources_gs = gs.open_by_url(gsheets_url)
 
-    sea_routes_df = get_as_dataframe(
-        sources_gs.worksheet(sea_routes_ws_name),
-        evaluate_formulas=True,
-    )
-    rail_routes_df = get_as_dataframe(
-        sources_gs.worksheet(rail_routes_ws_name),
-        evaluate_formulas=True,
-    )
-    dropp_routes_df = get_as_dataframe(
-        sources_gs.worksheet(dropp_routes_ws_name),
-        evaluate_formulas=True,
-    )
-    services_df = get_as_dataframe(
-        sources_gs.worksheet(services_ws_name),
-        evaluate_formulas=True,
-    )
-    points_df = get_as_dataframe(
-        sources_gs.worksheet(points_ws_name),
-        evaluate_formulas=True,
-    ) if points_ws_name else None
+        sea_routes_df = get_as_dataframe(
+            sources_gs.worksheet(sea_routes_ws_name),
+            evaluate_formulas=True,
+        )
+        rail_routes_df = get_as_dataframe(
+            sources_gs.worksheet(rail_routes_ws_name),
+            evaluate_formulas=True,
+        )
+        dropp_routes_df = get_as_dataframe(
+            sources_gs.worksheet(dropp_routes_ws_name),
+            evaluate_formulas=True,
+        )
+        services_df = get_as_dataframe(
+            sources_gs.worksheet(services_ws_name),
+            evaluate_formulas=True,
+        )
+        points_df = get_as_dataframe(
+            sources_gs.worksheet(points_ws_name),
+            evaluate_formulas=True,
+        ) if points_ws_name else None
+
+    except Exception as e:
+        raise HTTPException(status_code=HTTP_503_SERVICE_UNAVAILABLE, detail={
+            "type": type(e).__name__,
+            "detail": str(e),
+        }) from e
 
     routes_count = len(sea_routes_df) + len(rail_routes_df)
     try:
