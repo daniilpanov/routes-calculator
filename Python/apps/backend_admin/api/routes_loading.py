@@ -1,10 +1,16 @@
+from io import BytesIO
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException
-from fastapi.params import Depends
-from starlette.status import HTTP_400_BAD_REQUEST, HTTP_500_INTERNAL_SERVER_ERROR
+from fastapi.params import Depends, File
+from starlette.status import (
+    HTTP_400_BAD_REQUEST,
+    HTTP_500_INTERNAL_SERVER_ERROR,
+    HTTP_503_SERVICE_UNAVAILABLE,
+)
 
 import gspread
+import pandas
 from backend_admin.config import get_settings
 from backend_admin.dependencies.auth import request_auth
 from backend_admin.models.upoader_fields_config import UploaderFieldsConfig
@@ -45,6 +51,7 @@ async def update_from_gsheets(
     points_ws_name: str | None = settings.DEFAULT_POINTS_WS,
     services_ws_name: str | None = settings.DEFAULT_SERVICES_WS,
     load_on_warnings: bool = True,
+    data_file: Annotated[bytes | None, File()] = None,
 ):
     return await update_from_gsheets_with_custom_fields(
         db_session,
@@ -56,11 +63,12 @@ async def update_from_gsheets(
         points_ws_name,
         services_ws_name,
         load_on_warnings,
+        data_file,
     )
 
 
 @router.post("/update-from-gsheets-with-custom-fields")
-async def update_from_gsheets_with_custom_fields(
+async def update_from_gsheets_with_custom_fields(  # noqa: C901  # TODO: split it by worksheets
     db_session: Annotated[AsyncSession, Depends(get_database().session)],
     fields_config: UploaderFieldsConfig,
     gsheets_url: str = settings.DEFAULT_GSHEETS_URL,
@@ -70,32 +78,41 @@ async def update_from_gsheets_with_custom_fields(
     points_ws_name: str | None = settings.DEFAULT_POINTS_WS,
     services_ws_name: str | None = settings.DEFAULT_SERVICES_WS,
     load_on_warnings: bool = True,
+    data_file: Annotated[bytes | None, File()] = None,
 ):
-    gs = gspread.service_account(
-        filename=Resources.get(settings.GOOGLE_SERVICE_ACCOUNT_RESOURCE_NAME, scope="backend_admin").path,
-    )
-    sources_gs = gs.open_by_url(gsheets_url)
+    if data_file:
+        def download_data(ws):
+            return pandas.read_excel(BytesIO(data_file), ws)
+    else:
+        try:
+            gs = gspread.service_account(
+                filename=Resources.get(settings.GOOGLE_SERVICE_ACCOUNT_RESOURCE_NAME, scope="backend_admin").path,
+            )
+            sources_gs = gs.open_by_url(gsheets_url)
+        except Exception as e:
+            raise HTTPException(status_code=HTTP_503_SERVICE_UNAVAILABLE, detail={
+                "type": type(e).__name__,
+                "detail": str(e),
+            }) from e
 
-    sea_routes_df = get_as_dataframe(
-        sources_gs.worksheet(sea_routes_ws_name),
-        evaluate_formulas=True,
-    )
-    rail_routes_df = get_as_dataframe(
-        sources_gs.worksheet(rail_routes_ws_name),
-        evaluate_formulas=True,
-    )
-    dropp_routes_df = get_as_dataframe(
-        sources_gs.worksheet(dropp_routes_ws_name),
-        evaluate_formulas=True,
-    )
-    services_df = get_as_dataframe(
-        sources_gs.worksheet(services_ws_name),
-        evaluate_formulas=True,
-    )
-    points_df = get_as_dataframe(
-        sources_gs.worksheet(points_ws_name),
-        evaluate_formulas=True,
-    ) if points_ws_name else None
+        def download_data(ws):
+            return get_as_dataframe(
+                sources_gs.worksheet(ws),
+                evaluate_formulas=True,
+            )
+
+    try:
+        sea_routes_df = download_data(sea_routes_ws_name)
+        rail_routes_df = download_data(rail_routes_ws_name)
+        dropp_routes_df = download_data(dropp_routes_ws_name)
+        services_df = download_data(services_ws_name)
+        points_df = download_data(points_ws_name) if points_ws_name else None
+
+    except Exception as e:
+        raise HTTPException(status_code=HTTP_503_SERVICE_UNAVAILABLE, detail={
+            "type": type(e).__name__,
+            "detail": str(e),
+        }) from e
 
     routes_count = len(sea_routes_df) + len(rail_routes_df)
     try:
@@ -117,7 +134,10 @@ async def update_from_gsheets_with_custom_fields(
         }) from e
 
     except Exception as e:
-        raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail=e) from e
+        raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail={
+            "type": type(e).__name__,
+            "detail": str(e),
+        }) from e
 
     if not res:
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail={

@@ -1,4 +1,6 @@
 server {
+    client_max_body_size 20M;
+
     location /api/user/ {
         if ($request_uri ~ ^([^.]*)/([?#].*)?$) {
             return 308 $scheme://$http_host$1$is_args$args;

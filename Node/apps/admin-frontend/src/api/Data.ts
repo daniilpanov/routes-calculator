@@ -9,6 +9,20 @@ export const updateFromGsheets = async (): Promise<UpdateResponse> =>
         { withCredentials: true },
     )).data;
 
+export async function updateFromFile(file: File): Promise<UpdateResponse> {
+    const formData = new FormData();
+    formData.append("data_file", file);
+
+    return (await axios.post(
+        `${API_ENDPOINTS.DATA.UPDATE_FROM_GSHEETS}`,
+        formData,
+        {
+            headers: { "Content-Type": "multipart/form-data" },
+            withCredentials: true,
+        },
+    )).data;
+}
+
 export const deleteAllData = async (): Promise<void> =>
     await axios.delete(
         `${API_ENDPOINTS.DATA.DB}`,

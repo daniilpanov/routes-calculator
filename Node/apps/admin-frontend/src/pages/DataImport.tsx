@@ -1,5 +1,5 @@
 import { ChangeEvent, useRef, useState } from "react";
-import { deleteAllData, updateFromGsheets, uploadBackup } from "@/api/Data";
+import { deleteAllData, updateFromFile, updateFromGsheets, uploadBackup } from "@/api/Data";
 import { API_ENDPOINTS } from "@/api/ApiConfig";
 import { UpdateResponse } from "@/interfaces/Data";
 
@@ -9,7 +9,8 @@ export default function DataImport() {
     const [ error, setError ] = useState<string | null>(null);
     const [ warnings, setWarnings ] = useState<any[]>([]);
     const [ showWarnings, setShowWarnings ] = useState(false);
-    const fileInputRef = useRef<HTMLInputElement | null>(null);
+    const backupFileInputRef = useRef<HTMLInputElement | null>(null);
+    const dataFileInputRef = useRef<HTMLInputElement | null>(null);
 
     const handleOperation = async (operation: () => Promise<void | UpdateResponse>, successText: string) => {
         setLoading(true);
@@ -37,6 +38,8 @@ export default function DataImport() {
         );
     };
 
+    const handleUpdateFromFile = () => dataFileInputRef.current?.click();
+
     const handleDeleteAllData = async () => {
         await handleOperation(
             async () => deleteAllData(),
@@ -46,9 +49,9 @@ export default function DataImport() {
 
     const handleCreateBackup = () => window.open(API_ENDPOINTS.DATA.DB, "_blank");
 
-    const handleUploadBackup = () => fileInputRef.current?.click();
+    const handleUploadBackup = () => backupFileInputRef.current?.click();
 
-    const handleFileSelected = async (event: ChangeEvent<HTMLInputElement>) => {
+    const handleBackupFileSelected = async (event: ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file)
             return;
@@ -56,6 +59,19 @@ export default function DataImport() {
         await handleOperation(
             async () => uploadBackup(file),
             "Резервная копия успешно загружена.",
+        );
+
+        event.target.value = "";
+    };
+
+    const handleDataFileSelected = async (event: ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file)
+            return;
+
+        await handleOperation(
+            async () => updateFromFile(file),
+            "Данные успешно обновлены.",
         );
 
         event.target.value = "";
@@ -125,6 +141,9 @@ export default function DataImport() {
                 <button type="button" onClick={ handleUpdateFromGsheets } disabled={ loading }>
                     Обновить из Google Sheets
                 </button>
+                <button type="button" onClick={ handleUpdateFromFile } disabled={ loading }>
+                    Обновить из XLSX файла
+                </button>
                 <button type="button" onClick={ handleDeleteAllData } disabled={ loading }>
                     Удалить все данные
                 </button>
@@ -160,10 +179,17 @@ export default function DataImport() {
             ) }
 
             <input
-                ref={ fileInputRef }
+                ref={ backupFileInputRef }
                 type="file"
                 style={ { display: "none" } }
-                onChange={ handleFileSelected }
+                onChange={ handleBackupFileSelected }
+                accept="*/*"
+            />
+            <input
+                ref={ dataFileInputRef }
+                type="file"
+                style={ { display: "none" } }
+                onChange={ handleDataFileSelected }
                 accept="*/*"
             />
         </div>
