@@ -17,6 +17,8 @@ class RouteType(enum.Enum):
 class ContainerTransferTerms(enum.Enum):
     FIFO = "FIFO"
     FILO = "FILO"
+    LIFO = "LIFO"
+    LILO = "LILO"
 
 
 class ContainerShipmentTerms(enum.Enum):
