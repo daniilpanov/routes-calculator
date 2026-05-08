@@ -117,7 +117,10 @@ async def update_from_gsheets_with_custom_fields(
         }) from e
 
     except Exception as e:
-        raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail=e) from e
+        raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail={
+            "type": type(e).__name__,
+            "detail": str(e),
+        }) from e
 
     if not res:
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail={
