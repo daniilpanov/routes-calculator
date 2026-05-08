@@ -29,7 +29,6 @@ def build_usual_query(
     start_point_id: int,
     end_point_id: int,
     container_ids: list[int],
-    container_ownership: ContainerOwner,
 ):
     where_clause = and_(
         RouteModel.effective_from <= date,
@@ -47,8 +46,7 @@ def build_usual_query(
             PriceModel,
             and_(
                 RouteModel.id == PriceModel.route_id,
-                PriceModel.container_id.in_(container_ids),
-                RouteModel.container_owner == container_ownership,
+                PriceModel.container_id.in_(container_ids)
             ),
         )
         .outerjoin(
@@ -245,7 +243,6 @@ async def find_all_paths(
         start_point_id,
         end_point_id,
         container_ids,
-        ContainerOwner.SOC,  # Rail can not provide an equipment
     )
     query_sea = build_usual_query(
         RouteType.SEA,
@@ -253,7 +250,6 @@ async def find_all_paths(
         start_point_id,
         end_point_id,
         container_ids,
-        ContainerOwner.COC,  # Sea always provides an equipment
     )
 
     sea_rail_query = build_base_sea_rail_query(
