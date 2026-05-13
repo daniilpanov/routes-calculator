@@ -108,6 +108,14 @@ watch(allRoutesSelectedSignalRef, () => (routeSelected.value = allRoutesSelected
 
         <hr>
 
+        <ServicesView
+            v-if="route[0][3]?.length"
+            :services="route[0][3]"
+            @update:checked="(val: boolean, serviceIndex: number) => $emit('update:serviceChecked', val, serviceIndex)"
+        />
+
+        <hr>
+
         <div class="row">
             <div class="col-md-7">
                 Суммарная стоимость:
@@ -137,12 +145,6 @@ watch(allRoutesSelectedSignalRef, () => (routeSelected.value = allRoutesSelected
                 </b>
             </div>
         </div>
-
-        <ServicesView
-            v-if="route[0][3]?.length"
-            :services="route[0][3]"
-            @update:checked="(val: boolean, serviceIndex: number) => $emit('update:serviceChecked', val, serviceIndex)"
-        />
     </div>
 </template>
 
