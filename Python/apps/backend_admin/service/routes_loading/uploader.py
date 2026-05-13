@@ -370,8 +370,13 @@ async def load_routes(db_session, routes):
         route.company.name,
         route.start_point.city,
         route.end_point.city,
+        route.dropp_off_point.city if route.dropp_off_point else None,
         route.effective_from if isinstance(route.effective_from, str) else route.effective_from.date().isoformat(),
         route.effective_to if isinstance(route.effective_to, str) else route.effective_to.date().isoformat(),
+        route.container_shipment_terms,
+        route.container_transfer_terms,
+        route.container_owner,
+        route.is_through,
     ) for route in existing_routes}
 
     for route in routes:
@@ -379,8 +384,13 @@ async def load_routes(db_session, routes):
             route.company.name,
             route.start_point.city,
             route.end_point.city,
+            route.dropp_off_point.city if route.dropp_off_point else None,
             route.effective_from if isinstance(route.effective_from, str) else route.effective_from.date().isoformat(),
             route.effective_to if isinstance(route.effective_to, str) else route.effective_to.date().isoformat(),
+            route.container_shipment_terms,
+            route.container_transfer_terms,
+            route.container_owner,
+            route.is_through,
         )
         if route_key in existing_routes_set:
             continue
