@@ -118,7 +118,7 @@ watch(allRoutesSelectedSignalRef, () => (routeSelected.value = allRoutesSelected
 
         <div class="row">
             <div class="col-md-7">
-                Суммарная стоимость:
+                Суммарная стоимость в валюте запроса:
             </div>
             <div class="col-md-5">
                 <b v-if="Number.isNaN(route[1][0])">
@@ -132,7 +132,7 @@ watch(allRoutesSelectedSignalRef, () => (routeSelected.value = allRoutesSelected
             </div>
 
             <div class="col-md-7">
-                Оплата в рублях по курсу ЦБ на дату выставления счёта:
+                В рублях по курсу ЦБ на дату выставления счёта с учётом конвертации:
             </div>
             <div class="col-md-5">
                 <b v-if="Number.isNaN(route[1][1])">
