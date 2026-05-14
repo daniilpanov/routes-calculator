@@ -48,9 +48,14 @@ defineEmits(["update:price"]);
             </div>
         </div>
 
-        <blockquote v-if="segment.comment">
-            <p>Комментарий: <i>{{ segment.comment }}</i></p>
-        </blockquote>
+        <p></p>
+        <div v-if="segment.timetable">
+            Расписание: <i>{{ segment.timetable }}</i>
+        </div>
+
+        <div v-if="segment.comment">
+            Комментарий: <i>{{ segment.comment }}</i>
+        </div>
     </div>
 </template>
 

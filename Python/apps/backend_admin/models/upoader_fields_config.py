@@ -25,6 +25,7 @@ class UploaderFieldsConfig(BaseModel):
 
     company: str
     comment: str
+    timetable: str
     is_through: str
 
     conversation_percents: str

@@ -85,6 +85,7 @@ class RouteModel(Base):
     effective_from: Mapped[datetime.date] = mapped_column(DateTime(timezone=False))
     effective_to: Mapped[datetime.date] = mapped_column(DateTime(timezone=False))
     comment: Mapped[str | None] = mapped_column(String(255), nullable=True, default=None)
+    timetable: Mapped[str | None] = mapped_column(String(255), nullable=True, default=None)
 
     is_through: Mapped[bool] = mapped_column(default=True)
 
