@@ -39,6 +39,7 @@ interface ISegment {
     container_shipment_terms: string;
 
     comment?: string;
+    timetable?: string;
 }
 
 export interface IMultiPriceSegment extends ISegment {
