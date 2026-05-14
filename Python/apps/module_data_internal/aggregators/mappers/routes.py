@@ -18,6 +18,7 @@ def _map_segment(route: RouteModel):
         "endPointCountry": route.end_point.RU_country,
         "endPointName": route.end_point.RU_city,
         "comment": route.comment,
+        "timetable": route.timetable,
 
         "container_transfer_terms": route.container_transfer_terms,
         "container_shipment_terms": route.container_shipment_terms,

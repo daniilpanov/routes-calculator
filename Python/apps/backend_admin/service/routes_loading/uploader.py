@@ -257,6 +257,7 @@ def create_route(  # noqa: C901
         effective_from=effective_from,
         effective_to=effective_to,
         comment=nan_to_none_mapper(row[fc.comment]),
+        timetable=nan_to_none_mapper(row[fc.timetable]),
         container_transfer_terms=ctt,
         container_shipment_terms=cst,
         container_owner=co,
