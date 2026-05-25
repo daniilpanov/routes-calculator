@@ -1,4 +1,21 @@
 server {
+    listen 80;
+    listen 443 ssl;
+
+    ssl_certificate             /etc/ssl/server.crt;
+    ssl_certificate_key         /etc/ssl/server.key;
+    ssl_trusted_certificate     /etc/ssl/ca.crt;
+
+    ssl_protocols               TLSv1.2 TLSv1.1 TLSv1;
+    ssl_session_cache           shared:SSL:20m;
+    ssl_session_timeout         10m;
+    keepalive_timeout           70;
+
+    ssl_ciphers                 'EECDH+ECDSA+AESGCM:AES128+EECDH:AES128+EDH:!RC4:!aNULL:!eNULL:!LOW:!3DES:!MD5:!EXP:!PSK:!SRP:!DSS:!CAMELLIA:!ADH';
+    ssl_prefer_server_ciphers   on;
+    ssl_stapling                on;
+    resolver                    8.8.8.8;
+
     client_max_body_size 20M;
 
     location /api/user/ {
