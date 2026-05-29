@@ -1,3 +1,4 @@
+import { useDemoAuth } from "@/stores/demoAuth";
 import { useUser } from "@/stores/user";
 import { useRouter } from "@/stores/router";
 import { gotoAuthForm, gotoHome } from "@/services/redirects";
@@ -22,6 +23,12 @@ export function mountAuthProvider() {
 
 async function provideUser(newUser: IUser | null, newRouteName?: RouteRecordNameGeneric) {
     if (!newRouteName)
+        return;
+
+    if (newRouteName !== "demo")
+        useDemoAuth().clearDemo();
+
+    if (newRouteName === "demo")
         return;
 
     if (newRouteName === "calculator" && !newUser)
