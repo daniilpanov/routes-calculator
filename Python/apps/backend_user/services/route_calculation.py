@@ -3,8 +3,36 @@ import datetime
 
 from backend_user.api.v2.routes.models.form_requests import CalculateFormRequest
 from backend_user.dependencies.auth_context import AuthContext
+from backend_user.services.profit import apply_demo_profit_to_routes
 from module_data_fesco_api_adapter import api_client
 from module_data_internal import aggregators
+from module_shared.config import get_settings as get_shared_settings
+
+
+def _strip_demo_fields(routes: list) -> None:
+    excluded_fields = get_shared_settings().DEMO_EXCLUDED_FIELDS
+
+    for route in routes:
+        segments = route[0]
+        for segment in segments:
+            for field in excluded_fields:
+                segment.pop(field, None)
+
+
+def _apply_demo_transforms(routes: list, auth: AuthContext) -> None:
+    if not auth.is_demo:
+        return
+
+    if auth.sea_profit or auth.rail_profit:
+        apply_demo_profit_to_routes(
+            routes,
+            auth.sea_profit,
+            auth.sea_profit_currency,
+            auth.rail_profit,
+            auth.rail_profit_currency,
+        )
+
+    _strip_demo_fields(routes)
 
 
 async def _get_routes(
@@ -75,6 +103,8 @@ async def calculate_routes(request: CalculateFormRequest, auth: AuthContext) -> 
             res = list(coro_result)
             if res:
                 routes.extend(res)
+
+    _apply_demo_transforms(routes, auth)
 
     return {
         "errors": errors,
