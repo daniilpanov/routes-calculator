@@ -2,10 +2,14 @@
 import type { IMultiPriceSegment } from "@/interfaces/Routes";
 import RouteTypeIcon from "@/components/RouteTypeIcon.vue";
 import OnePriceInMultiSegment from "@/components/routes/OnePriceInMultiSegment.vue";
+import BlurredText from "@/components/BlurredText.vue";
+import { useBlurredFields } from "@/composables/useBlurredFields";
 
 defineProps<{
     segment: IMultiPriceSegment,
 }>();
+
+const { isFieldBlurred } = useBlurredFields();
 
 defineEmits(["update:price"]);
 </script>
@@ -14,7 +18,8 @@ defineEmits(["update:price"]);
     <div class="align-items-center my-2 result-segment">
         <div>
             <RouteTypeIcon :type="segment.type" />
-            {{ segment.company }}
+            <BlurredText v-if="isFieldBlurred('company')" :text="segment.company" />
+            <template v-else>{{ segment.company }}</template>
         </div>
         <div class="mb-2">
             Условия:
