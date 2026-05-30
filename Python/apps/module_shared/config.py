@@ -33,6 +33,9 @@ class Settings(BaseSettings):
     authjwt_cookie_csrf_protect: bool = False
     authjwt_cookie_samesite: str = "lax"
 
+    # DEMO
+    DEMO_EXCLUDED_FIELDS: set[str] = {"company"}
+
 
 @cache
 def get_settings():

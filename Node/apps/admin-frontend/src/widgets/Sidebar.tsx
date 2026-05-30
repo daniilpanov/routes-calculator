@@ -43,6 +43,7 @@ export default function Sidebar() {
                 <div className="nav-btn disabled">Управление маршрутами</div>
                 <div className="nav-btn disabled">Управление точками</div>
                 <NavLink to={ ROUTES.DATA_IMPORT } className="nav-btn">Загрузка данных</NavLink>
+                <NavLink to={ ROUTES.DEMO_GUESTS } className="nav-btn">Демо-ссылки</NavLink>
             </div>
 
             <div>

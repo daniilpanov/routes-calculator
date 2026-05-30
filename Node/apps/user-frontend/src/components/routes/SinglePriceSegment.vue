@@ -3,10 +3,14 @@ import type { ISinglePriceSegment } from "@/interfaces/Routes";
 
 import RouteTypeIcon from "@/components/RouteTypeIcon.vue";
 import PriceWithCurrency from "@/components/PriceWithCurrency.vue";
+import BlurredText from "@/components/BlurredText.vue";
+import { useBlurredFields } from "@/composables/useBlurredFields";
 
 defineProps<{
     segment: ISinglePriceSegment,
 }>();
+
+const { isFieldBlurred } = useBlurredFields();
 
 defineEmits(["update:price"]);
 </script>
@@ -15,7 +19,8 @@ defineEmits(["update:price"]);
     <div class="align-items-center my-2 result-segment">
         <div>
             <RouteTypeIcon :type="segment.type" />
-            {{ segment.company }}
+            <BlurredText v-if="isFieldBlurred('company')" :text="segment.company" />
+            <template v-else>{{ segment.company }}</template>
         </div>
         <div class="mb-2">
             <span v-if="segment.beginCond">Условия: {{ segment.beginCond }} - {{ segment.finishCond }}</span>

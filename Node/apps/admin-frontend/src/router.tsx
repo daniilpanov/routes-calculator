@@ -3,6 +3,7 @@ import { ROUTES } from "./constants";
 import MainLayout from "@/layouts/MainLayout";
 import Dashboard from "@/pages/Dashboard";
 import DataImport from "@/pages/DataImport";
+import DemoGuests from "@/pages/DemoGuests";
 import RequireAuth from "@/providers/RequireAuth";
 import React from "react";
 import EmptyLayout from "@/layouts/EmptyLayout";
@@ -22,6 +23,7 @@ export const routesConfig = [
             { path: ROUTES.ROOT, element: <Dashboard /> },
             { path: ROUTES.DASHBOARD, element: <Dashboard /> },
             { path: ROUTES.DATA_IMPORT, element: <DataImport /> },
+            { path: ROUTES.DEMO_GUESTS, element: <DemoGuests /> },
         ],
     },
 ];

@@ -9,4 +9,8 @@ export const API_ENDPOINTS = {
         UPDATE_FROM_GSHEETS: "/admin/api/data/update-from-gsheets",
         DB: "/admin/api/db/data",
     },
+    DEMO_GUESTS: {
+        ROOT: "/admin/api/demo-guests",
+        byId: (id: number) => `/admin/api/demo-guests/${id}`,
+    },
 };

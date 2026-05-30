@@ -8,13 +8,14 @@ from fastapi.params import Depends, Query
 from starlette.status import HTTP_500_INTERNAL_SERVER_ERROR
 
 from aiohttp import ClientResponseError
-from backend_user.dependencies.auth import request_auth
+from backend_user.dependencies.auth_context import AuthContext, get_auth_context
 from backend_user.utils.group_points import group_companies, group_transfers, raw_point_from_dict
 from module_data_fesco_api_adapter import api_client
 from module_data_fesco_api_adapter.api_client.mappers.points import map_points_v2 as map_fesco
 from module_data_internal import aggregators
 from module_data_internal.aggregators.mappers.points import map_points_v2 as map_custom
 from module_data_internal.schemas import CompanyModel, PointModel
+from module_shared.config import get_settings as get_shared_settings
 
 router = APIRouter(prefix="/v2/points", tags=["v2", "points"])
 
@@ -27,6 +28,20 @@ def _error_or_data(result):
         if isinstance(result, ClientResponseError) and result.status == 400 else
         {"success": False, "error": str(result), "type": str(type(result))}
     )
+
+
+def _strip_demo_fields_from_points(data: list, auth: AuthContext) -> None:
+    if not auth.is_demo:
+        return
+
+    excluded = get_shared_settings().DEMO_EXCLUDED_FIELDS
+    if "company" not in excluded:
+        return
+
+    for point in data:
+        point.companies = []
+        for port in point.ports:
+            port.companies = []
 
 
 def _parse_point_ids(departure_point_ids: Annotated[str, Query]) -> tuple[list[int], list[str]]:
@@ -45,7 +60,7 @@ def _parse_point_ids(departure_point_ids: Annotated[str, Query]) -> tuple[list[i
 
 
 @router.get("/departures")
-async def all_departure_by_date(date: datetime.date, _: Annotated[None, Depends(request_auth)]):
+async def all_departure_by_date(date: datetime.date, auth: Annotated[AuthContext, Depends(get_auth_context)]):
     fesco_points: Iterator[dict[str, Any]]
     custom_points: list[tuple[PointModel, CompanyModel]]
 
@@ -76,9 +91,12 @@ async def all_departure_by_date(date: datetime.date, _: Annotated[None, Depends(
     else:
         data.extend(map_custom(custom_points))
 
+    result = group_transfers(group_companies([raw_point_from_dict(point) for point in data], {"FESCO"}), {"FESCO"})
+    _strip_demo_fields_from_points(result, auth)
+
     return {
         "errors": errors,
-        "data": group_transfers(group_companies([raw_point_from_dict(point) for point in data], {"FESCO"}), {"FESCO"}),
+        "data": result,
     }
 
 
@@ -86,7 +104,7 @@ async def all_departure_by_date(date: datetime.date, _: Annotated[None, Depends(
 async def all_destination_by_date(
     date: datetime.date,
     departure_point_ids: Annotated[tuple[list[int], list[str]], Depends(_parse_point_ids)],
-    __: Annotated[None, Depends(request_auth)],
+    auth: Annotated[AuthContext, Depends(get_auth_context)],
 ):
     coros = [aggregators.get_destination_points()]
 
@@ -127,7 +145,10 @@ async def all_destination_by_date(
         else:
             data.extend(map_fesco(fesco_points))
 
+    result = group_transfers(group_companies([raw_point_from_dict(point) for point in data], {"FESCO"}), {"FESCO"})
+    _strip_demo_fields_from_points(result, auth)
+
     return {
         "errors": errors,
-        "data": group_transfers(group_companies([raw_point_from_dict(point) for point in data], {"FESCO"}), {"FESCO"}),
+        "data": result,
     }

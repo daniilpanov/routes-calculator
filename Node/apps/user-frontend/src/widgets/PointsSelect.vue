@@ -4,6 +4,7 @@ import type { IdIsExternal, IPoint } from "@/interfaces/Point";
 
 import SelectWithFilter from "@/components/SelectWithFilter.vue";
 
+import { useBlurredFields } from "@/composables/useBlurredFields";
 import { useLang } from "@/stores/lang";
 import { computed } from "vue";
 
@@ -24,10 +25,13 @@ const isDisabledModel = defineModel<boolean>("isDisabled", { required: false, de
 defineEmits(["update:clearSignal"]);
 
 const { lang } = useLang();
+const { isFieldBlurred } = useBlurredFields();
 
 const pointOptions = computed(() =>
     props.points?.map((point: IPoint) => {
-        const companiesString = point.companies.map((company: ICompany) => company.name).join(",");
+        const companiesString = isFieldBlurred("company")
+            ? ""
+            : point.companies.map((company: ICompany) => company.name).join(",");
 
         let ids: IdIsExternal[] = [
             ...point.ids.map(id => ({ id, isExternal: false })),
