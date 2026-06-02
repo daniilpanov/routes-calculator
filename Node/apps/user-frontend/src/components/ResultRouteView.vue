@@ -35,6 +35,7 @@ const editMode: Ref<boolean> = inject("editable") || ref(false);
 const printMode: Ref<boolean> = inject("printMode") || ref(false);
 const allRoutesSelected: Ref<boolean> = inject("allRoutesSelected") || ref(false);
 const allRoutesSelectedSignalRef: Ref<boolean> = inject("allRoutesSelectedSignal") || ref(false);
+const isDemoModeActive: Ref<boolean> = inject("isDemoModeActive") || ref(false);
 const routeSelected = ref<boolean>(props.route[1][2]);
 
 let quiteSelect: boolean = false;
@@ -57,9 +58,9 @@ watch(allRoutesSelectedSignalRef, () => (routeSelected.value = allRoutesSelected
 </script>
 
 <template>
-    <div class="p-3 mb-4 border rounded shadow-sm result-item" :class="!routeSelected ? 'excluded' : printMode ? '' : 'included'">
+    <div class="p-3 mb-4 border rounded shadow-sm result-item" :class="printMode || isDemoModeActive ? '' : routeSelected ? 'included' : 'excluded'">
         <label v-if="editMode"><input type="checkbox" v-model="routeSelected" class="select-route-checkbox"></label>
-        <b v-else-if="!routeSelected">Маршрут не будет отображаться в КП</b>
+        <b v-else-if="!isDemoModeActive && !routeSelected">Маршрут не будет отображаться в КП</b>
 
         <div v-if="props.route[0][2]" class="alert alert-warning d-flex align-items-center" role="alert">
             <svg class="flex-shrink-0 me-2" width="24" height="24" role="img" aria-label="Warning:"><use xlink:href="#exclamation-triangle-fill"/></svg>

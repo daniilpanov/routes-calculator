@@ -47,6 +47,7 @@ const routesStore = useRoutes();
 const routesRef = computed((): RouteExtendedDescriptor[] | undefined => routesStore.routes);
 
 const isDemoModeActive = computed(() => useDemoAuth().isDemo);  // TODO: use feature-flags
+provide("isDemoModeActive", isDemoModeActive);
 
 const editMode = ref<boolean>(false);
 
