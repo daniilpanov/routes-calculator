@@ -6,6 +6,7 @@ import ResultsWidget from "@/widgets/ResultsWidget.vue";
 
 import { clearRoutes, revalidateRoutes, serializeCalculatorQueryParams } from "@/services/calculator";
 import { updateRoutes } from "@/services/calculator";
+import { useDemoAuth } from "@/stores/demoAuth";
 import { useRates } from "@/stores/rates";
 import { useRoutes } from "@/stores/routes";
 
@@ -44,6 +45,9 @@ const currentRateRef = computed({
 
 const routesStore = useRoutes();
 const routesRef = computed((): RouteExtendedDescriptor[] | undefined => routesStore.routes);
+
+const isDemoModeActive = computed(() => useDemoAuth().isDemo);  // TODO: use feature-flags
+provide("isDemoModeActive", isDemoModeActive);
 
 const editMode = ref<boolean>(false);
 
@@ -176,16 +180,18 @@ onMounted(() => {
             <CurrencySelect :rates="ratesRef" v-model="currentRateRef" />
         </div>
 
-        <button class="btn btn-secondary" @click="editMode = !editMode">
-            <template v-if="editMode">
-                Обычный режим
-            </template>
-            <template v-else>
-                Режим редактирования КП
-            </template>
-        </button>
+        <template v-if="!isDemoModeActive">
+            <button class="btn btn-secondary" @click="editMode = !editMode">
+                <template v-if="editMode">
+                    Обычный режим
+                </template>
+                <template v-else>
+                    Режим редактирования КП
+                </template>
+            </button>
 
-        <button class="btn btn-success" :disabled="!routesRef" @click="saveInPdf">Сохранить результат в PDF</button>
+            <button class="btn btn-success" :disabled="!routesRef" @click="saveInPdf">Сохранить результат в PDF</button>
+        </template>
     </div>
 
     <hr />
