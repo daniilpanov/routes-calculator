@@ -73,3 +73,11 @@ jobs:
           git config user.email "github-actions@github.com"
           git tag ${{ inputs.docker_tag }}
           git push origin ${{ inputs.docker_tag }}
+
+  deploy:
+    if: ${{ inputs.deploy == 'true' }}
+    needs: build
+    uses: ./.github/workflows/project-deploy.yml
+    with:
+      docker_tag: ${{ inputs.docker_tag }}
+    secrets: inherit
