@@ -1,11 +1,13 @@
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+TABLES = {"drop", "service_prices", "prices", "routes", "companies", "containers", "points", "services"}
 
-async def create_db_dump(session: AsyncSession, structure: bool):
+
+async def create_db_dump(session: AsyncSession, structure: bool, all_tables: bool = False):
     yield "SET FOREIGN_KEY_CHECKS = 0;\n\n"
 
-    tables_descriptor = (await session.execute(text("SHOW TABLES"))).scalars()
+    tables_descriptor = (await session.execute(text("SHOW TABLES"))).scalars() if all_tables else TABLES
 
     for table in tables_descriptor:
         if table == "alembic_version":
