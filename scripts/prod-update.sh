@@ -10,6 +10,17 @@ if [ -z "$DOCKER_TAG" ]; then
     else
         DOCKER_TAG="latest"
     fi
+else
+    echo "=== Updating .env DOCKER_PROD_IMAGES_TAG to $DOCKER_TAG ==="
+    if [ -f .env ]; then
+        if grep -qP '^DOCKER_PROD_IMAGES_TAG=' .env; then
+            sed -i 's/^DOCKER_PROD_IMAGES_TAG=.*/DOCKER_PROD_IMAGES_TAG="'"$DOCKER_TAG"'"/' .env
+        else
+            echo 'DOCKER_PROD_IMAGES_TAG="'"$DOCKER_TAG"'"' >> .env
+        fi
+    else
+        echo 'DOCKER_PROD_IMAGES_TAG="'"$DOCKER_TAG"'"' > .env
+    fi
 fi
 
 echo "=== Git ref: $GIT_REF ==="
