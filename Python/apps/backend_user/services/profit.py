@@ -51,62 +51,17 @@ def _apply_profit_to_segments(
             segment["price"] = float(segment["price"]) + converted_profit
 
 
-def _apply_profit_to_drop(
-    drop: dict[str, Any] | None,
-    rail_profit: float,
-    rail_profit_currency: str,
-    rates: dict[str, float],
-) -> None:
-    if not drop or not rail_profit:
-        return
-    segment_currency = drop.get("currency", "USD")
-    converted_profit = _get_converted_profit(rail_profit, rail_profit_currency, segment_currency, rates)
-    drop["price"] = float(drop["price"]) + converted_profit
-
-
-def _apply_profit_to_services(
-    services: list[dict[str, Any]],
-    segments: list[dict[str, Any]],
-    sea_profit: float,
-    sea_profit_currency: str,
-    rail_profit: float,
-    rail_profit_currency: str,
-    rates: dict[str, float],
-) -> None:
-    if not services:
-        return
-    segment_types = {seg.get("id"): str(seg.get("type", "")).lower() for seg in segments}
-    for service in services:
-        seg_type = segment_types.get(service.get("segment_id"))
-        if seg_type == "sea":
-            profit = sea_profit
-            profit_currency = sea_profit_currency
-        elif seg_type == "rail":
-            profit = rail_profit
-            profit_currency = rail_profit_currency
-        else:
-            continue
-        segment_currency = service.get("currency", "USD")
-        converted_profit = _get_converted_profit(profit, profit_currency, segment_currency, rates)
-        service["price"] = float(service["price"]) + converted_profit
-
-
 def apply_demo_profit_to_routes(
     routes: list,
     sea_profit: float,
     sea_profit_currency: str,
     rail_profit: float,
     rail_profit_currency: str,
-) -> None:
+):
     if not sea_profit and not rail_profit:
         return
 
     rates = get_rates()
 
     for route in routes:
-        segments = route[0]
-        _apply_profit_to_segments(segments, sea_profit, sea_profit_currency, rail_profit, rail_profit_currency, rates)
-        _apply_profit_to_drop(route[1], rail_profit, rail_profit_currency, rates)
-        _apply_profit_to_services(
-            route[3], segments, sea_profit, sea_profit_currency, rail_profit, rail_profit_currency, rates,
-        )
+        _apply_profit_to_segments(route[0], sea_profit, sea_profit_currency, rail_profit, rail_profit_currency, rates)
