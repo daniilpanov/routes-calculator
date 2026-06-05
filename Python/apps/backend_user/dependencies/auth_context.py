@@ -27,31 +27,21 @@ async def get_auth_context(
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> AuthContext:
     demo_uid = request.headers.get("X-Demo-User-UID")
-    if demo_uid:
-        async with db.session_context() as session:
-            guest = await get_demo_guest_by_uid(session, demo_uid)
-        if not guest:
-            guest = None
-        return AuthContext(
-            is_demo=guest is not None,
-            demo_uid=demo_uid,
-            sea_profit=float(guest.sea_profit) if guest else 0,
-            sea_profit_currency=guest.sea_profit_currency if guest else "USD",
-            rail_profit=float(guest.rail_profit) if guest else 0,
-            rail_profit_currency=guest.rail_profit_currency if guest else "USD",
-        )
-
-    request_auth(authorization, settings)
-
-    if settings.DISABLE_USER_AUTH_CHECK:
+    if not demo_uid:
+        request_auth(authorization, settings)
         return AuthContext()
 
-    claims = authorization.get_raw_jwt() or {}
+    async with db.session_context() as session:
+        guest = await get_demo_guest_by_uid(session, demo_uid)
+
+    if not guest:
+        return AuthContext()
+
     return AuthContext(
-        is_demo=bool(claims.get("is_demo")),
-        sea_profit=float(claims.get("sea_profit") or 0),
-        sea_profit_currency=claims.get("sea_profit_currency", "USD"),
-        rail_profit=float(claims.get("rail_profit") or 0),
-        rail_profit_currency=claims.get("rail_profit_currency", "USD"),
-        demo_uid=claims.get("demo_uid"),
+        is_demo=True,
+        demo_uid=demo_uid,
+        sea_profit=float(guest.sea_profit),
+        sea_profit_currency=guest.sea_profit_currency,
+        rail_profit=float(guest.rail_profit),
+        rail_profit_currency=guest.rail_profit_currency,
     )
