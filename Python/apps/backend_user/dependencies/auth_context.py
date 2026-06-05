@@ -30,8 +30,10 @@ async def get_auth_context(
     if demo_uid:
         async with db.session_context() as session:
             guest = await get_demo_guest_by_uid(session, demo_uid)
+
         if not guest:
             guest = None
+
         return AuthContext(
             is_demo=guest is not None,
             demo_uid=demo_uid,
@@ -42,16 +44,4 @@ async def get_auth_context(
         )
 
     request_auth(authorization, settings)
-
-    if settings.DISABLE_USER_AUTH_CHECK:
-        return AuthContext()
-
-    claims = authorization.get_raw_jwt() or {}
-    return AuthContext(
-        is_demo=bool(claims.get("is_demo")),
-        sea_profit=float(claims.get("sea_profit") or 0),
-        sea_profit_currency=claims.get("sea_profit_currency", "USD"),
-        rail_profit=float(claims.get("rail_profit") or 0),
-        rail_profit_currency=claims.get("rail_profit_currency", "USD"),
-        demo_uid=claims.get("demo_uid"),
-    )
+    return AuthContext()
