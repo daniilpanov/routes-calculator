@@ -26,7 +26,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: prod
+    environment: dev
 
     steps:
       - name: Validate required secrets and variables
