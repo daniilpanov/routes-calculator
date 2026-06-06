@@ -8,10 +8,18 @@ on:
         required: false
         type: string
         default: ""
+      tag_message:
+        description: "Optional message for the git tag (annotated tag)"
+        required: false
+        type: string
   workflow_dispatch:
     inputs:
       docker_tag:
         description: "Docker image and git tag to deploy (optional)"
+        required: false
+        type: string
+      tag_message:
+        description: "Optional message for the git tag (annotated tag)"
         required: false
         type: string
 
@@ -41,4 +49,4 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             cd "${{ secrets.PROJECT_DIR }}"
-            ./scripts/prod-update.sh ${{ inputs.docker_tag || 'master' }} ${{ inputs.docker_tag }}
+            ./scripts/prod-update.sh ${{ inputs.docker_tag || 'master' }} ${{ inputs.docker_tag }} ${{ inputs.tag_message }}
