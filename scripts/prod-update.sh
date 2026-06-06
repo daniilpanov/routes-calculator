@@ -3,6 +3,7 @@ set -e
 
 GIT_REF="${1:-master}"
 DOCKER_TAG="${2:-}"
+TAG_MESSAGE="${3:-}"
 
 if [ -z "$DOCKER_TAG" ]; then
     if [ -f .env ]; then
@@ -31,16 +32,25 @@ git fetch -p --tags
 if git show-ref --verify --quiet "refs/tags/$GIT_REF"; then
     echo "=== Switching to tag: $GIT_REF ==="
     git checkout "tags/$GIT_REF"
-else
+elif git show-ref --verify --quiet "refs/heads/$GIT_REF"; then
     echo "=== Switching to branch: $GIT_REF ==="
     git checkout "$GIT_REF"
     git pull origin "$GIT_REF"
+else
+    echo "=== Creating and pushing git tag: $GIT_REF with message: $TAG_MESSAGE ==="
+    if [ -n "${3:-}" ]; then
+      git tag "$GIT_REF"
+    else
+      git tag -a "$GIT_REF" -m "$TAG_MESSAGE"
+    fi
+
+    #git push origin "$DOCKER_TAG"
 fi
 
 export DOCKER_PROD_IMAGES_TAG="$DOCKER_TAG"
 
-docker compose down
-docker compose pull
-docker compose -f docker-compose.migrate.yml pull
-./scripts/prod-db-migrate.sh upgrade head
-docker compose up -d
+#docker compose down
+#docker compose pull
+#docker compose -f docker-compose.migrate.yml pull
+#./scripts/prod-db-migrate.sh upgrade head
+#docker compose up -d

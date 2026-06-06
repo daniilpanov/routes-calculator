@@ -72,37 +72,11 @@ jobs:
               danielgreen1806/$img:$PRIMARY_TAG
           done
 
-      - name: Create and push git tag
-        if: ${{ inputs.docker_tag != '' }}
-        run: |
-          TAG="${{ inputs.docker_tag }}"
-
-          if git rev-parse --quiet --verify "refs/tags/$TAG" >/dev/null 2>&1; then
-            echo "Git tag '$TAG' already exists locally. Skipping."
-            exit 0
-          fi
-
-          if git ls-remote --tags origin "$TAG" 2>/dev/null | grep -q "refs/tags/$TAG$"; then
-            echo "Git tag '$TAG' already exists on remote. Skipping."
-            exit 0
-          fi
-
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-
-          MESSAGE="${{ inputs.tag_message }}"
-          if [ -n "$MESSAGE" ]; then
-            git tag -a "$TAG" -m "$MESSAGE"
-          else
-            git tag "$TAG"
-          fi
-
-          git push origin "$TAG"
-
   deploy:
     if: ${{ inputs.deploy == 'true' }}
     needs: build
     uses: ./.github/workflows/project-deploy.yml
     with:
       docker_tag: ${{ inputs.docker_tag }}
+      tag_message: ${{ inputs.tag_message }}
     secrets: inherit
