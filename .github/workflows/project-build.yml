@@ -7,6 +7,10 @@ on:
         description: "Docker image tag (optional). If set, a git tag is created and images are also pushed with this tag."
         required: false
         type: string
+      tag_message:
+        description: "Optional message for the git tag (annotated tag)"
+        required: false
+        type: string
       is_stable:
         description: "Mark as stable (pushes as latest-stable instead of latest)"
         type: boolean
@@ -61,18 +65,39 @@ jobs:
       - name: Push additional docker tag
         if: ${{ inputs.docker_tag != '' }}
         run: |
+          PRIMARY_TAG="${{ steps.set-tag.outputs.TAG }}"
           for img in calculator-python-apps calculator-db-migration calculator-reverseproxy; do
-            docker tag danielgreen1806/$img:${{ steps.set-tag.outputs.TAG }} danielgreen1806/$img:${{ inputs.docker_tag }}
-            docker push danielgreen1806/$img:${{ inputs.docker_tag }}
+            docker buildx imagetools create \
+              -t danielgreen1806/$img:${{ inputs.docker_tag }} \
+              danielgreen1806/$img:$PRIMARY_TAG
           done
 
       - name: Create and push git tag
         if: ${{ inputs.docker_tag != '' }}
         run: |
+          TAG="${{ inputs.docker_tag }}"
+
+          if git rev-parse --quiet --verify "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "Git tag '$TAG' already exists locally. Skipping."
+            exit 0
+          fi
+
+          if git ls-remote --tags origin "$TAG" 2>/dev/null | grep -q "refs/tags/$TAG$"; then
+            echo "Git tag '$TAG' already exists on remote. Skipping."
+            exit 0
+          fi
+
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git tag ${{ inputs.docker_tag }}
-          git push origin ${{ inputs.docker_tag }}
+
+          MESSAGE="${{ inputs.tag_message }}"
+          if [ -n "$MESSAGE" ]; then
+            git tag -a "$TAG" -m "$MESSAGE"
+          else
+            git tag "$TAG"
+          fi
+
+          git push origin "$TAG"
 
   deploy:
     if: ${{ inputs.deploy == 'true' }}
