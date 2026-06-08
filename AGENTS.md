@@ -39,7 +39,7 @@ Python/apps/
 │   ├── api/              # Auto-discovered routers (routes_loading, data_manager, demo_guests)
 │   └── service/          # Business logic (routes_loading/, db_management/)
 ├── module_shared/        # Shared infrastructure (config, database, responses, jwt_handler,
-│                         #   feature_flags, repositories/demo_guest, schemas/demo_guest)
+│                         #   feature_flags, models/route, repositories/demo_guest, schemas/demo_guest)
 ├── module_data_internal/ # ORM models + internal data aggregators
 │   └── schemas/          # CompanyModel, ContainerModel, PointModel, RouteModel, etc.
 └── module_data_fesco_api_adapter/  # External FESCO API client
@@ -187,14 +187,14 @@ Module prefixes:
 
 ### Python Tests
 - Tests live in `Python/tests/`, run with `pytest`
-- **70 tests** across 7 files:
-  - `test_route_calculation.py` (21) — route calculation (internal, FESCO, mixed, demo/profit, empty IDs, container fail, edge cases)
-  - `test_internal_aggregators.py` (17) — containers, paths (rail/sea/COC/SOC/expired/services/drop/dropp_off/no_data/process_results)
-  - `test_profit.py` (17) — currency conversion, profit application, segment type filtering, mixed segments, currency conversion in profit
-  - `test_auth_utils.py` (8) — `_strip_demo_fields`, `get_auth_context` with/without/invalid demo header, empty routes
-  - `test_get_points.py` (4) — `get_departure_points`, `get_destination_points`, no routes, multiple companies
-  - `test_demo_guest_repo.py` (5) — `get_demo_guest_by_uid` found/not found/profit overrides, `list_demo_guests` empty/multiple
-  - `test_get_rates.py` (3) — `get_rates` returns dict, caching, with datetime
+- **71 tests** across 7 files:
+    - `test_route_calculation.py` (18) — route calculation (service-level: internal, FESCO, mixed, errors; handler-level: format conversion, demo transforms/strip/profit)
+    - `test_internal_aggregators.py` (17) — containers, paths (rail/sea/COC/SOC/expired/services/drop/dropp_off/no_data/process_results)
+    - `test_profit.py` (17) — currency conversion, profit application, segment type filtering, mixed segments, currency conversion in profit
+    - `test_auth_utils.py` (8) — `_strip_demo_fields`, `get_auth_context` with/without/invalid demo header, empty routes
+    - `test_get_points.py` (4) — `get_departure_points`, `get_destination_points`, no routes, multiple companies
+    - `test_demo_guest_repo.py` (5) — `get_demo_guest_by_uid` found/not found/profit overrides, `list_demo_guests` empty/multiple
+    - `test_get_rates.py` (3) — `get_rates` returns dict, caching, with datetime
 - **Test DB**: SQLite in-memory (`sqlite+aiosqlite`). Tables created via `Base.metadata.create_all()`, **not** via Alembic migrations (migrations have MySQL-specific code).
 - **Auth mocks**: patch `get_demo_guest_by_uid`, `get_database`, and `request_auth` directly
 - **FESCO API mocks**: use `unittest.mock.patch` on `module_data_fesco_api_adapter.api_client` directly
@@ -272,6 +272,30 @@ module_shared ───┬── backend_auth
 - `providers/auth.ts` watches `useDemoAuth().demoUid` → fetches with/without `X-Demo-User-UID` header → sets `useFeatureFlags().blurredFields`
 - `immediate: true` ensures correct state on initial load
 - Feature flags are **not cleared explicitly** — the watcher auto-updates when `demoUid` changes (clearing demoUid → fetch without header → empty blurred_fields)
+
+### Domain Models
+
+**`module_shared/models/route.py`** — Route entities (Pydantic V2 `BaseModel`):
+- Models: `ContainerItem`, `PriceItem`, `OnePrice`, `ServiceItem`, `DropItem`, `RouteSegment`, `RouteResult`
+- `OnePrice` represents FESCO single-price format with `beginCond`/`finishCond` (price-level conditions, set only for sea segments)
+- `PriceItem` represents internal multi-price format (always has `value: float`)
+- `RouteSegment.prices` can be `list[PriceItem]` (internal) or `OnePrice` (FESCO) or `None`
+
+**`module_shared/models/errors.py`** — Error model:
+- `RouteError(error_type: str, error_text: str, source: str | None)`
+- Used in services (no source) and points handlers (`"internal"`/`"external"`)
+
+### Service/API Separation (Single Responsibility)
+- **Services** (`backend_user/services/`) handle data work: fetching, aggregating, manipulating (e.g., `_strip_demo_fields`)
+- **API handlers** (`backend_user/api/`) handle format conversion: model → tuple for HTTP response
+- Models in `module_shared/models/route.py` are Pydantic V2 `BaseModel` (not dataclasses) — they serve as both domain objects and response schemas
+- `calculate_routes()` returns `tuple[list[RouteResult], list[RouteError]]` (raw Pydantic models + errors)
+- V2 handler (`api/v2/routes/post.py`) owns: `_route_result_to_tuple`, `_normalize_routes`, `_apply_demo_transforms`
+  - `_seg_to_price_dict` was removed — models are returned as-is (no OnePrice flattening to `price`/`currency`/`container`/`beginCond`/`finishCond` flat fields)
+  - Response format: `[segments: list[RouteSegment], drop: DropItem | None, bool, services: list[ServiceItem]]` — tuple with raw model objects
+- V1 handler (`api/v1/routes/post.py`) has its own copies of these functions (legacy, separate format)
+- `_strip_demo_fields` stays in `services/route_calculation.py` (data manipulation, not format conversion)
+- No duplicate Pydantic response models — `backend_user/schemas/routes_responses.py` imports `RouteSegment`, `DropItem`, `ServiceItem` from `module_shared.models.route`
 
 ### Database
 - MariaDB, accessed via SQLAlchemy async + `aiomysql`
