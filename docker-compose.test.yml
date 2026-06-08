@@ -1,0 +1,19 @@
+services:
+  ### TEST
+  test-runner:
+    build:
+      context: "./Python/"
+      target: "test-runner"
+    env_file:
+      - ".env"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges
+    user: 1000:1000
+    volumes:
+      - "./Python/apps/:/app/apps/:ro"
+      - "./Python/tests/:/app/tests/:ro"
+      - "./Python/pyproject.toml:/app/pyproject.toml:ro"
+    profiles:
+      - test

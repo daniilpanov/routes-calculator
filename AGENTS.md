@@ -82,6 +82,35 @@ config/
 scripts/                  # Dev workflow scripts (run, stop, rebuild, migrate)
 ```
 
+### Build
+
+**Package Manager:** Poetry (`pyproject.toml` at project root). Always use `poetry add` CLI, don't edit `pyproject.toml` manually.
+
+**Dependency groups:**
+| Group | File | Contents |
+|-------|------|----------|
+| `[tool.poetry.dependencies]` | `Python/requirements.txt` | Runtime deps |
+| `[tool.poetry.group.dev.dependencies]` | `Python/requirements-dev.txt` | Linting/pre-commit tools (black, pre-commit, ipython) |
+| `[tool.poetry.group.tests.dependencies]` | `Python/requirements-tests.txt` | Test frameworks (pytest, pytest-asyncio, httpx, aiosqlite) |
+
+**Export commands** (run after every `poetry add` / `poetry remove`):
+```bash
+poetry export -f requirements.txt --output Python/requirements.txt --without-hashes
+poetry export -f requirements.txt --output Python/requirements-dev.txt --without-hashes --with dev
+poetry export -f requirements.txt --output Python/requirements-tests.txt --without-hashes --with tests
+```
+
+The `.txt` files are what the Docker build uses, so they must stay in sync with `poetry.lock`.
+
+**Dockerfile stages** (`Python/Dockerfile`):
+| Stage | Base | Purpose |
+|-------|------|---------|
+| `python-apps` | `python:3.12-slim` | Runs FastAPI microservices via uvicorn |
+| `db-migration` | `python:3.12-slim` | Runs Alembic database migrations |
+| `test-runner` | `python:3.12-slim` | Runs pytest (install from `requirements-tests.txt`) |
+
+The `test-runner` stage copies `apps/` to `/app/apps/`, `tests/` to `/app/tests/`, and overrides rootdir via `--override-ini` flags (no pyproject.toml in build context). At runtime, the hot-dev compose mounts `pyproject.toml` for config.
+
 ### Nginx Routing
 
 | Location | Proxy Target | Purpose |
@@ -129,6 +158,12 @@ Module prefixes:
 - Before each Node commit: run the project's lint script (if available)
 - Fix any lint/type errors before committing
 
+### CI Workflows
+- `project-lint.yml` — pre-commit + ESLint, runs on every PR
+- `project-tests.yml` — pytest (SQLite in-memory), runs on PR, push to main/master, and manual
+- `project-build.yml` — Docker Bake build + optional deploy, manual trigger only
+- `project-deploy.yml` — SSH deploy, reusable sub-workflow
+
 ---
 
 ## Code Style & Conventions
@@ -149,6 +184,25 @@ Module prefixes:
 - Router auto-discovery pattern: place `router = APIRouter(...)` in any module under `api/` — it gets discovered automatically
 - DB sessions: use `async with db.session_context() as session` — auto-commits on exit, auto-rollbacks on exception
 - Alembic migrations: placed in `Python/alembic/versions/`, excluded from pre-commit (`exclude: 'Python/alembic/.*'`)
+
+### Python Tests
+- Tests live in `Python/tests/`, run with `pytest`
+- **70 tests** across 7 files:
+  - `test_route_calculation.py` (21) — route calculation (internal, FESCO, mixed, demo/profit, empty IDs, container fail, edge cases)
+  - `test_internal_aggregators.py` (17) — containers, paths (rail/sea/COC/SOC/expired/services/drop/dropp_off/no_data/process_results)
+  - `test_profit.py` (17) — currency conversion, profit application, segment type filtering, mixed segments, currency conversion in profit
+  - `test_auth_utils.py` (8) — `_strip_demo_fields`, `get_auth_context` with/without/invalid demo header, empty routes
+  - `test_get_points.py` (4) — `get_departure_points`, `get_destination_points`, no routes, multiple companies
+  - `test_demo_guest_repo.py` (5) — `get_demo_guest_by_uid` found/not found/profit overrides, `list_demo_guests` empty/multiple
+  - `test_get_rates.py` (3) — `get_rates` returns dict, caching, with datetime
+- **Test DB**: SQLite in-memory (`sqlite+aiosqlite`). Tables created via `Base.metadata.create_all()`, **not** via Alembic migrations (migrations have MySQL-specific code).
+- **Auth mocks**: patch `get_demo_guest_by_uid`, `get_database`, and `request_auth` directly
+- **FESCO API mocks**: use `unittest.mock.patch` on `module_data_fesco_api_adapter.api_client` directly
+- **Test data**: factory functions in `Python/tests/data/__init__.py` build ORM objects with sensible defaults
+- **Currency rates**: tests use RUB-relative rates `{"USD": 90.0, "RUB": 1.0}`; `_convert_currency` formula is `amount * rates[from] / rates[to]`
+- Run locally: `PYTHONPATH=Python/apps python -m pytest Python/tests/ -v`
+- Run in Docker (profile `test`, won't start with `docker compose up`):
+  `./scripts/run-test.sh`
 
 ### Python Module Dependencies Graph
 ```
@@ -228,5 +282,10 @@ module_shared ───┬── backend_auth
 ---
 
 ## Known Gaps
-- **No automated tests** — Python and both frontends lack test coverage
 - **Backend docs** (`docs/backend/`) are empty
+
+---
+
+## ✅ Critical Rule
+
+**After EVERY completed step** (every commit, every config change, every dependency update, every new file) — **STOP and update this AGENTS.md file** with any relevant new conventions, decisions, or structural changes. This file is the persistent memory for all future sessions. If it's not in AGENTS.md, it doesn't exist.
