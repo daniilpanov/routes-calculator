@@ -1,3 +1,4 @@
+from backend_user.schemas.routes import NormalizedRoutes
 from backend_user.services.get_rates import get_rates
 from module_shared.models.route import RouteSegment
 
@@ -46,7 +47,7 @@ def _apply_profit_to_segments(
 
 
 def apply_demo_profit_to_routes(
-    routes: list,
+    routes: NormalizedRoutes,
     sea_profit: float,
     sea_profit_currency: str,
     rail_profit: float,

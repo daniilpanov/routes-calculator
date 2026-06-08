@@ -2,22 +2,15 @@ import asyncio
 import datetime
 from collections.abc import Iterable
 
-from backend_user.dependencies.auth_context import AuthContext
 from backend_user.schemas.form_requests import CalculateFormRequest
-from backend_user.services.profit import apply_demo_profit_to_routes
+from backend_user.schemas.routes import NormalizedRoutes
 from module_data_fesco_api_adapter import api_client
 from module_data_internal import aggregators
 from module_shared.config import get_settings as get_shared_settings
-from module_shared.models.route import DropItem, RouteResult, RouteSegment, ServiceItem
-
-NormalizedRoutes = list[tuple[list[RouteSegment], DropItem | None, bool, list[ServiceItem]]]
+from module_shared.models.route import RouteResult
 
 
-def _normalize_routes(routes: Iterable[RouteResult]) -> NormalizedRoutes:
-    return [(r.segments, r.drop, r.may_be_invalid, r.services) for r in routes]
-
-
-def _strip_demo_fields(routes: list) -> None:
+def _strip_demo_fields(routes: NormalizedRoutes) -> None:
     excluded_fields = get_shared_settings().DEMO_EXCLUDED_FIELDS
 
     for route in routes:
@@ -25,22 +18,6 @@ def _strip_demo_fields(routes: list) -> None:
         for segment in segments:
             for field in excluded_fields:
                 setattr(segment, field, None)
-
-
-def _apply_demo_transforms(routes: list, auth: AuthContext) -> None:
-    if not auth.is_demo:
-        return
-
-    if auth.sea_profit or auth.rail_profit:
-        apply_demo_profit_to_routes(
-            routes,
-            auth.sea_profit,
-            auth.sea_profit_currency,
-            auth.rail_profit,
-            auth.rail_profit_currency,
-        )
-
-    _strip_demo_fields(routes)
 
 
 async def _get_routes(
@@ -66,7 +43,7 @@ async def _get_routes(
         return []
 
 
-async def calculate_routes(request: CalculateFormRequest, auth: AuthContext) -> dict:
+async def calculate_routes(request: CalculateFormRequest) -> tuple[list[RouteResult], list[dict]]:
     coros = []
 
     for destination_id in request.destinationExternalIds:
@@ -96,8 +73,8 @@ async def calculate_routes(request: CalculateFormRequest, auth: AuthContext) -> 
             )
 
     result = await asyncio.gather(*coros, return_exceptions=True)
-    routes = []
-    errors = []
+    routes: list[RouteResult] = []
+    errors: list[dict] = []
 
     for coro_result in result:
         if isinstance(coro_result, BaseException):
@@ -112,10 +89,4 @@ async def calculate_routes(request: CalculateFormRequest, auth: AuthContext) -> 
             if res:
                 routes.extend(res)
 
-    normalized = _normalize_routes(routes)
-    _apply_demo_transforms(normalized, auth)
-
-    return {
-        "errors": errors,
-        "routes": normalized,
-    }
+    return routes, errors
