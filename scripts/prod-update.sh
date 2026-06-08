@@ -31,13 +31,13 @@ git fetch -p --tags
 
 if git show-ref --verify --quiet "refs/tags/$GIT_REF"; then
     echo "=== Switching to tag: $GIT_REF ==="
-    git checkout "tags/$GIT_REF"
+    git checkout "$GIT_REF"
 elif git show-ref --verify --quiet "refs/heads/$GIT_REF"; then
     echo "=== Switching to branch: $GIT_REF ==="
     git checkout "$GIT_REF"
     git pull origin "$GIT_REF"
 else
-    echo "=== Creating and pushing git tag '$GIT_REF' with message '$TAG_MESSAGE' from 'master' ==="
+    echo "=== Creating and pushing git tag '$GIT_TAG' with message '$TAG_MESSAGE' from 'master' ==="
     git checkout master
 
     if [ -n "$TAG_MESSAGE" ]; then
