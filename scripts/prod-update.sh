@@ -40,13 +40,13 @@ else
     echo "=== Creating and pushing git tag '$GIT_REF' with message '$TAG_MESSAGE' from 'master' ==="
     git checkout master
 
-    if [ -n "${3:-}" ]; then
-      git tag "$GIT_REF"
-    else
+    if [ -n "$TAG_MESSAGE" ]; then
       git tag -a "$GIT_REF" -m "$TAG_MESSAGE"
+    else
+      git tag "$GIT_REF"
     fi
 
-    git push origin "$DOCKER_TAG"
+    git push origin "$GIT_REF"
 fi
 
 export DOCKER_PROD_IMAGES_TAG="$DOCKER_TAG"
