@@ -70,9 +70,9 @@ async def calculate(request: CalculateFormRequest, _: Annotated[None, Depends(re
     multi_service_routes = []
 
     for route_and_drop_and_datecheck in routes:
-        if len(route_and_drop_and_datecheck) == 3:
-            route, drop, may_route_be_invalid = route_and_drop_and_datecheck
-        else:  # magic fallback
+        if len(route_and_drop_and_datecheck) >= 3:
+            route, drop, may_route_be_invalid, *_ = route_and_drop_and_datecheck
+        else:  # safety fallback
             route = route_and_drop_and_datecheck[0]
             drop = None
             may_route_be_invalid = False
