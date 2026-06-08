@@ -73,7 +73,7 @@ jobs:
           done
 
   deploy:
-    if: ${{ inputs.deploy == 'true' }}
+    if: ${{ inputs.deploy }}
     needs: build
     uses: ./.github/workflows/project-deploy.yml
     with:
