@@ -45,6 +45,18 @@ ipython = "*"
 icecream = "*"
 pynacl = "*"
 
+
+[tool.poetry.group.tests.dependencies]
+pytest = "^9.0.3"
+pytest-asyncio = "^1.4.0"
+httpx = "^0.28.1"
+aiosqlite = "^0.22.1"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["Python/tests"]
+pythonpath = ["Python/apps"]
+
 [tool.isort]
 profile = "black"
 verbose = false
