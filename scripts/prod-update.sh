@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
-set -e
 
 GIT_REF="${1:-master}"
 DOCKER_TAG="${2:-}"
-TAG_MESSAGE="${3:-}"
+GIT_TAG="${3:-}"
+TAG_MESSAGE="${4:-}"
+
+if [ -z "$GIT_TAG" ]; then
+    GIT_TAG="$DOCKER_TAG"
+fi
 
 if [ -z "$DOCKER_TAG" ]; then
     if [ -f .env ]; then
@@ -36,17 +40,18 @@ elif git show-ref --verify --quiet "refs/heads/$GIT_REF"; then
     echo "=== Switching to branch: $GIT_REF ==="
     git checkout "$GIT_REF"
     git pull origin "$GIT_REF"
-else
-    echo "=== Creating and pushing git tag '$GIT_TAG' with message '$TAG_MESSAGE' from 'master' ==="
-    git checkout master
+fi
 
+if [ "$GIT_TAG" ]; then
     if [ -n "$TAG_MESSAGE" ]; then
-      git tag -a "$GIT_REF" -m "$TAG_MESSAGE"
+        echo "=== Creating and pushing git tag '$GIT_TAG' with message '$TAG_MESSAGE' from '$GIT_REF' ==="
+        git tag -a "$GIT_TAG" -m "$TAG_MESSAGE"
     else
-      git tag "$GIT_REF"
+        echo "=== Creating and pushing git tag '$GIT_TAG' from '$GIT_REF' ==="
+        git tag "$GIT_TAG"
     fi
 
-    git push origin "$GIT_REF"
+    git push origin "$GIT_TAG"
 fi
 
 export DOCKER_PROD_IMAGES_TAG="$DOCKER_TAG"
