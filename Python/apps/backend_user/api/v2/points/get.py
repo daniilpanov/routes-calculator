@@ -9,6 +9,7 @@ from starlette.status import HTTP_500_INTERNAL_SERVER_ERROR
 
 from backend_user.dependencies.auth_context import AuthContext, get_auth_context
 from backend_user.schemas.errors import RouteError
+from backend_user.schemas.get_points_responses import PointsDataResponse
 from backend_user.utils.group_points import group_companies, group_transfers, raw_point_from_dict
 from module_data_fesco_api_adapter import api_client
 from module_data_fesco_api_adapter.api_client.transformers.points import (
@@ -51,7 +52,7 @@ def _parse_point_ids(departure_point_ids: Annotated[str, Query]) -> tuple[list[i
     return internal_point_ids, external_point_ids
 
 
-@router.get("/departures")
+@router.get("/departures", response_model=PointsDataResponse)
 async def all_departure_by_date(date: datetime.date, auth: Annotated[AuthContext, Depends(get_auth_context)]):
     fesco_points: Iterator[dict[str, Any]]
     custom_points: list[tuple[PointModel, CompanyModel]]
@@ -84,7 +85,7 @@ async def all_departure_by_date(date: datetime.date, auth: Annotated[AuthContext
     }
 
 
-@router.get("/destinations")
+@router.get("/destinations", response_model=PointsDataResponse)
 async def all_destination_by_date(
     date: datetime.date,
     departure_point_ids: Annotated[tuple[list[int], list[str]], Depends(_parse_point_ids)],

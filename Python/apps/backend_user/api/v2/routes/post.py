@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends
 
 from backend_user.dependencies.auth_context import AuthContext, get_auth_context
 from backend_user.schemas.form_requests import CalculateFormRequest
-from backend_user.schemas.routes import NormalizedRoutes
+from backend_user.schemas.routes import NormalizedRoutes, RoutesDataResponse
 from backend_user.services.profit import apply_demo_profit_to_routes
 from backend_user.services.route_calculation import _strip_demo_fields, calculate_routes
 from module_shared.models.route import RouteResult
@@ -32,7 +32,7 @@ def _apply_demo_transforms(routes: NormalizedRoutes, auth: AuthContext) -> None:
     _strip_demo_fields(routes)
 
 
-@router.post("/calculate")
+@router.post("/calculate", response_model=RoutesDataResponse)
 async def calculate(
     request: CalculateFormRequest,
     auth: Annotated[AuthContext, Depends(get_auth_context)],
