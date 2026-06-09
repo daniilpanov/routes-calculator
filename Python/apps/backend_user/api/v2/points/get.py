@@ -7,8 +7,8 @@ from fastapi import APIRouter, HTTPException
 from fastapi.params import Depends, Query
 from starlette.status import HTTP_500_INTERNAL_SERVER_ERROR
 
-from aiohttp import ClientResponseError
 from backend_user.dependencies.auth_context import AuthContext, get_auth_context
+from backend_user.schemas.errors import RouteError
 from backend_user.utils.group_points import group_companies, group_transfers, raw_point_from_dict
 from module_data_fesco_api_adapter import api_client
 from module_data_fesco_api_adapter.api_client.transformers.points import (
@@ -20,16 +20,6 @@ from module_data_internal.schemas import CompanyModel, PointModel
 from module_shared.config import get_settings as get_shared_settings
 
 router = APIRouter(prefix="/v2/points", tags=["v2", "points"])
-
-
-def _error_or_data(result):
-    return (
-        {"success": True, "data": list(result)}
-        if not isinstance(result, BaseException) else
-        {"success": True, "data": []}
-        if isinstance(result, ClientResponseError) and result.status == 400 else
-        {"success": False, "error": str(result), "type": str(type(result))}
-    )
 
 
 def _strip_demo_fields_from_points(data: list, auth: AuthContext) -> None:
@@ -76,20 +66,12 @@ async def all_departure_by_date(date: datetime.date, auth: Annotated[AuthContext
     data: list[dict[str, Any]] = []
 
     if isinstance(fesco_points, BaseException):
-        errors.append({
-            "source": "external",
-            "error_text": str(fesco_points),
-            "error_type": str(type(fesco_points)),
-        })
+        errors.append(RouteError(error_type=str(type(fesco_points)), error_text=str(fesco_points), source="external"))
     else:
         data.extend(map_fesco(fesco_points))
 
     if isinstance(custom_points, BaseException):
-        errors.append({
-            "source": "internal",
-            "error_text": str(custom_points),
-            "error_type": str(type(custom_points)),
-        })
+        errors.append(RouteError(error_type=str(type(custom_points)), error_text=str(custom_points), source="internal"))
     else:
         data.extend(map_custom(custom_points))
 
@@ -129,21 +111,15 @@ async def all_destination_by_date(
     fesco_points_array: list[Iterator[dict[str, Any]] | BaseException]
     custom_points, *fesco_points_array = results
     if isinstance(custom_points, BaseException):
-        errors.append({
-            "source": "internal",
-            "error_text": str(custom_points),
-            "error_type": str(type(custom_points)),
-        })
+        errors.append(RouteError(error_type=str(type(custom_points)), error_text=str(custom_points), source="internal"))
     else:
         data.extend(map_custom(custom_points))
 
     for fesco_points in fesco_points_array:
         if isinstance(fesco_points, BaseException):
-            errors.append({
-                "source": "external",
-                "error_text": str(fesco_points),
-                "error_type": str(type(fesco_points)),
-            })
+            errors.append(
+                RouteError(error_type=str(type(fesco_points)), error_text=str(fesco_points), source="external")
+            )
         else:
             data.extend(map_fesco(fesco_points))
 
