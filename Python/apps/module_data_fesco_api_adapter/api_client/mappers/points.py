@@ -1,24 +1,6 @@
 from collections.abc import Iterator
 from typing import Any
 
-# V1
-
-
-def _map_point_v1(point):
-    return {
-        "id": point["id"],
-        "company": "FESCO",
-        "country": point["country"],
-        "name": point["name"],
-    }
-
-
-def map_points_v1(points):
-    return map(_map_point_v1, points)
-
-
-# V2
-
 
 def _is_invalid_point(point: dict[str, Any]) -> bool:
     """
@@ -30,7 +12,7 @@ def _is_invalid_point(point: dict[str, Any]) -> bool:
     return not point_loc_name or "DEFAULT LOCATION" in point_loc_name
 
 
-def _map_point_v2(point: dict[str, Any]) -> dict[str, Any] | None:
+def _map_point(point: dict[str, Any]) -> dict[str, Any] | None:
     """
     Maps a single point from source format to target format.
     Dynamically includes all languages defined in language_map.
@@ -72,7 +54,7 @@ def _map_point_v2(point: dict[str, Any]) -> dict[str, Any] | None:
     return result
 
 
-def map_points_v2(points: Iterator[dict[str, Any]]) -> Iterator[dict[str, Any]]:
+def map_points(points: Iterator[dict[str, Any]]) -> Iterator[dict[str, Any]]:
     """
     Maps multiple points from source format to target format.
     Filters out invalid points and dynamically includes all available languages.
@@ -83,4 +65,4 @@ def map_points_v2(points: Iterator[dict[str, Any]]) -> Iterator[dict[str, Any]]:
     Returns:
         Iterator of mapped point dictionaries with dynamic language support
     """
-    return filter(None, map(_map_point_v2, points))
+    return filter(None, map(_map_point, points))
