@@ -1,7 +1,7 @@
 import re
 
 
-def _map_container(container):
+def transform_container(container):
     seeking_expr = re.compile(r"\((\d+)'(.+)\)\D+(\d+)-(\d+)t$")
     data = seeking_expr.findall(container["ContainerNameEng"])
     if data:
@@ -41,8 +41,8 @@ def _map_container(container):
     }
 
 
-def map_containers(containers):
+def transform_containers(containers):
     return sorted(
-        map(_map_container, containers),
+        map(transform_container, containers),
         key=lambda c: c["size"] * 100 + (c["weight_to"] or 0),
     )

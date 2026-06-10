@@ -11,7 +11,9 @@ from aiohttp import ClientResponseError
 from backend_user.dependencies.auth_context import AuthContext, get_auth_context
 from backend_user.utils.group_points import group_companies, group_transfers, raw_point_from_dict
 from module_data_fesco_api_adapter import api_client
-from module_data_fesco_api_adapter.api_client.mappers.points import map_points as map_fesco
+from module_data_fesco_api_adapter.api_client.transformers.points import (
+    transform_points as map_fesco,
+)
 from module_data_internal import aggregators
 from module_data_internal.aggregators.mappers.points import map_points as map_custom
 from module_data_internal.schemas import CompanyModel, PointModel
@@ -119,7 +121,7 @@ async def all_destination_by_date(
     )
 
     errors = []
-    data = []
+    data: list[dict[str, Any]] = []
 
     if not results:
         raise HTTPException(HTTP_500_INTERNAL_SERVER_ERROR, detail="Unknown error: no results")

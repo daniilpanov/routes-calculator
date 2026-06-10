@@ -1,4 +1,4 @@
-from .containers import _map_container
+from .containers import transform_container
 
 _segment_types = {
     1: "rail",
@@ -11,7 +11,7 @@ def _check_currency(currency):
     return "RUB" if currency == "RUR" else currency
 
 
-def _map_segment(segment):
+def transform_segment(segment):
     return {
         "id": segment["SegmentUID"],
         "type": _segment_types.get(segment["SegmentType"]),
@@ -24,7 +24,7 @@ def _map_segment(segment):
     }
 
 
-def _map_service(service):
+def transform_service(service):
     if service.get("group"):
         if not service.get("items") or not len(service["items"]):
             print(f"WARNING\tError in parsing FESCO service group: {service}")
@@ -52,16 +52,16 @@ def _map_service(service):
     }
 
 
-def _map_route(route):
-    services = [item for item in map(_map_service, route.get("Services", [])) if item]
+def transform_route(route):
+    services = [item for item in map(transform_service, route.get("Services", [])) if item]
 
     res = []
-    for segm in map(_map_segment, route.get("Segments", [])):
+    for segm in map(transform_segment, route.get("Segments", [])):
         item = {
             "company": "FESCO",
             "effectiveFrom": route["DateFrom"],
             "effectiveTo": route["DateTo"],
-            "container": _map_container(route["Containers"][0]),
+            "container": transform_container(route["Containers"][0]),
             "services": {},
         }
         item.update(segm)
@@ -76,5 +76,5 @@ def _map_route(route):
     return res, None, False, services
 
 
-def map_routes(routes):
-    return map(_map_route, routes)
+def transform_routes(routes):
+    return map(transform_route, routes)

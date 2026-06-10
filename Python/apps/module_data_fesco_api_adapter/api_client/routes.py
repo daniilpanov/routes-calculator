@@ -3,9 +3,8 @@ import datetime
 
 import aiohttp
 from backend_user.config import get_settings
-from backend_user.mapper_decorator import apply_mapper
 
-from .mappers.routes import map_routes
+from .transformers.routes import transform_routes
 
 
 async def _get_routes(
@@ -35,7 +34,6 @@ async def _get_routes(
     return (await resp.json()).get("data", [])
 
 
-@apply_mapper(map_routes)
 async def find_all_paths(
     date: datetime.date,
     departure_id: str,
@@ -55,4 +53,4 @@ async def find_all_paths(
         if not isinstance(routes_group, BaseException):
             routes.extend(routes_group)
 
-    return routes
+    return transform_routes(routes)
