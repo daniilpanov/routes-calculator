@@ -11,16 +11,26 @@ def _check_currency(currency):
     return "RUB" if currency == "RUR" else currency
 
 
-def transform_segment(segment):
+def transform_segment(segment, container, date_from, date_to, container_transfer_terms):
     return {
         "id": segment["SegmentUID"],
         "type": _segment_types.get(segment["SegmentType"]),
+        "company": "FESCO",
+        "effectiveFrom": date_from,
+        "effectiveTo": date_to,
+        "container_transfer_terms": container_transfer_terms,
+        "container_owner": "COC",
         "startPointCountry": segment["BeginCountryName"],
         "startPointName": segment["BeginLocName"],
         "endPointCountry": segment["FinishCountryName"],
         "endPointName": segment["FinishLocName"],
-        "price": segment["Containers"][0]["Price"],
-        "currency": _check_currency(segment["Containers"][0]["Currency"]),
+        "services": {},
+        "prices": [{
+            "conversation_percents": 0.0,
+            "currency": _check_currency(segment["Containers"][0]["Currency"]),
+            "value": segment["Containers"][0]["Price"],
+            "container": container,
+        }],
     }
 
 
@@ -54,26 +64,22 @@ def transform_service(service):
 
 def transform_route(route):
     services = [item for item in map(transform_service, route.get("Services", [])) if item]
+    container_descriptor = transform_container(route["Containers"][0])
 
-    res = []
-    for segm in map(transform_segment, route.get("Segments", [])):
-        item = {
-            "company": "FESCO",
-            "effectiveFrom": route["DateFrom"],
-            "effectiveTo": route["DateTo"],
-            "container": transform_container(route["Containers"][0]),
-            "services": {},
-        }
-        item.update(segm)
-        if segm["type"] == "sea":
-            item.update(
-                {
-                    "beginCond": route["BeginCond"],
-                    "finishCond": route["FinishCond"],
-                }
-            )
-        res.append(item)
-    return res, None, False, services
+    return (
+        [
+            transform_segment(
+                seg,
+                container_descriptor,
+                route["DateFrom"],
+                route["DateTo"],
+                route["BeginCond"] + route["FinishCond"],
+            ) for seg in route.get("Segments", [])
+        ],
+        None,
+        False,
+        services,
+    )
 
 
 def transform_routes(routes):
