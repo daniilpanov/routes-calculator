@@ -2,8 +2,8 @@ import datetime
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
-from backend_user.api.v2.routes.models.form_requests import CalculateFormRequest
 from backend_user.dependencies.auth_context import AuthContext
+from backend_user.schemas.form_requests import CalculateFormRequest
 from backend_user.services.route_calculation import calculate_routes
 
 
