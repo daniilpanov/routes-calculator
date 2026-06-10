@@ -1,8 +1,10 @@
 import asyncio
 import datetime
+from collections.abc import Iterable
 
 import aiohttp
 from backend_user.config import get_settings
+from module_shared.models.route import RouteResult
 
 from .transformers.routes import transform_routes
 
@@ -25,7 +27,7 @@ async def _get_routes(
             "Accept": "application/json",
             "Authorization": f"Bearer {get_settings().FESCO_API_KEY}",
             "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-            "(KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
+                          "(KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
             "X-Lk-Lang": "RU",
         },
     )
@@ -40,7 +42,7 @@ async def find_all_paths(
     destination_id: str,
     wte_ids: list[str],
     _: bool = False,
-):
+) -> Iterable[RouteResult]:
     async with aiohttp.ClientSession() as session:
         coroutines = [
             _get_routes(date, departure_id, destination_id, wte_id, session)

@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+from collections.abc import Iterable
 
 from backend_user.dependencies.auth_context import AuthContext
 from backend_user.schemas.form_requests import CalculateFormRequest
@@ -7,6 +8,13 @@ from backend_user.services.profit import apply_demo_profit_to_routes
 from module_data_fesco_api_adapter import api_client
 from module_data_internal import aggregators
 from module_shared.config import get_settings as get_shared_settings
+from module_shared.models.route import DropItem, RouteResult, RouteSegment, ServiceItem
+
+NormalizedRoutes = list[tuple[list[RouteSegment], DropItem | None, bool, list[ServiceItem]]]
+
+
+def _normalize_routes(routes: Iterable[RouteResult]) -> NormalizedRoutes:
+    return [(r.segments, r.drop, r.may_be_invalid, r.services) for r in routes]
 
 
 def _strip_demo_fields(routes: list) -> None:
@@ -16,7 +24,7 @@ def _strip_demo_fields(routes: list) -> None:
         segments = route[0]
         for segment in segments:
             for field in excluded_fields:
-                segment.pop(field, None)
+                setattr(segment, field, None)
 
 
 def _apply_demo_transforms(routes: list, auth: AuthContext) -> None:
@@ -42,7 +50,7 @@ async def _get_routes(
     destination: str | int,
     container_weight: float,
     container_type: int,
-):
+) -> Iterable[RouteResult]:
     containers = await modul.get_containers(date, departure, destination)
     container_ids = modul.search_container_ids(
         containers,
@@ -104,9 +112,10 @@ async def calculate_routes(request: CalculateFormRequest, auth: AuthContext) -> 
             if res:
                 routes.extend(res)
 
-    _apply_demo_transforms(routes, auth)
+    normalized = _normalize_routes(routes)
+    _apply_demo_transforms(normalized, auth)
 
     return {
         "errors": errors,
-        "routes": routes,
+        "routes": normalized,
     }

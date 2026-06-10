@@ -1,3 +1,7 @@
+from collections.abc import Iterable
+
+from module_shared.models.route import PriceItem, RouteResult, RouteSegment, ServiceItem
+
 from .containers import transform_container
 
 _segment_types = {
@@ -11,76 +15,69 @@ def _check_currency(currency):
     return "RUB" if currency == "RUR" else currency
 
 
-def transform_segment(segment, container, date_from, date_to, container_transfer_terms):
-    return {
-        "id": segment["SegmentUID"],
-        "type": _segment_types.get(segment["SegmentType"]),
-        "company": "FESCO",
-        "effectiveFrom": date_from,
-        "effectiveTo": date_to,
-        "container_transfer_terms": container_transfer_terms,
-        "container_owner": "COC",
-        "startPointCountry": segment["BeginCountryName"],
-        "startPointName": segment["BeginLocName"],
-        "endPointCountry": segment["FinishCountryName"],
-        "endPointName": segment["FinishLocName"],
-        "services": {},
-        "prices": [{
-            "conversation_percents": 0.0,
-            "currency": _check_currency(segment["Containers"][0]["Currency"]),
-            "value": segment["Containers"][0]["Price"],
-            "container": container,
-        }],
-    }
-
-
-def transform_service(service):
+def transform_service(service: dict) -> ServiceItem | None:
     if service.get("group"):
-        if not service.get("items") or not len(service["items"]):
+        if not service.get("items"):
             print(f"WARNING\tError in parsing FESCO service group: {service}")
             return None
 
         service = service["items"][0]
 
-    mandatory_keys = {"SegmentUID", "ServiceName", }
-    for key in mandatory_keys:
-        if key not in service:
-            print(f"WARNING\tError in parsing FESCO service: {service}")
-            return None
+    if "SegmentUID" not in service or "ServiceName" not in service:
+        print(f"WARNING\tError in parsing FESCO service: {service}")
+        return None
 
-    return {
-        "segment_id": service["SegmentUID"],
-        "name": service["ServiceType"][0]["ServiceTypeName"] if service["ServiceType"] else service["ServiceName"],
-        "description": service["ServiceName"],
-        "hint": service.get("ServiceComment") or None,
-        "checked": service.get("checked", False),
-        "mandatory": service.get("Default", False) and service.get("InclMainServicePrice", False),
-        "currency": service["ContPrice"][0]["Currency"] if service["ContPrice"] else None,
-        "price": (
-            service["ContPrice"][0]["Price"] * service["ContPrice"][0]["Quantity"] if service["ContPrice"] else None
+    return ServiceItem(
+        segment_id=service["SegmentUID"],
+        name=(
+            service["ServiceType"][0]["ServiceTypeName"]
+            if service.get("ServiceType")
+            else service["ServiceName"]
         ),
-    }
-
-
-def transform_route(route):
-    services = [item for item in map(transform_service, route.get("Services", [])) if item]
-    container_descriptor = transform_container(route["Containers"][0])
-
-    return (
-        [
-            transform_segment(
-                seg,
-                container_descriptor,
-                route["DateFrom"],
-                route["DateTo"],
-                route["BeginCond"] + route["FinishCond"],
-            ) for seg in route.get("Segments", [])
-        ],
-        None,
-        False,
-        services,
+        description=service["ServiceName"],
+        hint=service.get("ServiceComment") or None,
+        checked=service.get("checked", False),
+        mandatory=service.get("Default", False) and service.get("InclMainServicePrice", False),
+        currency=service["ContPrice"][0]["Currency"] if service.get("ContPrice") else None,
+        price=(
+            service["ContPrice"][0]["Price"] * service["ContPrice"][0]["Quantity"]
+            if service.get("ContPrice")
+            else None
+        ),
     )
 
 
-def transform_routes(routes):
+def transform_route(route: dict) -> RouteResult:
+    services = [item for item in map(transform_service, route.get("Services", [])) if item]
+    container_descriptor = transform_container(route["Containers"][0])
+    segments: list[RouteSegment] = []
+
+    for segm in route.get("Segments", []):
+        cont_data = segm.get("Containers", [{}])[0]
+        seg_type = _segment_types.get(segm.get("SegmentType"))
+
+        seg = RouteSegment(
+            id=segm["SegmentUID"],
+            company="FESCO",
+            type=seg_type,
+            effectiveFrom=route["DateFrom"],
+            effectiveTo=route["DateTo"],
+            startPointCountry=segm["BeginCountryName"],
+            startPointName=segm["BeginLocName"],
+            endPointCountry=segm["FinishCountryName"],
+            endPointName=segm["FinishLocName"],
+            container_transfer_terms=route["BeginCond"] + route["FinishCond"] if seg_type == "sea" else None,
+            container_owner="COC",
+            prices=[PriceItem(
+                value=cont_data.get("Price", 0),
+                currency=_check_currency(cont_data.get("Currency", "USD")),
+                container=container_descriptor,
+            )],
+        )
+        segments.append(seg)
+
+    return RouteResult(segments=segments, services=services)
+
+
+def transform_routes(routes: list[dict]) -> Iterable[RouteResult]:
     return map(transform_route, routes)

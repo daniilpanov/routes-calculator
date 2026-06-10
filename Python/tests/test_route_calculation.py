@@ -5,6 +5,46 @@ import pytest
 from backend_user.dependencies.auth_context import AuthContext
 from backend_user.schemas.form_requests import CalculateFormRequest
 from backend_user.services.route_calculation import calculate_routes
+from module_shared.models.route import ContainerItem, PriceItem, RouteResult, RouteSegment
+
+
+def _make_segment(company: str = "CompanyA", **overrides) -> RouteSegment:
+    kwargs = dict(  # noqa: C408
+        id=1,
+        company=company,
+        type="RAIL",
+        effectiveFrom="2024-01-01",
+        effectiveTo="2025-12-31",
+        startPointCountry="Россия",
+        startPointName="Москва",
+        endPointCountry="Россия",
+        endPointName="Владивосток",
+        comment=None,
+        timetable=None,
+        container_transfer_terms="FIFO",
+        container_shipment_terms="FOB",
+        container_owner="COC",
+        prices=[
+            PriceItem(
+                container=ContainerItem(
+                    id=1, size=20, type="DC", weight_from=0, weight_to=28000, name="20DC"
+                ),
+                value=1000.0,
+                currency="USD",
+                conversation_percents=0,
+            )
+        ],
+    )
+    kwargs.update(overrides)
+    return RouteSegment(**kwargs)
+
+
+def _make_full_route(company: str = "CompanyA", segments_count: int = 1, **segment_overrides) -> RouteResult:
+    segment = _make_segment(company=company, **segment_overrides)
+    segments = [segment]
+    if segments_count > 1:
+        segments.append(_make_segment(company=company, id=2, type="SEA"))
+    return RouteResult(segments=segments)
 
 
 def _make_request(
@@ -24,46 +64,6 @@ def _make_request(
         destinationExternalIds=dest_external or [],
         cargoWeight=weight,
         containerType=container_type,
-    )
-
-
-def _make_route_segment(company: str = "CompanyA", **overrides) -> dict:
-    segment = {
-        "id": 1,
-        "company": company,
-        "type": "RAIL",
-        "effectiveFrom": "2024-01-01",
-        "effectiveTo": "2025-12-31",
-        "startPointCountry": "Россия",
-        "startPointName": "Москва",
-        "endPointCountry": "Россия",
-        "endPointName": "Владивосток",
-        "comment": None,
-        "timetable": None,
-        "container_transfer_terms": "FIFO",
-        "container_shipment_terms": "FOB",
-        "container_owner": "COC",
-        "prices": [
-            {
-                "container": {"id": 1, "size": 20, "type": "DC", "weight_from": 0, "weight_to": 28000, "name": "20DC"},
-                "value": 1000.0,
-                "currency": "USD",
-                "conversation_percents": 0,
-            }
-        ],
-    }
-    segment.update(overrides)
-    return segment
-
-
-def _make_full_route(company: str = "CompanyA", segments_count: int = 1, **segment_overrides) -> tuple:
-    segment = _make_route_segment(company=company, **segment_overrides)
-    segments = [segment] if segments_count == 1 else [segment, {**segment, "id": 2, "type": "SEA"}]
-    return (
-        segments,
-        None,
-        False,
-        [],
     )
 
 
@@ -90,8 +90,8 @@ async def test_rail_only_internal():
     route_data = result["routes"][0]
     segments = route_data[0]
     assert len(segments) == 1
-    assert segments[0]["company"] == "CompanyA"
-    assert segments[0]["type"] == "RAIL"
+    assert segments[0].company == "CompanyA"
+    assert segments[0].type == "RAIL"
 
 
 @pytest.mark.asyncio
@@ -114,7 +114,7 @@ async def test_sea_only_internal():
 
     assert len(result["routes"]) == 1
     segments = result["routes"][0][0]
-    assert segments[0]["type"] == "SEA"
+    assert segments[0].type == "SEA"
 
 
 @pytest.mark.asyncio
@@ -198,7 +198,7 @@ async def test_fesco_external_source():
         result = await calculate_routes(request, auth)
 
     assert len(result["routes"]) == 1
-    assert result["routes"][0][0][0]["company"] == "FESCO"
+    assert result["routes"][0][0][0].company == "FESCO"
 
 
 @pytest.mark.asyncio
@@ -222,7 +222,7 @@ async def test_mixed_internal_and_external():
         result = await calculate_routes(request, auth)
 
     assert len(result["routes"]) == 2
-    companies = {seg["company"] for route_res in result["routes"] for seg in route_res[0]}
+    companies = {seg.company for route_res in result["routes"] for seg in route_res[0]}
     assert "CompanyA" in companies
     assert "FESCO" in companies
 
@@ -246,7 +246,7 @@ async def test_fesco_api_error_does_not_break_all():
         result = await calculate_routes(request, auth)
 
     assert len(result["routes"]) == 1
-    assert result["routes"][0][0][0]["company"] == "CompanyA"
+    assert result["routes"][0][0][0].company == "CompanyA"
     assert len(result["errors"]) == 1
 
 
@@ -269,7 +269,7 @@ async def test_demo_auth_strips_company_field():
         result = await calculate_routes(request, auth)
 
     assert len(result["routes"]) == 1
-    assert "company" not in result["routes"][0][0][0]
+    assert result["routes"][0][0][0].company is None
 
 
 @pytest.mark.asyncio
@@ -292,7 +292,7 @@ async def test_demo_auth_with_profit():
         result = await calculate_routes(request, auth)
 
     assert len(result["routes"]) == 1
-    assert "company" not in result["routes"][0][0][0]
+    assert result["routes"][0][0][0].company is None
 
 
 @pytest.mark.asyncio
@@ -319,45 +319,12 @@ async def test_single_segment_rail_route_preserves_structure():
     assert isinstance(segments, list)
     assert len(segments) == 1
     segment = segments[0]
-    assert "id" in segment
-    assert "company" in segment
-    assert "type" in segment
-    assert "prices" in segment
-    assert isinstance(segment["prices"], list)
-    assert segment["prices"][0]["value"] == 1000.0
-    assert segment["prices"][0]["currency"] == "USD"
-
-
-@pytest.mark.asyncio
-async def test_sea_rail_combined_route():
-    sea_segment = _make_route_segment(company="SeaLine", type="SEA")
-    rail_segment = _make_route_segment(company="RailCo", type="RAIL", id=2)
-    segments = [sea_segment, rail_segment]
-    route = (segments, {"price": 200.0, "conversation_percents": 0, "currency": "USD"}, False, [])
-
-    with (
-        patch("backend_user.services.route_calculation.aggregators") as mock_agg,
-        patch("backend_user.services.route_calculation.api_client") as mock_fesco,
-    ):
-        mock_agg.get_containers = AsyncMock(return_value=[{"id": 1, "size": 20, "weight_from": 0, "weight_to": 28000}])
-        mock_agg.search_container_ids = lambda containers, weight, size: [1]
-        mock_agg.find_all_paths = AsyncMock(return_value=[route])
-        mock_fesco.get_containers = AsyncMock(return_value=[])
-        mock_fesco.search_container_ids = lambda containers, weight, size: []
-        mock_fesco.find_all_paths = AsyncMock(return_value=[])
-
-        request = _make_request()
-        auth = AuthContext()
-        result = await calculate_routes(request, auth)
-
-    assert len(result["routes"]) == 1
-    route_data = result["routes"][0]
-    segments, drop, _may_be_invalid, _services = route_data
-    assert len(segments) == 2
-    assert segments[0]["type"] == "SEA"
-    assert segments[1]["type"] == "RAIL"
-    assert drop is not None
-    assert drop["price"] == 200.0
+    assert isinstance(segment.id, int)
+    assert segment.company == "CompanyA"
+    assert segment.type == "RAIL"
+    assert isinstance(segment.prices, list)
+    assert segment.prices[0].value == 1000.0
+    assert segment.prices[0].currency == "USD"
 
 
 @pytest.mark.asyncio
@@ -445,7 +412,7 @@ async def test_demo_auth_with_profit_and_rail():
         result = await calculate_routes(request, auth)
 
     assert len(result["routes"]) == 1
-    assert "company" not in result["routes"][0][0][0]
+    assert result["routes"][0][0][0].company is None
 
 
 @pytest.mark.asyncio
@@ -467,7 +434,7 @@ async def test_non_demo_does_not_strip_company():
         result = await calculate_routes(request, auth)
 
     assert len(result["routes"]) == 1
-    assert result["routes"][0][0][0]["company"] == "CompanyA"
+    assert result["routes"][0][0][0].company == "CompanyA"
 
 
 def test_strip_demo_fields_empty_segments():

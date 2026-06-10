@@ -1,4 +1,4 @@
-def _map_point(item):
+def _transform_point(item):
     point, company = item
     return {
         "id": point.id,
@@ -17,5 +17,5 @@ def _map_point(item):
     }
 
 
-def map_points(points):
-    return map(_map_point, points)
+def transform_points(points):
+    return map(_transform_point, points)

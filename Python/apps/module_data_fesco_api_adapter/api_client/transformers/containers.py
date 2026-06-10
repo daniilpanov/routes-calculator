@@ -1,5 +1,7 @@
 import re
 
+from module_shared.models.route import ContainerItem
+
 
 def transform_container(container):
     seeking_expr = re.compile(r"\((\d+)'(.+)\)\D+(\d+)-(\d+)t$")
@@ -27,22 +29,22 @@ def transform_container(container):
             cweight_from = None
             cweight_to = None
 
-    return {
-        "id": container["ContainerCode"],
-        "type": ctype,
-        "size": csize,
-        "weight_from": cweight_from,
-        "weight_to": cweight_to,
-        "name": (
+    return ContainerItem(
+        id=container["ContainerCode"],
+        type=ctype,
+        size=csize,
+        weight_from=cweight_from,
+        weight_to=cweight_to,
+        name=(
             f"{csize}'{ctype} {int(cweight_from)}-{int(cweight_to)}t"
             if cweight_to
             else f"{csize}'{ctype}"
         ),
-    }
+    )
 
 
 def transform_containers(containers):
     return sorted(
         map(transform_container, containers),
-        key=lambda c: c["size"] * 100 + (c["weight_to"] or 0),
+        key=lambda c: c.size * 100 + (c.weight_to or 0),
     )

@@ -6,6 +6,7 @@ from module_data_internal.aggregators.containers import get_containers, search_c
 from module_data_internal.aggregators.routes import find_all_paths, process_results
 from module_data_internal.schemas import ContainerOwner, ContainerType, RouteType
 from module_shared.database import Database
+from module_shared.models.route import ContainerItem
 
 from .data import (
     CompanyFactory,
@@ -62,20 +63,20 @@ async def test_get_containers(sqlite_db: Database):
         await session.commit()
 
     with patch("module_data_internal.aggregators.containers.get_database", return_value=sqlite_db):
-        result = await get_containers(datetime.date(2024, 6, 15), 1, 2)
+        result = await get_containers(datetime.date(2024, 6, 15), "1", "2")
 
     result_list = list(result)
     assert len(result_list) == 2
-    sizes = {c["size"] for c in result_list}
+    sizes = {c.size for c in result_list}
     assert sizes == {20, 40}
 
 
 def test_search_container_ids_edge():
     containers = [
-        {"id": 1, "size": 20, "weight_from": 0, "weight_to": 28000},
-        {"id": 2, "size": 20, "weight_from": 28001, "weight_to": 50000},
-        {"id": 3, "size": 40, "weight_from": 0, "weight_to": 28000},
-        {"id": 4, "size": 40, "weight_from": 28001, "weight_to": 50000},
+        ContainerItem(id=1, size=20, weight_from=0, weight_to=28000, name="20DC", type=ContainerType.DC),
+        ContainerItem(id=2, size=20, weight_from=28001, weight_to=50000, name="20DC", type=ContainerType.DC),
+        ContainerItem(id=3, size=40, weight_from=0, weight_to=28000, name="40DC", type=ContainerType.DC),
+        ContainerItem(id=4, size=40, weight_from=28001, weight_to=50000, name="40DC", type=ContainerType.DC),
     ]
 
     assert search_container_ids(containers, weight=0, size=20) == [1]
@@ -89,9 +90,9 @@ def test_search_container_ids_edge():
 
 def test_search_container_ids():
     containers = [
-        {"id": 1, "size": 20, "weight_from": 0, "weight_to": 28000},
-        {"id": 2, "size": 20, "weight_from": 28001, "weight_to": 50000},
-        {"id": 3, "size": 40, "weight_from": 0, "weight_to": 28000},
+        ContainerItem(id=1, size=20, weight_from=0, weight_to=28000, name="20DC", type=ContainerType.DC),
+        ContainerItem(id=2, size=20, weight_from=28001, weight_to=50000, name="20DC", type=ContainerType.DC),
+        ContainerItem(id=3, size=40, weight_from=0, weight_to=28000, name="40DC", type=ContainerType.DC),
     ]
 
     assert search_container_ids(containers, weight=20000, size=20) == [1]
@@ -105,16 +106,16 @@ async def test_find_all_paths_rail(sqlite_db: Database):
     async with sqlite_db.session_context() as session:
         company, point_a, point_b, container = await _seed_basic_data(session)
 
-        route = RouteFactory(
+        route_model = RouteFactory(
             company_id=company.id,
             start_point_id=point_a.id,
             end_point_id=point_b.id,
             type=RouteType.RAIL,
         )
-        session.add(route)
+        session.add(route_model)
         await session.flush()
 
-        price = PriceFactory(route_id=route.id, container_id=container.id)
+        price = PriceFactory(route_id=route_model.id, container_id=container.id)
         session.add(price)
         await session.commit()
 
@@ -128,10 +129,10 @@ async def test_find_all_paths_rail(sqlite_db: Database):
 
     routes = list(result)
     assert len(routes) == 1
-    segments, drop, may_be_invalid, services = routes[0]
-    assert len(segments) == 1
-    assert segments[0]["type"] == "RAIL"
-    assert segments[0]["company"] == "TestRailCo"
+    route = routes[0]
+    assert len(route.segments) == 1
+    assert route.segments[0].type == "RAIL"
+    assert route.segments[0].company == "TestRailCo"
 
 
 @pytest.mark.asyncio
@@ -162,7 +163,7 @@ async def test_find_all_paths_sea(sqlite_db: Database):
 
     routes = list(result)
     assert len(routes) == 1
-    assert routes[0][0][0]["type"] == "SEA"
+    assert routes[0].segments[0].type == "SEA"
 
 
 @pytest.mark.asyncio
@@ -218,10 +219,9 @@ async def test_find_all_paths_sea_rail_same_company_coc(sqlite_db: Database):
     routes = list(result)
     assert len(routes) >= 1
     result_route = routes[0]
-    segments, drop_info, _may_be_invalid, _services = result_route
-    assert len(segments) == 2
-    assert segments[0]["type"] == "SEA"
-    assert segments[1]["type"] == "RAIL"
+    assert len(result_route.segments) == 2
+    assert result_route.segments[0].type == "SEA"
+    assert result_route.segments[1].type == "RAIL"
 
 
 @pytest.mark.asyncio
@@ -328,12 +328,12 @@ async def test_find_all_paths_sea_rail_different_company_soc(sqlite_db: Database
 
     routes = list(result)
     assert len(routes) >= 1
-    segments, drop_info, _may_be_invalid, _services = routes[0]
-    assert len(segments) == 2
-    assert segments[0]["type"] == "SEA"
-    assert segments[0]["company"] == "SeaCo"
-    assert segments[1]["type"] == "RAIL"
-    assert segments[1]["company"] == "RailCo"
+    route = routes[0]
+    assert len(route.segments) == 2
+    assert route.segments[0].type == "SEA"
+    assert route.segments[0].company == "SeaCo"
+    assert route.segments[1].type == "RAIL"
+    assert route.segments[1].company == "RailCo"
 
 
 @pytest.mark.asyncio
@@ -409,9 +409,9 @@ async def test_find_all_paths_sea_rail_with_drop_price(sqlite_db: Database):
 
     routes = list(result)
     assert len(routes) >= 1
-    _segments, drop_info, _may_be_invalid, _services = routes[0]
-    assert drop_info is not None
-    assert drop_info["price"] == 999.0
+    route = routes[0]
+    assert route.drop is not None
+    assert route.drop.price == 999.0
 
 
 @pytest.mark.asyncio
@@ -461,10 +461,10 @@ async def test_find_all_paths_with_dropp_off_point(sqlite_db: Database):
 
     routes = list(result)
     assert len(routes) >= 1
-    segments, _drop, _may_be_invalid, _services = routes[0]
-    assert len(segments) == 2
-    assert segments[0]["type"] == "SEA"
-    assert segments[1]["type"] == "RAIL"
+    route = routes[0]
+    assert len(route.segments) == 2
+    assert route.segments[0].type == "SEA"
+    assert route.segments[1].type == "RAIL"
 
 
 @pytest.mark.asyncio
@@ -472,16 +472,16 @@ async def test_find_all_paths_with_services(sqlite_db: Database):
     async with sqlite_db.session_context() as session:
         company, point_a, point_b, container = await _seed_basic_data(session)
 
-        route = RouteFactory(
+        route_model = RouteFactory(
             company_id=company.id,
             start_point_id=point_a.id,
             end_point_id=point_b.id,
             type=RouteType.RAIL,
         )
-        session.add(route)
+        session.add(route_model)
         await session.flush()
 
-        price = PriceFactory(route_id=route.id, container_id=container.id)
+        price = PriceFactory(route_id=route_model.id, container_id=container.id)
         session.add(price)
         await session.flush()
 
@@ -490,7 +490,7 @@ async def test_find_all_paths_with_services(sqlite_db: Database):
         await session.flush()
 
         sp = ServicePriceFactory(
-            route_id=route.id,
+            route_id=route_model.id,
             service_id=service.id,
             container_id=None,
         )
@@ -507,9 +507,9 @@ async def test_find_all_paths_with_services(sqlite_db: Database):
 
     routes = list(result)
     assert len(routes) == 1
-    _segments, _drop, _may_be_invalid, services = routes[0]
-    assert len(services) == 1
-    assert services[0]["name"] == "Test Service"
+    route = routes[0]
+    assert len(route.services) == 1
+    assert route.services[0].name == "Test Service"
 
 
 def test_process_results_skips_exception():

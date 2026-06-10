@@ -32,11 +32,11 @@ def search_container_ids(containers: list, weight: int, container_type: int):
     needle = []
 
     for container in containers:
-        if container["size"] == container_type:
-            if container["weight_to"]:
-                if container["weight_from"] <= weight <= container["weight_to"]:
-                    needle.append(container["id"])
+        if container.size == container_type:
+            if container.weight_to:
+                if container.weight_from <= weight <= container.weight_to:
+                    needle.append(container.id)
             else:
-                needle.append(container["id"])
+                needle.append(container.id)
 
     return needle
