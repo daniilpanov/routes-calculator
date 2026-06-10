@@ -281,6 +281,18 @@ module_shared ───┬── backend_auth
 
 ---
 
+## Makefile (`Makefile`)
+
+| Target | Description |
+|--------|-------------|
+| `make build` | Docker buildx bake (all targets) |
+| `make prod` | `docker compose up` — Ctrl+C runs `down` |
+| `make dev` | `./scripts/run-dev.sh` — Ctrl+C runs `./scripts/stop-dev.sh` |
+| `make update [args]` | `./scripts/prod-update.sh` — pass args directly |
+| `make export-deps` | `./scripts/export-python-dependencies.sh` |
+| `make alembic [args]` | `./scripts/alembic-proxy.sh` — pass alembic subcommand via args |
+| `make migrate [args]` | `./scripts/prod-db-migrate.sh` — pass alembic subcommand via args |
+
 ## Known Gaps
 - **Backend docs** (`docs/backend/`) are empty
 
