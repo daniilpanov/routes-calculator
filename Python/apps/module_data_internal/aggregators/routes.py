@@ -197,7 +197,7 @@ def process_results(
     for result in results:
         if not result or isinstance(result, BaseException):
             if isinstance(result, BaseException):
-                logger.error("Query error: %s", result, exc_info=result)
+                logger.error("Route query failed", exc_info=result)
             continue
 
         for row in result:

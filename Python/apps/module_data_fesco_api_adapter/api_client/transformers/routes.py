@@ -21,13 +21,13 @@ def _check_currency(currency):
 def transform_service(service: dict) -> ServiceItem | None:
     if service.get("group"):
         if not service.get("items"):
-            logger.warning("Error in parsing FESCO service group: %s", service)
+            logger.warning("FESCO: skipping service group — no items")
             return None
 
         service = service["items"][0]
 
     if "SegmentUID" not in service or "ServiceName" not in service:
-        logger.warning("Error in parsing FESCO service: %s", service)
+        logger.warning("FESCO: skipping service — missing SegmentUID/ServiceName")
         return None
 
     return ServiceItem(
