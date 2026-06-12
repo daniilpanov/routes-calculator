@@ -17,6 +17,8 @@ class Settings(BaseSettings):
 
     DB_CHARSET: str = "utf8mb4"
     DB_COLLATE: str = "utf8mb4_unicode_ci"
+    DB_LOG_LEVEL: str = "WARNING"
+    DB_LOG_OUTPUT: str = "both"
 
     # AUTH
     admin_login: str

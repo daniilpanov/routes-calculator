@@ -6,7 +6,7 @@ from fastapi_another_jwt_auth import AuthJWT
 from fastapi_another_jwt_auth.exceptions import AuthJWTException
 from module_shared.config import get_settings as get_shared_settings
 from module_shared.jwt_error_handler import authjwt_exception_handler
-from module_shared.logger import setup_logging
+from module_shared.logger import setup_logging, setup_sqlalchemy_logging
 
 from .autodiscover import api_discover
 from .config import get_settings
@@ -19,6 +19,7 @@ if find_spec("dotenv") is not None:
 shared_settings = get_shared_settings()
 
 setup_logging("backend_admin", shared_settings.LOG_LEVEL)
+setup_sqlalchemy_logging(shared_settings.DB_LOG_LEVEL, shared_settings.DB_LOG_OUTPUT)
 
 # Disable docs in production
 docs_url = "/docs" if shared_settings.ENVIRONMENT != "prod" else None
