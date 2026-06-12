@@ -1,4 +1,4 @@
-from collections.abc import Iterator
+from collections.abc import Iterable
 from typing import Any
 
 
@@ -37,5 +37,5 @@ def _transform_point(point: dict[str, Any]) -> dict[str, Any] | None:
     return result
 
 
-def transform_points(points: Iterator[dict[str, Any]]) -> Iterator[dict[str, Any]]:
+def transform_points(points: Iterable[dict[str, Any]]) -> Iterable[dict[str, Any]]:
     return filter(None, map(_transform_point, points))

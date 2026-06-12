@@ -46,5 +46,6 @@ def transform_container(container):
 def transform_containers(containers):
     return sorted(
         map(transform_container, containers),
+        # weight_to < 100
         key=lambda c: c.size * 100 + (c.weight_to or 0),
     )
