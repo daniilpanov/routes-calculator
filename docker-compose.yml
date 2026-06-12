@@ -83,7 +83,7 @@ services:
       reverseproxy:
     volumes:
       - "./resources/:/apps/resources/:rw"
-      - "./logs/:/apps/logs/:rw"
+      - "./logs/:/var/log/app/:rw"
     command:
       - "backend_user.main:app"
       - "--host"
