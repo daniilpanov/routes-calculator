@@ -1,7 +1,10 @@
 import datetime
+import logging
 import re
 
 import pandas as pd
+
+logger = logging.getLogger(__name__)
 
 
 def none_filter(x):
@@ -72,7 +75,7 @@ def format_date(date_str, try_another_variants=True):  # noqa: C901
                 return f"{year}-{month}-{day}"
 
             except Exception as e:
-                print(f"Error parsing DD-Mon-YY '{date_str}': {e}")
+                logger.warning("Error parsing date (DD-Mon-YY): '%s' — %s", date_str, e)
                 return None
 
         # 31.01.2026 (DD.MM.YYYY)
@@ -81,7 +84,7 @@ def format_date(date_str, try_another_variants=True):  # noqa: C901
                 day, month, year = date_str.split(".")
                 return f"{year}-{month.zfill(2)}-{day.zfill(2)}"
             except Exception as e:
-                print(f"Error parsing DD.MM.YYYY '{date_str}': {e}")
+                logger.warning("Error parsing date (DD.MM.YYYY): '%s' — %s", date_str, e)
                 return None
 
         # 18.дек (DD.Mon) (current year)
@@ -101,11 +104,11 @@ def format_date(date_str, try_another_variants=True):  # noqa: C901
                 return f"{current_year}-{month}-{day}"
 
             except Exception as e:
-                print(f"Error parsing DD.Mon '{date_str}': {e}")
+                logger.warning("Error parsing date (DD.Mon): '%s' — %s", date_str, e)
                 return None
 
         else:
-            print(f"Unknown date format '{date_str}'.{' Try to parse with errors' if try_another_variants else ''}")
+            logger.warning("Unknown date format: '%s'", date_str)
             if not try_another_variants:
                 return None
 
@@ -118,5 +121,5 @@ def format_date(date_str, try_another_variants=True):  # noqa: C901
             )
 
     except Exception as e:
-        print(f"Error while parsing '{date_str}': {e}")
+        logger.error("Error while parsing date '%s': %s", date_str, e)
         return None

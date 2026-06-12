@@ -47,5 +47,4 @@ extend-immutable-calls =
 
 ignore =
   PIE786
-  T201
   W503

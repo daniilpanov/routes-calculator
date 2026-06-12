@@ -1,8 +1,11 @@
+import logging
 from collections.abc import Iterable
 
 from module_shared.models.route import PriceItem, RouteResult, RouteSegment, ServiceItem
 
 from .containers import transform_container
+
+logger = logging.getLogger(__name__)
 
 _segment_types = {
     1: "rail",
@@ -18,13 +21,13 @@ def _check_currency(currency):
 def transform_service(service: dict) -> ServiceItem | None:
     if service.get("group"):
         if not service.get("items"):
-            print(f"WARNING\tError in parsing FESCO service group: {service}")
+            logger.warning("Error in parsing FESCO service group: %s", service)
             return None
 
         service = service["items"][0]
 
     if "SegmentUID" not in service or "ServiceName" not in service:
-        print(f"WARNING\tError in parsing FESCO service: {service}")
+        logger.warning("Error in parsing FESCO service: %s", service)
         return None
 
     return ServiceItem(
