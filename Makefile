@@ -6,7 +6,7 @@ build:
 	docker buildx bake $(ARGS)
 
 prod:
-	@trap 'docker compose down' EXIT; docker compose up $(ARGS)
+	@mkdir -p logs && trap 'docker compose down' EXIT; docker compose up $(ARGS)
 
 dev:
 	@trap './scripts/stop-dev.sh' EXIT; ./scripts/run-dev.sh $(ARGS)

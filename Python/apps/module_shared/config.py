@@ -33,6 +33,9 @@ class Settings(BaseSettings):
     authjwt_cookie_csrf_protect: bool = False
     authjwt_cookie_samesite: str = "lax"
 
+    # LOGGING
+    LOG_LEVEL: str = "INFO"
+
     # DEMO
     DEMO_EXCLUDED_FIELDS: set[str] = {"company"}
 

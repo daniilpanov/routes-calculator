@@ -24,6 +24,7 @@ services:
       - "./Python/apps/module_data_internal/:/apps/module_data_internal/:ro"
       - "./Python/apps/module_shared/:/apps/module_shared/:ro"
       - "./resources/:/apps/resources/:rw"
+      - "./logs/:/apps/logs/:rw"
     command:
       - "backend_user.main:app"
       - "--host"
@@ -36,6 +37,7 @@ services:
       - "./Python/apps/backend_auth/:/apps/backend_auth/:ro"
       - "./Python/apps/module_shared/:/apps/module_shared/:ro"
       - "./resources/:/apps/resources/:rw"
+      - "./logs/:/apps/logs/:rw"
     command:
       - "backend_auth.main:app"
       - "--host"
@@ -50,6 +52,7 @@ services:
       - "./Python/apps/module_data_internal/:/apps/module_data_internal/:ro"
       - "./Python/apps/module_shared/:/apps/module_shared/:ro"
       - "./resources/:/apps/resources/:rw"
+      - "./logs/:/apps/logs/:rw"
     command:
       - "backend_admin.main:app"
       - "--host"

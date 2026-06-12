@@ -83,6 +83,7 @@ services:
       reverseproxy:
     volumes:
       - "./resources/:/apps/resources/:rw"
+      - "./logs/:/apps/logs/:rw"
     command:
       - "backend_user.main:app"
       - "--host"
@@ -106,6 +107,7 @@ services:
       reverseproxy:
     volumes:
       - "./resources/:/apps/resources/:rw"
+      - "./logs/:/apps/logs/:rw"
     command:
       - "backend_auth.main:app"
       - "--host"
@@ -129,6 +131,7 @@ services:
       reverseproxy:
     volumes:
       - "./resources/:/apps/resources/:rw"
+      - "./logs/:/apps/logs/:rw"
     command:
       - "backend_admin.main:app"
       - "--host"
