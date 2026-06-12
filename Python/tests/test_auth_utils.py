@@ -2,44 +2,50 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 from backend_user.services.route_calculation import _strip_demo_fields
+from module_shared.models.route import RouteSegment
 
 
 class TestStripDemoFields:
     def test_removes_company_from_segments(self):
-        routes = [
-            (
-                [{"company": "CompanyA", "id": 1}, {"company": "CompanyB", "id": 2}],
-                None,
-                False,
-                [],
-            )
-        ]
+        seg1 = _make_segment(company="CompanyA")
+        seg2 = _make_segment(company="CompanyB", id=2)
+        routes = [([seg1, seg2], None, False, [])]
         _strip_demo_fields(routes)
-        assert "company" not in routes[0][0][0]
-        assert "company" not in routes[0][0][1]
+        assert seg1.company is None
+        assert seg2.company is None
 
     def test_preserves_other_fields(self):
-        routes = [
-            (
-                [{"company": "CompanyA", "id": 1, "type": "RAIL", "prices": []}],
-                None,
-                False,
-                [],
-            )
-        ]
+        seg = _make_segment(company="CompanyA")
+        routes = [([seg], None, False, [])]
         _strip_demo_fields(routes)
-        assert "company" not in routes[0][0][0]
-        assert routes[0][0][0]["id"] == 1
-        assert routes[0][0][0]["type"] == "RAIL"
+        assert seg.company is None
+        assert seg.id == 1
+        assert seg.type == "RAIL"
 
     def test_multiple_routes(self):
+        seg1 = _make_segment(company="Co1")
+        seg2 = _make_segment(company="Co2", id=2)
         routes = [
-            ([{"company": "Co1", "id": 1}], None, False, []),
-            ([{"company": "Co2", "id": 2}], None, False, []),
+            ([seg1], None, False, []),
+            ([seg2], None, False, []),
         ]
         _strip_demo_fields(routes)
-        assert "company" not in routes[0][0][0]
-        assert "company" not in routes[1][0][0]
+        assert seg1.company is None
+        assert seg2.company is None
+
+
+def _make_segment(company: str = "CompanyA", **kwargs) -> RouteSegment:
+    return RouteSegment(
+        id=kwargs.get("id", 1),
+        company=company,
+        type=kwargs.get("type", "RAIL"),
+        effectiveFrom="2024-01-01",
+        effectiveTo="2025-12-31",
+        startPointCountry="RU",
+        startPointName="Moscow",
+        endPointCountry="CN",
+        endPointName="Shanghai",
+    )
 
 
 @pytest.mark.asyncio

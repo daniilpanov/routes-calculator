@@ -2,9 +2,50 @@ import datetime
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
-from backend_user.api.v2.routes.models.form_requests import CalculateFormRequest
+from backend_user.api.v2.routes.post import _apply_demo_transforms, _normalize_routes
 from backend_user.dependencies.auth_context import AuthContext
-from backend_user.services.route_calculation import calculate_routes
+from backend_user.schemas.form_requests import CalculateFormRequest
+from backend_user.services.route_calculation import _strip_demo_fields, calculate_routes
+from module_shared.models.route import ContainerItem, PriceItem, RouteResult, RouteSegment
+
+
+def _make_segment(company: str = "CompanyA", **overrides) -> RouteSegment:
+    kwargs = dict(  # noqa: C408
+        id=1,
+        company=company,
+        type="RAIL",
+        effectiveFrom="2024-01-01",
+        effectiveTo="2025-12-31",
+        startPointCountry="Россия",
+        startPointName="Москва",
+        endPointCountry="Россия",
+        endPointName="Владивосток",
+        comment=None,
+        timetable=None,
+        container_transfer_terms="FIFO",
+        container_shipment_terms="FOB",
+        container_owner="COC",
+        prices=[
+            PriceItem(
+                container=ContainerItem(
+                    id=1, size=20, type="DC", weight_from=0, weight_to=28000, name="20DC"
+                ),
+                value=1000.0,
+                currency="USD",
+                conversation_percents=0,
+            )
+        ],
+    )
+    kwargs.update(overrides)
+    return RouteSegment(**kwargs)
+
+
+def _make_full_route(company: str = "CompanyA", segments_count: int = 1, **segment_overrides) -> RouteResult:
+    segment = _make_segment(company=company, **segment_overrides)
+    segments = [segment]
+    if segments_count > 1:
+        segments.append(_make_segment(company=company, id=2, type="SEA"))
+    return RouteResult(segments=segments)
 
 
 def _make_request(
@@ -27,44 +68,9 @@ def _make_request(
     )
 
 
-def _make_route_segment(company: str = "CompanyA", **overrides) -> dict:
-    segment = {
-        "id": 1,
-        "company": company,
-        "type": "RAIL",
-        "effectiveFrom": "2024-01-01",
-        "effectiveTo": "2025-12-31",
-        "startPointCountry": "Россия",
-        "startPointName": "Москва",
-        "endPointCountry": "Россия",
-        "endPointName": "Владивосток",
-        "comment": None,
-        "timetable": None,
-        "container_transfer_terms": "FIFO",
-        "container_shipment_terms": "FOB",
-        "container_owner": "COC",
-        "prices": [
-            {
-                "container": {"id": 1, "size": 20, "type": "DC", "weight_from": 0, "weight_to": 28000, "name": "20DC"},
-                "value": 1000.0,
-                "currency": "USD",
-                "conversation_percents": 0,
-            }
-        ],
-    }
-    segment.update(overrides)
-    return segment
-
-
-def _make_full_route(company: str = "CompanyA", segments_count: int = 1, **segment_overrides) -> tuple:
-    segment = _make_route_segment(company=company, **segment_overrides)
-    segments = [segment] if segments_count == 1 else [segment, {**segment, "id": 2, "type": "SEA"}]
-    return (
-        segments,
-        None,
-        False,
-        [],
-    )
+# ──────────────────────────────────────────────
+# Service-level tests — calculate_routes returns RouteResult dataclasses
+# ──────────────────────────────────────────────
 
 
 @pytest.mark.asyncio
@@ -74,7 +80,9 @@ async def test_rail_only_internal():
         patch("backend_user.services.route_calculation.aggregators") as mock_agg,
         patch("backend_user.services.route_calculation.api_client") as mock_fesco,
     ):
-        mock_agg.get_containers = AsyncMock(return_value=[{"id": 1, "size": 20, "weight_from": 0, "weight_to": 28000}])
+        mock_agg.get_containers = AsyncMock(
+            return_value=[ContainerItem(id=1, size=20, weight_from=0, weight_to=28000, type="DC", name="20DC")]
+        )
         mock_agg.search_container_ids = lambda containers, weight, size: [1]
         mock_agg.find_all_paths = AsyncMock(return_value=[route])
         mock_fesco.get_containers = AsyncMock(return_value=[])
@@ -82,16 +90,13 @@ async def test_rail_only_internal():
         mock_fesco.find_all_paths = AsyncMock(return_value=[])
 
         request = _make_request()
-        auth = AuthContext()
-        result = await calculate_routes(request, auth)
+        routes, errors = await calculate_routes(request)
 
-    assert len(result["routes"]) == 1
-    assert len(result["errors"]) == 0
-    route_data = result["routes"][0]
-    segments = route_data[0]
-    assert len(segments) == 1
-    assert segments[0]["company"] == "CompanyA"
-    assert segments[0]["type"] == "RAIL"
+    assert len(routes) == 1
+    assert len(errors) == 0
+    assert len(routes[0].segments) == 1
+    assert routes[0].segments[0].company == "CompanyA"
+    assert routes[0].segments[0].type == "RAIL"
 
 
 @pytest.mark.asyncio
@@ -101,7 +106,9 @@ async def test_sea_only_internal():
         patch("backend_user.services.route_calculation.aggregators") as mock_agg,
         patch("backend_user.services.route_calculation.api_client") as mock_fesco,
     ):
-        mock_agg.get_containers = AsyncMock(return_value=[{"id": 1, "size": 20, "weight_from": 0, "weight_to": 28000}])
+        mock_agg.get_containers = AsyncMock(
+            return_value=[ContainerItem(id=1, size=20, weight_from=0, weight_to=28000, type="DC", name="20DC")]
+        )
         mock_agg.search_container_ids = lambda containers, weight, size: [1]
         mock_agg.find_all_paths = AsyncMock(return_value=[route])
         mock_fesco.get_containers = AsyncMock(return_value=[])
@@ -109,12 +116,10 @@ async def test_sea_only_internal():
         mock_fesco.find_all_paths = AsyncMock(return_value=[])
 
         request = _make_request()
-        auth = AuthContext()
-        result = await calculate_routes(request, auth)
+        routes, _errors = await calculate_routes(request)
 
-    assert len(result["routes"]) == 1
-    segments = result["routes"][0][0]
-    assert segments[0]["type"] == "SEA"
+    assert len(routes) == 1
+    assert routes[0].segments[0].type == "SEA"
 
 
 @pytest.mark.asyncio
@@ -123,7 +128,9 @@ async def test_no_routes_found():
         patch("backend_user.services.route_calculation.aggregators") as mock_agg,
         patch("backend_user.services.route_calculation.api_client") as mock_fesco,
     ):
-        mock_agg.get_containers = AsyncMock(return_value=[{"id": 1, "size": 20, "weight_from": 0, "weight_to": 28000}])
+        mock_agg.get_containers = AsyncMock(
+            return_value=[ContainerItem(id=1, size=20, weight_from=0, weight_to=28000, type="DC", name="20DC")]
+        )
         mock_agg.search_container_ids = lambda containers, weight, size: [1]
         mock_agg.find_all_paths = AsyncMock(return_value=[])
         mock_fesco.get_containers = AsyncMock(return_value=[])
@@ -131,10 +138,9 @@ async def test_no_routes_found():
         mock_fesco.find_all_paths = AsyncMock(return_value=[])
 
         request = _make_request()
-        auth = AuthContext()
-        result = await calculate_routes(request, auth)
+        routes, _errors = await calculate_routes(request)
 
-    assert len(result["routes"]) == 0
+    assert len(routes) == 0
 
 
 @pytest.mark.asyncio
@@ -151,10 +157,9 @@ async def test_no_matching_containers():
         mock_fesco.find_all_paths = AsyncMock(return_value=[])
 
         request = _make_request()
-        auth = AuthContext()
-        result = await calculate_routes(request, auth)
+        routes, _errors = await calculate_routes(request)
 
-    assert len(result["routes"]) == 0
+    assert len(routes) == 0
 
 
 @pytest.mark.asyncio
@@ -164,7 +169,9 @@ async def test_multiple_internal_pairs():
         patch("backend_user.services.route_calculation.aggregators") as mock_agg,
         patch("backend_user.services.route_calculation.api_client") as mock_fesco,
     ):
-        mock_agg.get_containers = AsyncMock(return_value=[{"id": 1, "size": 20, "weight_from": 0, "weight_to": 28000}])
+        mock_agg.get_containers = AsyncMock(
+            return_value=[ContainerItem(id=1, size=20, weight_from=0, weight_to=28000, type="DC", name="20DC")]
+        )
         mock_agg.search_container_ids = lambda containers, weight, size: [1]
         mock_agg.find_all_paths = AsyncMock(return_value=[route_a])
         mock_fesco.get_containers = AsyncMock(return_value=[])
@@ -172,10 +179,9 @@ async def test_multiple_internal_pairs():
         mock_fesco.find_all_paths = AsyncMock(return_value=[])
 
         request = _make_request(dep_internal=[1, 3], dest_internal=[2, 4])
-        auth = AuthContext()
-        result = await calculate_routes(request, auth)
+        routes, _errors = await calculate_routes(request)
 
-    assert len(result["routes"]) >= 1
+    assert len(routes) >= 1
 
 
 @pytest.mark.asyncio
@@ -188,17 +194,17 @@ async def test_fesco_external_source():
         mock_agg.get_containers = AsyncMock(return_value=[])
         mock_agg.search_container_ids = lambda containers, weight, size: []
         mock_agg.find_all_paths = AsyncMock(return_value=[])
-        fesco_container = {"id": "f1", "size": 20, "weight_from": 0, "weight_to": 28000}
-        mock_fesco.get_containers = AsyncMock(return_value=[fesco_container])
+        mock_fesco.get_containers = AsyncMock(
+            return_value=[ContainerItem(id="f1", size=20, weight_from=0, weight_to=28000, type="DC", name="20DC")]
+        )
         mock_fesco.search_container_ids = lambda containers, weight, size: ["f1"]
         mock_fesco.find_all_paths = AsyncMock(return_value=[route])
 
         request = _make_request(dep_external=["EXT1"], dest_external=["EXT2"])
-        auth = AuthContext()
-        result = await calculate_routes(request, auth)
+        routes, _errors = await calculate_routes(request)
 
-    assert len(result["routes"]) == 1
-    assert result["routes"][0][0][0]["company"] == "FESCO"
+    assert len(routes) == 1
+    assert routes[0].segments[0].company == "FESCO"
 
 
 @pytest.mark.asyncio
@@ -209,20 +215,24 @@ async def test_mixed_internal_and_external():
         patch("backend_user.services.route_calculation.aggregators") as mock_agg,
         patch("backend_user.services.route_calculation.api_client") as mock_fesco,
     ):
-        mock_agg.get_containers = AsyncMock(return_value=[{"id": 1, "size": 20, "weight_from": 0, "weight_to": 28000}])
+        mock_agg.get_containers = AsyncMock(
+            return_value=[ContainerItem(id=1, size=20, weight_from=0, weight_to=28000, type="DC", name="20DC")]
+        )
         mock_agg.search_container_ids = lambda containers, weight, size: [1]
         mock_agg.find_all_paths = AsyncMock(return_value=[route_int])
-        fesco_container = {"id": "f1", "size": 20, "weight_from": 0, "weight_to": 28000}
-        mock_fesco.get_containers = AsyncMock(return_value=[fesco_container])
+        mock_fesco.get_containers = AsyncMock(
+            return_value=[ContainerItem(id="f1", size=20, weight_from=0, weight_to=28000, type="DC", name="20DC")]
+        )
         mock_fesco.search_container_ids = lambda containers, weight, size: ["f1"]
         mock_fesco.find_all_paths = AsyncMock(return_value=[route_ext])
 
-        request = _make_request(dep_internal=[1], dest_internal=[2], dep_external=["EXT1"], dest_external=["EXT2"])
-        auth = AuthContext()
-        result = await calculate_routes(request, auth)
+        request = _make_request(
+            dep_internal=[1], dest_internal=[2], dep_external=["EXT1"], dest_external=["EXT2"]
+        )
+        routes, _errors = await calculate_routes(request)
 
-    assert len(result["routes"]) == 2
-    companies = {seg["company"] for route_res in result["routes"] for seg in route_res[0]}
+    assert len(routes) == 2
+    companies = {seg.company for route_res in routes for seg in route_res.segments}
     assert "CompanyA" in companies
     assert "FESCO" in companies
 
@@ -234,136 +244,28 @@ async def test_fesco_api_error_does_not_break_all():
         patch("backend_user.services.route_calculation.aggregators") as mock_agg,
         patch("backend_user.services.route_calculation.api_client") as mock_fesco,
     ):
-        mock_agg.get_containers = AsyncMock(return_value=[{"id": 1, "size": 20, "weight_from": 0, "weight_to": 28000}])
+        mock_agg.get_containers = AsyncMock(
+            return_value=[ContainerItem(id=1, size=20, weight_from=0, weight_to=28000, type="DC", name="20DC")]
+        )
         mock_agg.search_container_ids = lambda containers, weight, size: [1]
         mock_agg.find_all_paths = AsyncMock(return_value=[route_int])
         mock_fesco.get_containers = AsyncMock(side_effect=Exception("FESCO timeout"))
         mock_fesco.search_container_ids = lambda containers, weight, size: []
         mock_fesco.find_all_paths = AsyncMock(side_effect=Exception("FESCO timeout"))
 
-        request = _make_request(dep_internal=[1], dest_internal=[2], dep_external=["EXT1"], dest_external=["EXT2"])
-        auth = AuthContext()
-        result = await calculate_routes(request, auth)
+        request = _make_request(
+            dep_internal=[1], dest_internal=[2], dep_external=["EXT1"], dest_external=["EXT2"]
+        )
+        routes, errors = await calculate_routes(request)
 
-    assert len(result["routes"]) == 1
-    assert result["routes"][0][0][0]["company"] == "CompanyA"
-    assert len(result["errors"]) == 1
-
-
-@pytest.mark.asyncio
-async def test_demo_auth_strips_company_field():
-    route = _make_full_route(company="CompanyA")
-    with (
-        patch("backend_user.services.route_calculation.aggregators") as mock_agg,
-        patch("backend_user.services.route_calculation.api_client") as mock_fesco,
-    ):
-        mock_agg.get_containers = AsyncMock(return_value=[{"id": 1, "size": 20, "weight_from": 0, "weight_to": 28000}])
-        mock_agg.search_container_ids = lambda containers, weight, size: [1]
-        mock_agg.find_all_paths = AsyncMock(return_value=[route])
-        mock_fesco.get_containers = AsyncMock(return_value=[])
-        mock_fesco.search_container_ids = lambda containers, weight, size: []
-        mock_fesco.find_all_paths = AsyncMock(return_value=[])
-
-        request = _make_request()
-        auth = AuthContext(is_demo=True)
-        result = await calculate_routes(request, auth)
-
-    assert len(result["routes"]) == 1
-    assert "company" not in result["routes"][0][0][0]
-
-
-@pytest.mark.asyncio
-async def test_demo_auth_with_profit():
-    route = _make_full_route(company="CompanyA")
-    with (
-        patch("backend_user.services.route_calculation.aggregators") as mock_agg,
-        patch("backend_user.services.route_calculation.api_client") as mock_fesco,
-        patch("backend_user.services.profit.get_rates", return_value={"RUB": 1, "USD": 90, "EUR": 100}),
-    ):
-        mock_agg.get_containers = AsyncMock(return_value=[{"id": 1, "size": 20, "weight_from": 0, "weight_to": 28000}])
-        mock_agg.search_container_ids = lambda containers, weight, size: [1]
-        mock_agg.find_all_paths = AsyncMock(return_value=[route])
-        mock_fesco.get_containers = AsyncMock(return_value=[])
-        mock_fesco.search_container_ids = lambda containers, weight, size: []
-        mock_fesco.find_all_paths = AsyncMock(return_value=[])
-
-        request = _make_request()
-        auth = AuthContext(is_demo=True, sea_profit=100.0, sea_profit_currency="USD")
-        result = await calculate_routes(request, auth)
-
-    assert len(result["routes"]) == 1
-    assert "company" not in result["routes"][0][0][0]
-
-
-@pytest.mark.asyncio
-async def test_single_segment_rail_route_preserves_structure():
-    route = _make_full_route(company="CompanyA")
-    with (
-        patch("backend_user.services.route_calculation.aggregators") as mock_agg,
-        patch("backend_user.services.route_calculation.api_client") as mock_fesco,
-    ):
-        mock_agg.get_containers = AsyncMock(return_value=[{"id": 1, "size": 20, "weight_from": 0, "weight_to": 28000}])
-        mock_agg.search_container_ids = lambda containers, weight, size: [1]
-        mock_agg.find_all_paths = AsyncMock(return_value=[route])
-        mock_fesco.get_containers = AsyncMock(return_value=[])
-        mock_fesco.search_container_ids = lambda containers, weight, size: []
-        mock_fesco.find_all_paths = AsyncMock(return_value=[])
-
-        request = _make_request()
-        auth = AuthContext()
-        result = await calculate_routes(request, auth)
-
-    assert len(result["routes"]) == 1
-    route_data = result["routes"][0]
-    segments, drop, may_be_invalid, services = route_data
-    assert isinstance(segments, list)
-    assert len(segments) == 1
-    segment = segments[0]
-    assert "id" in segment
-    assert "company" in segment
-    assert "type" in segment
-    assert "prices" in segment
-    assert isinstance(segment["prices"], list)
-    assert segment["prices"][0]["value"] == 1000.0
-    assert segment["prices"][0]["currency"] == "USD"
-
-
-@pytest.mark.asyncio
-async def test_sea_rail_combined_route():
-    sea_segment = _make_route_segment(company="SeaLine", type="SEA")
-    rail_segment = _make_route_segment(company="RailCo", type="RAIL", id=2)
-    segments = [sea_segment, rail_segment]
-    route = (segments, {"price": 200.0, "conversation_percents": 0, "currency": "USD"}, False, [])
-
-    with (
-        patch("backend_user.services.route_calculation.aggregators") as mock_agg,
-        patch("backend_user.services.route_calculation.api_client") as mock_fesco,
-    ):
-        mock_agg.get_containers = AsyncMock(return_value=[{"id": 1, "size": 20, "weight_from": 0, "weight_to": 28000}])
-        mock_agg.search_container_ids = lambda containers, weight, size: [1]
-        mock_agg.find_all_paths = AsyncMock(return_value=[route])
-        mock_fesco.get_containers = AsyncMock(return_value=[])
-        mock_fesco.search_container_ids = lambda containers, weight, size: []
-        mock_fesco.find_all_paths = AsyncMock(return_value=[])
-
-        request = _make_request()
-        auth = AuthContext()
-        result = await calculate_routes(request, auth)
-
-    assert len(result["routes"]) == 1
-    route_data = result["routes"][0]
-    segments, drop, _may_be_invalid, _services = route_data
-    assert len(segments) == 2
-    assert segments[0]["type"] == "SEA"
-    assert segments[1]["type"] == "RAIL"
-    assert drop is not None
-    assert drop["price"] == 200.0
+    assert len(routes) == 1
+    assert routes[0].segments[0].company == "CompanyA"
+    assert len(errors) == 1
 
 
 @pytest.mark.asyncio
 async def test_external_only_without_internal():
     route = _make_full_route(company="FESCO")
-    fesco_container = {"id": "f1", "size": 20, "weight_from": 0, "weight_to": 28000}
     with (
         patch("backend_user.services.route_calculation.aggregators") as mock_agg,
         patch("backend_user.services.route_calculation.api_client") as mock_fesco,
@@ -371,16 +273,17 @@ async def test_external_only_without_internal():
         mock_agg.get_containers = AsyncMock(return_value=[])
         mock_agg.search_container_ids = lambda containers, weight, size: []
         mock_agg.find_all_paths = AsyncMock(return_value=[])
-        mock_fesco.get_containers = AsyncMock(return_value=[fesco_container])
+        mock_fesco.get_containers = AsyncMock(
+            return_value=[ContainerItem(id="f1", size=20, weight_from=0, weight_to=28000, type="DC", name="20DC")]
+        )
         mock_fesco.search_container_ids = lambda containers, weight, size: ["f1"]
         mock_fesco.find_all_paths = AsyncMock(return_value=[route])
 
         request = _make_request(dep_internal=[], dest_internal=[], dep_external=["EXT1"], dest_external=["EXT2"])
-        auth = AuthContext()
-        result = await calculate_routes(request, auth)
+        routes, errors = await calculate_routes(request)
 
-    assert len(result["routes"]) == 1
-    assert result["errors"] == []
+    assert len(routes) == 1
+    assert errors == []
 
 
 @pytest.mark.asyncio
@@ -397,82 +300,82 @@ async def test_empty_ids_lists_returns_empty():
         mock_fesco.find_all_paths = AsyncMock(return_value=[])
 
         request = _make_request(dep_internal=[], dest_internal=[], dep_external=[], dest_external=[])
-        auth = AuthContext()
-        result = await calculate_routes(request, auth)
+        routes, errors = await calculate_routes(request)
 
-    assert result == {"errors": [], "routes": []}
+    assert routes == []
+    assert errors == []
 
 
 @pytest.mark.asyncio
 async def test_container_fetch_fails_gracefully():
-    route = _make_full_route(company="CompanyA")
     with (
         patch("backend_user.services.route_calculation.aggregators") as mock_agg,
         patch("backend_user.services.route_calculation.api_client") as mock_fesco,
     ):
         mock_agg.get_containers = AsyncMock(side_effect=Exception("DB timeout"))
         mock_agg.search_container_ids = Mock()
-        mock_agg.find_all_paths = AsyncMock(return_value=[route])
+        mock_agg.find_all_paths = AsyncMock(return_value=[])
         mock_fesco.get_containers = AsyncMock(return_value=[])
         mock_fesco.search_container_ids = lambda containers, weight, size: []
         mock_fesco.find_all_paths = AsyncMock(return_value=[])
 
         request = _make_request()
-        auth = AuthContext()
-        result = await calculate_routes(request, auth)
+        routes, errors = await calculate_routes(request)
 
-    assert len(result["routes"]) == 0
-    assert len(result["errors"]) == 1
-
-
-@pytest.mark.asyncio
-async def test_demo_auth_with_profit_and_rail():
-    route = _make_full_route(company="CompanyA", type="RAIL")
-    with (
-        patch("backend_user.services.route_calculation.aggregators") as mock_agg,
-        patch("backend_user.services.route_calculation.api_client") as mock_fesco,
-        patch("backend_user.services.profit.get_rates", return_value={"RUB": 1, "USD": 90, "EUR": 100}),
-    ):
-        mock_agg.get_containers = AsyncMock(return_value=[{"id": 1, "size": 20, "weight_from": 0, "weight_to": 28000}])
-        mock_agg.search_container_ids = lambda containers, weight, size: [1]
-        mock_agg.find_all_paths = AsyncMock(return_value=[route])
-        mock_fesco.get_containers = AsyncMock(return_value=[])
-        mock_fesco.search_container_ids = lambda containers, weight, size: []
-        mock_fesco.find_all_paths = AsyncMock(return_value=[])
-
-        request = _make_request()
-        auth = AuthContext(is_demo=True, rail_profit=50.0, rail_profit_currency="USD")
-        result = await calculate_routes(request, auth)
-
-    assert len(result["routes"]) == 1
-    assert "company" not in result["routes"][0][0][0]
+    assert len(routes) == 0
+    assert len(errors) == 1
 
 
-@pytest.mark.asyncio
-async def test_non_demo_does_not_strip_company():
-    route = _make_full_route(company="CompanyA")
-    with (
-        patch("backend_user.services.route_calculation.aggregators") as mock_agg,
-        patch("backend_user.services.route_calculation.api_client") as mock_fesco,
-    ):
-        mock_agg.get_containers = AsyncMock(return_value=[{"id": 1, "size": 20, "weight_from": 0, "weight_to": 28000}])
-        mock_agg.search_container_ids = lambda containers, weight, size: [1]
-        mock_agg.find_all_paths = AsyncMock(return_value=[route])
-        mock_fesco.get_containers = AsyncMock(return_value=[])
-        mock_fesco.search_container_ids = lambda containers, weight, size: []
-        mock_fesco.find_all_paths = AsyncMock(return_value=[])
+# ──────────────────────────────────────────────
+# Handler-level tests — format conversion + demo transforms
+# ──────────────────────────────────────────────
 
-        request = _make_request()
-        auth = AuthContext(is_demo=False)
-        result = await calculate_routes(request, auth)
 
-    assert len(result["routes"]) == 1
-    assert result["routes"][0][0][0]["company"] == "CompanyA"
+def test_apply_demo_transforms_strips_company():
+    seg = _make_segment(company="CompanyA")
+    route = RouteResult(segments=[seg])
+    formatted = _normalize_routes([route])
+    auth = AuthContext(is_demo=True)
+    _apply_demo_transforms(formatted, auth)
+
+    assert not formatted[0][0][0].company
+
+
+def test_apply_demo_transforms_does_not_strip_for_non_demo():
+    seg = _make_segment(company="CompanyA")
+    route = RouteResult(segments=[seg])
+    formatted = _normalize_routes([route])
+    auth = AuthContext(is_demo=False)
+    _apply_demo_transforms(formatted, auth)
+
+    assert formatted[0][0][0].company == "CompanyA"
+
+
+def test_apply_demo_transforms_with_profit():
+    seg = _make_segment(company="CompanyA", type="sea")
+    route = RouteResult(segments=[seg])
+    formatted = _normalize_routes([route])
+    auth = AuthContext(is_demo=True, sea_profit=100.0, sea_profit_currency="USD")
+
+    with patch("backend_user.services.profit.get_rates", return_value={"RUB": 1, "USD": 90, "EUR": 100}):
+        _apply_demo_transforms(formatted, auth)
+
+    assert formatted[0][0][0].company is None
+
+
+def test_apply_demo_transforms_with_profit_and_rail():
+    seg = _make_segment(company="CompanyA", type="rail")
+    route = RouteResult(segments=[seg])
+    formatted = _normalize_routes([route])
+    auth = AuthContext(is_demo=True, rail_profit=50.0, rail_profit_currency="USD")
+
+    with patch("backend_user.services.profit.get_rates", return_value={"RUB": 1, "USD": 90, "EUR": 100}):
+        _apply_demo_transforms(formatted, auth)
+
+    assert formatted[0][0][0].company is None
 
 
 def test_strip_demo_fields_empty_segments():
-    from backend_user.services.route_calculation import _strip_demo_fields
-
     routes = [([], None, False, [])]
     _strip_demo_fields(routes)
     assert routes[0][0] == []

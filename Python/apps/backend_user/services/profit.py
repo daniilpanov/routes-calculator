@@ -1,6 +1,6 @@
-from typing import Any
-
+from backend_user.schemas.routes import NormalizedRoutes
 from backend_user.services.get_rates import get_rates
+from module_shared.models.route import RouteSegment
 
 
 def _convert_currency(amount: float, from_currency: str, to_currency: str, rates: dict[str, float]) -> float:
@@ -22,7 +22,7 @@ def _get_converted_profit(
 
 
 def _apply_profit_to_segments(
-    segments: list[dict[str, Any]],
+    segments: list[RouteSegment],
     sea_profit: float,
     sea_profit_currency: str,
     rail_profit: float,
@@ -30,7 +30,7 @@ def _apply_profit_to_segments(
     rates: dict[str, float],
 ) -> None:
     for segment in segments:
-        seg_type = str(segment.get("type", "")).lower()
+        seg_type = (segment.type or "").lower()
         if seg_type == "sea":
             profit = sea_profit
             profit_currency = sea_profit_currency
@@ -40,19 +40,14 @@ def _apply_profit_to_segments(
         else:
             continue
 
-        for price in segment.get("prices", []):
-            segment_currency = price.get("currency", "USD")
+        for price in segment.prices or []:
+            segment_currency = price.currency
             converted_profit = _get_converted_profit(profit, profit_currency, segment_currency, rates)
-            price["value"] = float(price["value"]) + converted_profit
-
-        if "price" in segment and "currency" in segment:
-            segment_currency = segment["currency"]
-            converted_profit = _get_converted_profit(profit, profit_currency, segment_currency, rates)
-            segment["price"] = float(segment["price"]) + converted_profit
+            price.value = float(price.value) + converted_profit
 
 
 def apply_demo_profit_to_routes(
-    routes: list,
+    routes: NormalizedRoutes,
     sea_profit: float,
     sea_profit_currency: str,
     rail_profit: float,

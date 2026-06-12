@@ -1,0 +1,30 @@
+ARGS = $(filter-out $@,$(MAKECMDGOALS))
+
+.PHONY: build prod dev test update export-deps alembic migrate
+
+build:
+	docker buildx bake $(ARGS)
+
+prod:
+	@trap 'docker compose down' EXIT; docker compose up $(ARGS)
+
+dev:
+	@trap './scripts/stop-dev.sh' EXIT; ./scripts/run-dev.sh $(ARGS)
+
+test:
+	./scripts/run-test.sh $(ARGS)
+
+update:
+	./scripts/prod-update.sh $(ARGS)
+
+export-deps:
+	./scripts/export-python-dependencies.sh $(ARGS)
+
+alembic:
+	./scripts/alembic-proxy.sh $(ARGS)
+
+migrate:
+	./scripts/prod-db-migrate.sh $(ARGS)
+
+%:
+	@true

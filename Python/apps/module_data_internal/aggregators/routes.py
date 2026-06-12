@@ -1,7 +1,6 @@
 import asyncio
 import datetime
 
-from backend_user.mapper_decorator import apply_mapper
 from module_data_internal.schemas import (
     ContainerOwner,
     DropModel,
@@ -11,10 +10,11 @@ from module_data_internal.schemas import (
     ServicePriceModel,
 )
 from module_shared.database import Base, get_database
+from module_shared.models.route import RouteResult
 from sqlalchemy import and_, desc, or_, select
 from sqlalchemy.orm import aliased, contains_eager, joinedload, selectinload
 
-from .mappers.routes import map_routes
+from .transformers.routes import transform_routes
 
 
 async def _execute_query(q):
@@ -230,13 +230,12 @@ def process_results(
     return flat_result
 
 
-@apply_mapper(map_routes)
 async def find_all_paths(
     date: datetime.date,
     start_point_id: int,
     end_point_id: int,
     container_ids: list[int],
-) -> list[tuple[list[Base], bool]]:
+) -> list[RouteResult]:
     query_rail = build_usual_query(
         RouteType.RAIL,
         date,
@@ -268,4 +267,4 @@ async def find_all_paths(
     coroutines = [_execute_query(query) for query in all_queries]
     results = await asyncio.gather(*coroutines, return_exceptions=True)
 
-    return process_results(results, date, container_ids)
+    return transform_routes(process_results(results, date, container_ids))

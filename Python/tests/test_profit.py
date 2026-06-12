@@ -2,10 +2,12 @@ from unittest.mock import patch
 
 import pytest
 from backend_user.services.profit import (
+    _apply_profit_to_segments,
     _convert_currency,
     _get_converted_profit,
     apply_demo_profit_to_routes,
 )
+from module_shared.models.route import PriceItem, RouteSegment
 
 _CB_RATES = {"USD": 90.0, "RUB": 1.0, "EUR": 100.0}
 
@@ -43,39 +45,27 @@ class TestGetConvertedProfit:
 
 
 class TestApplyDemoProfitToRoutes:
-    def _make_segment(self, seg_type="sea", price_value=1000.0, currency="USD"):
-        return {
-            "type": seg_type,
-            "prices": [{"value": price_value, "currency": currency}],
-            "price": price_value,
-            "currency": currency,
-        }
-
     def _apply(self, routes, **kwargs):
         with patch("backend_user.services.profit.get_rates", return_value=_CB_RATES):
             apply_demo_profit_to_routes(routes, **kwargs)
 
     def _segment_price(self, routes, route_index=0, segment_index=0, price_index=0):
-        return routes[route_index][0][segment_index]["prices"][price_index]["value"]
-
-    def _segment_total(self, routes, route_index=0, segment_index=0):
-        return routes[route_index][0][segment_index]["price"]
+        return routes[route_index][0][segment_index].prices[price_index].value
 
     def test_sea_profit_added_to_sea_segment(self):
-        routes = [([self._make_segment(seg_type="sea")], None, False, [])]
+        routes = [([_make_segment(seg_type="sea")], None, False, [])]
         self._apply(routes, sea_profit=50.0, sea_profit_currency="USD", rail_profit=0.0, rail_profit_currency="USD")
 
         assert self._segment_price(routes) == 1050.0
-        assert self._segment_total(routes) == 1050.0
 
     def test_rail_profit_added_to_rail_segment(self):
-        routes = [([self._make_segment(seg_type="rail")], None, False, [])]
+        routes = [([_make_segment(seg_type="rail")], None, False, [])]
         self._apply(routes, sea_profit=0.0, sea_profit_currency="USD", rail_profit=30.0, rail_profit_currency="USD")
 
         assert self._segment_price(routes) == 1030.0
 
     def test_no_profit_when_all_zero(self):
-        routes = [([self._make_segment(seg_type="sea")], None, False, [])]
+        routes = [([_make_segment(seg_type="sea")], None, False, [])]
 
         apply_demo_profit_to_routes(
             routes,
@@ -88,38 +78,51 @@ class TestApplyDemoProfitToRoutes:
         assert self._segment_price(routes) == 1000.0
 
     def test_sea_profit_not_added_to_rail_segment(self):
-        routes = [([self._make_segment(seg_type="rail")], None, False, [])]
+        routes = [([_make_segment(seg_type="rail")], None, False, [])]
         self._apply(routes, sea_profit=50.0, sea_profit_currency="USD", rail_profit=0.0, rail_profit_currency="USD")
 
         assert self._segment_price(routes) == 1000.0
 
     def test_unknown_segment_type_skipped(self):
-        routes = [([self._make_segment(seg_type="truck")], None, False, [])]
+        routes = [([_make_segment(seg_type="truck")], None, False, [])]
         self._apply(routes, sea_profit=50.0, sea_profit_currency="USD", rail_profit=30.0, rail_profit_currency="USD")
 
         assert self._segment_price(routes) == 1000.0
 
     def test_mixed_segments(self):
         segments = [
-            {"type": "sea", "prices": [{"value": 1000.0, "currency": "USD"}], "price": 1000.0, "currency": "USD"},
-            {"type": "rail", "prices": [{"value": 500.0, "currency": "USD"}], "price": 500.0, "currency": "USD"},
+            _make_segment(seg_type="sea"),
+            _make_segment(seg_type="rail", price_value=500.0),
         ]
         routes = [(segments, None, False, [])]
 
         self._apply(routes, sea_profit=100.0, sea_profit_currency="USD", rail_profit=50.0, rail_profit_currency="USD")
 
-        assert segments[0]["prices"][0]["value"] == 1100.0
-        assert segments[1]["prices"][0]["value"] == 550.0
+        assert segments[0].prices[0].value == 1100.0
+        assert segments[1].prices[0].value == 550.0
 
     def test_currency_conversion(self):
-        segment = {"type": "sea", "prices": [{"value": 1000.0, "currency": "RUB"}], "price": 1000.0, "currency": "RUB"}
+        segment = _make_segment(seg_type="sea", price_value=1000.0, currency="RUB")
         routes = [([segment], None, False, [])]
 
         self._apply(routes, sea_profit=100.0, sea_profit_currency="USD", rail_profit=0.0, rail_profit_currency="USD")
 
-        # 100 USD profit in RUB: 100 * rates["USD"] / rates["RUB"] = 100 * 90 / 1 = 9000 RUB
-        assert segment["prices"][0]["value"] == 10000.0
-        assert segment["price"] == 10000.0
+        assert segment.prices[0].value == 10000.0
+
+
+def _make_segment(seg_type="sea", price_value=1000.0, currency="USD") -> RouteSegment:
+    return RouteSegment(
+        id=1,
+        company="Test",
+        type=seg_type,
+        effectiveFrom="2024-01-01",
+        effectiveTo="2025-12-31",
+        startPointCountry="RU",
+        startPointName="Moscow",
+        endPointCountry="CN",
+        endPointName="Shanghai",
+        prices=[PriceItem(value=price_value, currency=currency, conversation_percents=0)],
+    )
 
 
 @pytest.mark.parametrize(
@@ -131,10 +134,19 @@ class TestApplyDemoProfitToRoutes:
     ],
 )
 def test_various_segment_types_with_profit(segment_type, expected_value):
-    from backend_user.services.profit import _apply_profit_to_segments
-
     segments = [
-        {"type": segment_type, "prices": [{"value": 1000.0, "currency": "USD"}], "price": 1000.0, "currency": "USD"},
+        RouteSegment(
+            id=1,
+            company="Test",
+            type=segment_type,
+            effectiveFrom="2024-01-01",
+            effectiveTo="2025-12-31",
+            startPointCountry="RU",
+            startPointName="Moscow",
+            endPointCountry="CN",
+            endPointName="Shanghai",
+            prices=[PriceItem(value=1000.0, currency="USD", conversation_percents=0)],
+        ),
     ]
 
     _apply_profit_to_segments(
@@ -146,4 +158,4 @@ def test_various_segment_types_with_profit(segment_type, expected_value):
         rates=_CB_RATES,
     )
 
-    assert segments[0]["prices"][0]["value"] == expected_value
+    assert segments[0].prices[0].value == expected_value
