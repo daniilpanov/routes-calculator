@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+import logging
 
 from module_data_internal.schemas import (
     ContainerOwner,
@@ -15,6 +16,8 @@ from sqlalchemy import and_, desc, or_, select
 from sqlalchemy.orm import aliased, contains_eager, joinedload, selectinload
 
 from .transformers.routes import transform_routes
+
+logger = logging.getLogger(__name__)
 
 
 async def _execute_query(q):
@@ -194,7 +197,7 @@ def process_results(
     for result in results:
         if not result or isinstance(result, BaseException):
             if isinstance(result, BaseException):
-                print(f"Query error: {result}")
+                logger.error("Route query failed", exc_info=result)
             continue
 
         for row in result:

@@ -56,6 +56,7 @@ fi
 
 export DOCKER_PROD_IMAGES_TAG="$DOCKER_TAG"
 
+mkdir -p logs
 docker compose down
 docker compose pull
 docker compose -f docker-compose.migrate.yml pull

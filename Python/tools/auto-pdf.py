@@ -1,5 +1,6 @@
 # REQUIREMENTS: ghostscript, pillow, camelot, pandas, numpy
 import csv
+import logging
 import re
 import typing
 
@@ -9,12 +10,15 @@ import requests
 if typing.TYPE_CHECKING:
     pass
 
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logger = logging.getLogger(__name__)
+
 
 def parse_pdf(service, path, transfer_type, output_suffix=""):
     parsed_path = path.rsplit("-", maxsplit=3)
     start_date = parsed_path[-2]
     end_date = parsed_path[-1][:-4]
-    print(start_date, "-", end_date)
+    logger.info("%s — %s", start_date, end_date)
     output_path = (  # noqa: ECE001
         service
         + "."
@@ -52,11 +56,11 @@ def parse_pdf(service, path, transfer_type, output_suffix=""):
             df = page.df
             header = [line.strip() for line in df.loc[0][0].splitlines()]
             if not header[0].startswith("Port of Discharge: "):
-                print("ERROR!", df)
+                logger.error("Failed to parse PDF header")
                 continue
             discharge = header[0].split(":")[1].strip()
             container_types = header[2], header[3]
-            print(discharge, *container_types)
+            logger.info("%s %s %s", discharge, *container_types)
             body = df.loc[1:]
             for _, row in body.iterrows():
                 if len(row) < 3:

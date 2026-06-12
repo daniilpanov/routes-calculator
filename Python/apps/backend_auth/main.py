@@ -9,10 +9,16 @@ from fastapi_another_jwt_auth import AuthJWT
 from fastapi_another_jwt_auth.exceptions import AuthJWTException
 from module_shared.config import Settings, get_settings
 from module_shared.jwt_error_handler import authjwt_exception_handler
+from module_shared.logger import setup_logging, setup_sqlalchemy_logging
 from pydantic import BaseModel
+
+shared_settings = get_settings()
 
 AuthJWT.load_config(get_settings)
 app = FastAPI(redirect_slashes=False)
+
+setup_logging("backend_auth", shared_settings.LOG_LEVEL)
+setup_sqlalchemy_logging(shared_settings.DB_LOG_LEVEL, shared_settings.DB_LOG_OUTPUT)
 
 
 class User(BaseModel):

@@ -17,6 +17,8 @@ class Settings(BaseSettings):
 
     DB_CHARSET: str = "utf8mb4"
     DB_COLLATE: str = "utf8mb4_unicode_ci"
+    DB_LOG_LEVEL: str = "WARNING"
+    DB_LOG_OUTPUT: str = "both"
 
     # AUTH
     admin_login: str
@@ -32,6 +34,9 @@ class Settings(BaseSettings):
     # CSRF double submit protection.
     authjwt_cookie_csrf_protect: bool = False
     authjwt_cookie_samesite: str = "lax"
+
+    # LOGGING
+    LOG_LEVEL: str = "INFO"
 
     # DEMO
     DEMO_EXCLUDED_FIELDS: set[str] = {"company"}

@@ -14,6 +14,5 @@ services:
     volumes:
       - "./Python/apps/:/app/apps/:ro"
       - "./Python/tests/:/app/tests/:ro"
-      - "./Python/pyproject.toml:/app/pyproject.toml:ro"
     profiles:
       - test

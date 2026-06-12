@@ -1,6 +1,10 @@
+import logging
+
 from backend_user.schemas.routes import NormalizedRoutes
 from backend_user.services.get_rates import get_rates
 from module_shared.models.route import RouteSegment
+
+logger = logging.getLogger(__name__)
 
 
 def _convert_currency(amount: float, from_currency: str, to_currency: str, rates: dict[str, float]) -> float:
@@ -56,6 +60,10 @@ def apply_demo_profit_to_routes(
     if not sea_profit and not rail_profit:
         return
 
+    logger.info(
+        "Applying profit: sea=%.2f %s, rail=%.2f %s",
+        sea_profit, sea_profit_currency, rail_profit, rail_profit_currency,
+    )
     rates = get_rates()
 
     for route in routes:
