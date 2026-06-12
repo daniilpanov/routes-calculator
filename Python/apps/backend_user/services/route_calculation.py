@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+import logging
 from collections.abc import Iterable
 
 from backend_user.schemas.errors import RouteError
@@ -9,6 +10,8 @@ from module_data_fesco_api_adapter import api_client
 from module_data_internal import aggregators
 from module_shared.config import get_settings as get_shared_settings
 from module_shared.models.route import RouteResult
+
+logger = logging.getLogger(__name__)
 
 
 def _strip_demo_fields(routes: NormalizedRoutes) -> None:
@@ -36,6 +39,7 @@ async def _get_routes(
         container_type,
     )
     if not container_ids:
+        logger.warning("No matching containers for %s-%s", departure, destination)
         return []
     return await modul.find_all_paths(date, departure, destination, container_ids)
 
@@ -66,6 +70,12 @@ async def calculate_routes(request: CalculateFormRequest) -> tuple[list[RouteRes
         for departure_id in request.departureExternalIds
     ]
 
+    logger.info(
+        "Calculating routes: %d internal / %d external pairs",
+        len(internal_coros),
+        len(external_coros),
+    )
+
     internal_result, external_result = await asyncio.gather(
         asyncio.gather(*internal_coros, return_exceptions=True),
         asyncio.gather(*external_coros, return_exceptions=True),
@@ -78,14 +88,17 @@ async def calculate_routes(request: CalculateFormRequest) -> tuple[list[RouteRes
 
     for is_external, coro_result in result:
         if isinstance(coro_result, BaseException):
+            source = source_map[int(is_external)]
+            logger.error("Route %s: calculation failed", source, exc_info=coro_result)
             errors.append(RouteError(
                 error_type=str(type(coro_result)),
                 error_text=str(coro_result),
-                source=source_map[int(is_external)],
+                source=source,
             ))
         elif coro_result:
             res = list(coro_result)
             if res:
                 routes.extend(res)
 
+    logger.info("Result: %d routes, %d errors", len(routes), len(errors))
     return routes, errors
