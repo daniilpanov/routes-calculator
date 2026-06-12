@@ -15,6 +15,9 @@ RUN mkdir -p /home/${USERNAME} && \
 
 USER ${USER_UID}
 
+RUN mkdir /var/log/app
+RUN chown ${USERNAME}:${USERNAME} /var/log/app
+
 # install requirements
 COPY ./requirements.txt ./
 RUN ["python3", "-m", "pip", "install", "--no-deps", "--no-cache-dir", "-r", "requirements.txt"]
