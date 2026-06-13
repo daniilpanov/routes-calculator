@@ -19,30 +19,48 @@ Read this first to understand conventions, structure, and constraints.
 
 ### Python Backend (`Python/`)
 
-Three FastAPI microservices + shared libraries:
+Three FastAPI microservices + shared libraries + CLI tools + Alembic migrations:
 
 ```
-Python/apps/
-├── backend_auth/         # Port 8081 — Auth & demo guest login
-│   ├── main.py           # FastAPI app: /login, /token/refresh, /logout, /me
-├── backend_user/         # Port 8080 — Route calculator (user-facing API)
-│   ├── main.py
-│   ├── autodiscover.py   # Auto-discovers routers from api/ subpackages
-│   ├── config.py
-│   ├── api/v1/, api/v2/  # Versioned API endpoints (routes, points, rates)
-│   │   └── v2/demo/      # Demo endpoints (validate, feature_flags)
-│   ├── dependencies/     # FastAPI dependencies (auth, auth_context)
-│   └── services/         # Business logic (route_calculation, profit, get_rates)
-├── backend_admin/        # Port 8082 — Admin data management
-│   ├── main.py
-│   ├── autodiscover.py
-│   ├── api/              # Auto-discovered routers (routes_loading, data_manager, demo_guests)
-│   └── service/          # Business logic (routes_loading/, db_management/)
-├── module_shared/        # Shared infrastructure (config, database, responses, jwt_handler,
-│                         #   feature_flags, models/route, repositories/demo_guest, schemas/demo_guest)
-├── module_data_internal/ # ORM models + internal data aggregators
-│   └── schemas/          # CompanyModel, ContainerModel, PointModel, RouteModel, etc.
-└── module_data_fesco_api_adapter/  # External FESCO API client
+Python/
+├── cli/                   # CLI debugging tools (AI-assisted route debugging)
+│   ├── main.py            # click group: login, route-query, db, sheets
+│   ├── auth.py            # JWT login, token storage (~/.opencode-token)
+│   ├── config.py          # CLISettings: API_BASE_URL, ADMIN_API_BASE_URL, etc.
+│   ├── route_query.py     # Tool 1: Query /v2/routes/calculate via API
+│   ├── db_explorer.py     # Tool 2: Admin CRUD client (list, get, create, update, patch, delete)
+│   └── sheets_reader.py   # Tool 3: Google Sheets reader (worksheets, show, search)
+├── apps/
+│   ├── backend_auth/         # Port 8081 — Auth & demo guest login
+│   │   └── main.py           # FastAPI app: /login, /token/refresh, /logout, /me
+│   ├── backend_user/         # Port 8080 — Route calculator (user-facing API)
+│   │   ├── main.py
+│   │   ├── autodiscover.py
+│   │   ├── config.py
+│   │   ├── api/v1/, api/v2/  # Versioned API endpoints
+│   │   ├── dependencies/
+│   │   └── services/
+│   ├── backend_admin/        # Port 8082 — Admin data management
+│   │   ├── main.py
+│   │   ├── autodiscover.py
+│   │   ├── api/
+│   │   │   ├── routes_loading.py  # Import routes from Google Sheets
+│   │   │   ├── data_manager.py    # DB dump/erase/load
+│   │   │   ├── demo_guests.py     # CRUD demo guests
+│   │   │   └── data_browser.py    # Thin CRUD routes (delegates to service/)
+│   │   ├── schemas/
+│   │   │   └── data_browser.py    # Pydantic request/response models
+│   │   └── service/
+│   │       ├── crud_base.py           # Generic CRUD template (CRUDBase)
+│   │       ├── crud_companies.py      # Company CRUD service
+│   │       ├── crud_points.py         # Point CRUD service
+│   │       ├── crud_containers.py     # Container CRUD service
+│   │       ├── crud_route_segments.py # Route segment CRUD (composite)
+│   │       ├── crud_services.py       # Service CRUD service
+│   │       └── crud_drop_off.py      # Drop-off CRUD service
+│   ├── module_shared/
+│   ├── module_data_internal/
+│   └── module_data_fesco_api_adapter/
 ```
 
 ### Node Frontends (`Node/apps/`)
@@ -303,6 +321,77 @@ module_shared ───┬── backend_auth
 - Models defined in `module_data_internal/schemas/` and `module_shared/schemas/`
 - Both use the same `Base` class from `module_shared.database`
 
+### Route Calculation — Key Logic
+
+**`containerType` parameter** is container size in feet (20 or 40), NOT DC/HC type.
+- Passed as `size` to `search_container_ids()` (`containers.py:19-24`), which filters by `ContainerModel.size` column.
+- `ContainerModel.type` (DC/HC) is never used for filtering in the calculate endpoint.
+- Frontend sends `containerType` as `"20"` or `"40"`.
+
+**COC/SOC matching logic** (`routes.py:_apply_container_owner_filter`, lines 270-296):
+- Same company → Rail must be `container_owner == COC`
+- Different companies → Rail must be `container_owner == SOC`
+- Sea and rail must share the same `RouteDate` (effective range).
+
+**Through-route condition** (sea-rail JOIN in `routes.py`):
+- A rail segment with `is_through=true` can only pair with sea from the same company.
+- Two non-through segments (both `is_through=false`) can pair across different companies.
+- Logic: `or_(~RailRoute.is_through & ~SeaRoute.is_through, SeaRoute.company_id == RailRoute.company_id)`.
+
+### CLI Tools (`Python/cli/`)
+
+**Entry point:** `python -m cli <command>` (requires `PYTHONPATH=Python/apps`).
+For sheets commands, also set `GSHEETS_URL` and `GOOGLE_SERVICE_ACCOUNT_PATH` env vars
+(or put them in `.env.cli` in the project root — see `.env.cli.example`).
+**Framework:** `click` (transitive dep via uvicorn; no explicit dependency needed)
+**Auth:** JWT login via `POST /login` on backend_auth; token stored in `~/.opencode-token`; sent as `Cookie: access_token_cookie=<token>` in subsequent requests. `api/user/` nginx route is used by default.
+
+**Commands:**
+
+```
+python -m cli login                         # Authenticate and save JWT
+python -m cli logout                        # Clear saved JWT
+python -m cli route-query                   # Query route calculator API
+python -m cli db list <resource>            # List resources via Admin API
+python -m cli db get <resource>/<id>        # Get single resource
+python -m cli db create <resource>          # Create resource (--data JSON)
+python -m cli db update <resource>/<id>     # Full update PUT (--data JSON)
+python -m cli db patch <resource>/<id>      # Partial update PATCH (--data JSON)
+python -m cli db delete <resource>/<id>     # Delete resource
+python -m cli sheets worksheets             # List worksheets
+python -m cli sheets columns <ws>           # List column names + 0-based indices
+python -m cli sheets show <ws>              # Show data (--filter, --search, --columns, --csv, --output, --count)
+python -m cli sheets search <ws>            # Search (--column optional, --columns, --limit)
+python -m cli sheets find <company>         # Cross-worksheet company search (--columns, --csv, --output, --count)
+```
+
+All output is JSON by default (for AI/script parsing).
+
+### Admin CRUD API (`data_browser.py`)
+
+**File:** `Python/apps/backend_admin/api/data_browser.py`
+**Prefix:** `/db` (auto-discovered by `autodiscover.py`)
+**Auth:** JWT via `Depends(request_auth)`
+
+**Resources and endpoints:**
+
+| Resource | Endpoints | Description |
+|----------|-----------|-------------|
+| Companies | `GET/POST /db/companies`, `GET/PUT/PATCH/DELETE /db/companies/{id}` | `name: str` |
+| Points | `GET/POST /db/points`, `GET/PUT/PATCH/DELETE /db/points/{id}` | `city, country, RU_city?, RU_country?` |
+| Containers | `GET/POST /db/containers`, `GET/PUT/PATCH/DELETE /db/containers/{id}` | `size, type(DC/HC), weight_from, weight_to, name` |
+| Route Segments | `GET/POST /db/route-segments`, `GET/PUT/PATCH/DELETE /db/route-segments/{id}` | Composite: route fields + nested `prices[]` + `services[]` |
+| Services | `GET/POST /db/services`, `GET/PUT/PATCH/DELETE /db/services/{id}` | `name, internal_name, description, hint?, mandatory, default` |
+| Drop-off | `GET/POST /db/drop-off`, `GET/PUT/PATCH/DELETE /db/drop-off/{id}` | `container_id, company_id, dates, price, currency` |
+
+**Architecture:**
+- `api/data_browser.py` — thin route definitions only (delegates to service layer)
+- `schemas/data_browser.py` — all Pydantic request/response models with `from_model()` classmethods
+- `service/crud_base.py` — generic `CRUDBase` template (ABC) with `list`, `get`, `create`, `update`, `patch`, `delete` + filter definitions via `FilterDef`
+- `service/crud_*.py` — per-entity service classes that override `_build_instance`, `_apply_update`, `_apply_patch` for entity-specific conversion logic (strip, enum/date parsing, nested prices/services)
+
+**Route Segment** is a composite resource — `crud_route_segments.py` overrides `create`/`update` to handle nested `prices[]` and `services[]` (fully replaced on PUT); PATCH only touches route-level fields via `_apply_patch`. The `get` method uses `selectinload` for eager relationship loading.
+
 ---
 
 ## Makefile (`Makefile`)
@@ -316,9 +405,6 @@ module_shared ───┬── backend_auth
 | `make export-deps` | `./scripts/export-python-dependencies.sh` |
 | `make alembic [args]` | `./scripts/alembic-proxy.sh` — pass alembic subcommand via args |
 | `make migrate [args]` | `./scripts/prod-db-migrate.sh` — pass alembic subcommand via args |
-
-## Known Gaps
-- **Backend docs** (`docs/backend/`) are empty
 
 ---
 
