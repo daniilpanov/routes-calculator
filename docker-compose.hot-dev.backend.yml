@@ -46,7 +46,7 @@ services:
       - "./Python/apps/backend_auth/:/apps/backend_auth/:ro"
       - "./Python/apps/module_shared/:/apps/module_shared/:ro"
       - "./resources/:/apps/resources/:rw"
-      - "./logs/:/apps/logs/:rw"
+      - "./logs/:/var/log/app/:rw"
     command:
       - "backend_auth.main:app"
       - "--host"

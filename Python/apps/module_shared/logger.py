@@ -2,7 +2,7 @@ import logging
 import sys
 from logging.handlers import RotatingFileHandler
 
-LOG_DIR = "/apps/logs"
+LOG_DIR = "/var/log/app"
 
 _FORMAT = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 _DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
