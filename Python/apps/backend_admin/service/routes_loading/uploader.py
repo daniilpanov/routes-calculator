@@ -246,7 +246,7 @@ def create_route(  # noqa: C901
     effective_to = row[fc.effective_to]
 
     is_through_raw = row[fc.is_through]
-    is_through = pd.isna(is_through_raw) or is_through_raw == 0.0 or is_through_raw == "0"
+    is_through = pd.isna(is_through_raw) or is_through_raw == 1.0 or is_through_raw == "1"
 
     route = RouteModel(
         type=RouteType(route_type),
