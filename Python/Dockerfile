@@ -13,10 +13,10 @@ RUN mkdir -p /home/${USERNAME} && \
     chmod 750 ${APP_DIR} && \
     chown ${USERNAME}:${USERNAME} ${APP_DIR}
 
-USER ${USER_UID}
-
 RUN mkdir /var/log/app
 RUN chown ${USERNAME}:${USERNAME} /var/log/app
+
+USER ${USER_UID}
 
 # install requirements
 COPY ./requirements.txt ./
