@@ -21,6 +21,7 @@ from backend_admin.schemas.data_browser import (
     RouteSegmentListResponse,
     RouteSegmentPatch,
     RouteSegmentResponse,
+    RouteSegmentStatsResponse,
     ServiceCreate,
     ServicePatch,
     ServiceResponse,
@@ -251,6 +252,15 @@ async def list_route_segments(
         return await crud_route_segments.list(
             session, company_id=company_id, start_point_id=start_point_id, end_point_id=end_point_id, type=type
         )
+
+
+@router.get("/route-segments/stats", response_model=RouteSegmentStatsResponse)
+async def route_segments_stats(
+    _: Annotated[None, Depends(request_auth)],
+    db: Annotated[Database, Depends(get_database)],
+):
+    async with db.session_context() as session:
+        return await crud_route_segments.stats(session)
 
 
 @router.get("/route-segments/{segment_id}", response_model=RouteSegmentResponse)

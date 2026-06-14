@@ -10,8 +10,10 @@ from backend_admin.schemas.data_browser import (
     RouteSegmentListResponse,
     RouteSegmentPatch,
     RouteSegmentResponse,
+    RouteSegmentStatsResponse,
 )
 from backend_admin.service.crud_base import CRUDBase, FilterDef
+from module_data_internal.schemas.company import CompanyModel
 from module_data_internal.schemas.route import (
     ContainerOwner,
     ContainerShipmentTerms,
@@ -21,7 +23,7 @@ from module_data_internal.schemas.route import (
     RouteType,
     ServicePriceModel,
 )
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -101,6 +103,55 @@ class CRUDRouteSegment(CRUDBase):
         if type_filter is not None and type_filter != "":
             stmt = stmt.where(RouteModel.type == RouteType(type_filter.upper()))
         return stmt
+
+    async def stats(
+        self, session: AsyncSession
+    ) -> RouteSegmentStatsResponse:
+        # Total
+        total_result = await session.execute(select(func.count(RouteModel.id)))
+        total = total_result.scalar() or 0
+
+        # By type
+        type_result = await session.execute(
+            select(RouteModel.type, func.count(RouteModel.id))
+            .group_by(RouteModel.type)
+        )
+        by_type: dict[str, int] = {str(r[0].value): r[1] for r in type_result}
+
+        # By is_through
+        through_result = await session.execute(
+            select(RouteModel.is_through, func.count(RouteModel.id))
+            .group_by(RouteModel.is_through)
+        )
+        by_is_through: dict[str, int] = {str(r[0]).lower(): r[1] for r in through_result}
+
+        # By container_owner
+        owner_result = await session.execute(
+            select(RouteModel.container_owner, func.count(RouteModel.id))
+            .group_by(RouteModel.container_owner)
+        )
+        by_container_owner: dict[str, int] = {str(r[0].value): r[1] for r in owner_result}
+
+        # Top companies (limit 20)
+        cnt_col = func.count(RouteModel.id).label("cnt")
+        sq = select(RouteModel.company_id, CompanyModel.name, cnt_col)
+        sq = sq.join(CompanyModel, RouteModel.company_id == CompanyModel.id)
+        sq = sq.group_by(RouteModel.company_id, CompanyModel.name)
+        sq = sq.order_by(cnt_col.desc())
+        sq = sq.limit(20)
+        companies_result = await session.execute(sq)
+        top_companies = [
+            {"company_id": r[0], "name": r[1], "count": r[2]}
+            for r in companies_result
+        ]
+
+        return RouteSegmentStatsResponse(
+            total_segments=total,
+            by_type=by_type,
+            by_is_through=by_is_through,
+            by_container_owner=by_container_owner,
+            top_companies=top_companies,
+        )
 
     async def create(
         self, session: AsyncSession, data: RouteSegmentCreate

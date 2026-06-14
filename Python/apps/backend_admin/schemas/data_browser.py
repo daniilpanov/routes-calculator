@@ -189,6 +189,14 @@ class RouteSegmentPatch(BaseModel):
     container_owner: str | None = None
 
 
+class RouteSegmentStatsResponse(BaseModel):
+    total_segments: int
+    by_type: dict[str, int]
+    by_is_through: dict[str, int]
+    by_container_owner: dict[str, int]
+    top_companies: list[dict]
+
+
 class RouteSegmentListResponse(BaseModel):
     id: int  # noqa: A003
     company_id: int
