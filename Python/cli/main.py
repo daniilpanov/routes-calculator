@@ -20,22 +20,32 @@ def cli():
 @cli.command("login")
 @click.option(
     "--username",
-    default=get_cli_settings().ADMIN_USER,
-    prompt=True,
-    help="Admin username",
+    default=None,
+    help="Admin username (defaults to ADMIN_USER from .env.cli)",
 )
 @click.option(
     "--password",
-    default=get_cli_settings().ADMIN_PASSWORD,
-    prompt=True,
+    default=None,
     hide_input=True,
-    help="Admin password",
+    help="Admin password (defaults to ADMIN_PASSWORD from .env.cli)",
 )
 @click.option("--api-url", default=None, help="Auth API URL")
-def login_command(username: str, password: str, api_url: str | None):
+def login_command(username: str | None, password: str | None, api_url: str | None):
     """Authenticate and store JWT token."""
     settings = get_cli_settings()
     url = api_url or settings.AUTH_API_URL
+
+    username = username or settings.ADMIN_USER
+    password = password or settings.ADMIN_PASSWORD
+
+    if not username or not password:
+        missing = [k for k, v in [("username", username), ("password", password)] if not v]
+        click.echo(
+            f"Error: {' and '.join(missing)} not provided. "
+            f"Set them in .env.cli or pass --{'/--'.join(missing)}.",
+            err=True,
+        )
+        raise click.Abort
 
     try:
         token = asyncio.run(login(url, username, password))
