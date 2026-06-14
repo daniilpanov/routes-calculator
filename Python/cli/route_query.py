@@ -16,7 +16,21 @@ def _parse_ids(value: str):
     return [int(x) for x in re.split(r"[\s,]+", value) if x]
 
 
-@click.command()
+@click.command(
+    epilog="""
+Examples:
+
+  # Typical route: Shanghai (ID 7112) -> Moscow (ID 7037), 28t, 40ft
+  python -m cli route-query --departure 7112 --destination 7037 --weight 28000 --type 40 --date 2024-01-15
+
+  # Multiple departure points
+  python -m cli route-query --departure "7112,7113" --destination 7037 --weight 28000 --type 20 --date 2024-01-15
+
+  # Demo user query
+  python -m cli route-query --departure 7112 --destination 7037 \
+      --weight 28000 --type 40 --date 2024-01-15 --demo-uid demo123
+""",
+)
 @click.option("--date", required=True, help="Dispatch date (YYYY-MM-DD)")
 @click.option("--departure", "departure_raw", default="",
               help="Internal departure point IDs (comma or space-separated, e.g. '1,2,3')")
