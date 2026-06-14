@@ -2,7 +2,7 @@ import logging
 
 from backend_user.schemas.routes import NormalizedRoutes
 from backend_user.services.get_rates import get_rates
-from module_shared.models.route import RouteSegment
+from module_shared.models.route import RouteResult, RouteSegment
 
 logger = logging.getLogger(__name__)
 
@@ -68,3 +68,24 @@ def apply_demo_profit_to_routes(
 
     for route in routes:
         _apply_profit_to_segments(route[0], sea_profit, sea_profit_currency, rail_profit, rail_profit_currency, rates)
+
+
+def apply_demo_profit_to_route(
+    route: RouteResult,
+    sea_profit: float,
+    sea_profit_currency: str,
+    rail_profit: float,
+    rail_profit_currency: str,
+) -> None:
+    if not sea_profit and not rail_profit:
+        return
+
+    logger.info(
+        "Applying profit to route: sea=%.2f %s, rail=%.2f %s",
+        sea_profit, sea_profit_currency, rail_profit, rail_profit_currency,
+    )
+    rates = get_rates()
+
+    _apply_profit_to_segments(
+        route.segments, sea_profit, sea_profit_currency, rail_profit, rail_profit_currency, rates
+    )
