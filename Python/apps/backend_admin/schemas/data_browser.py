@@ -189,6 +189,14 @@ class RouteSegmentPatch(BaseModel):
     container_owner: str | None = None
 
 
+class RouteSegmentStatsResponse(BaseModel):
+    total_segments: int
+    by_type: dict[str, int]
+    by_is_through: dict[str, int]
+    by_container_owner: dict[str, int]
+    top_companies: list[dict]
+
+
 class RouteSegmentListResponse(BaseModel):
     id: int  # noqa: A003
     company_id: int
@@ -197,6 +205,10 @@ class RouteSegmentListResponse(BaseModel):
     type: str  # noqa: A003
     effective_from: str
     effective_to: str
+    is_through: bool
+    container_transfer_terms: str | None = None
+    container_shipment_terms: str | None = None
+    container_owner: str
 
     @classmethod
     def from_model(cls, model: RouteModel) -> "RouteSegmentListResponse":
@@ -208,6 +220,10 @@ class RouteSegmentListResponse(BaseModel):
             type=model.type.value,
             effective_from=model.effective_from.isoformat(),
             effective_to=model.effective_to.isoformat(),
+            is_through=model.is_through,
+            container_transfer_terms=model.container_transfer_terms.value,
+            container_shipment_terms=model.container_shipment_terms.value,
+            container_owner=model.container_owner.value,
         )
 
 

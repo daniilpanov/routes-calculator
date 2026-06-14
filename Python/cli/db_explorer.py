@@ -167,3 +167,30 @@ def delete(resource_id: str):
             click.echo(f"HTTP {status}", err=True)
 
     asyncio.run(_run())
+
+
+@db.group("stats")
+def stats():
+    """Show database statistics."""
+
+
+@stats.command("route-segments")
+def stats_route_segments():
+    """Show route segments statistics (totals, distribution, top companies)."""
+    async def _run():
+        status, body = await _api_get("route-segments/stats")
+        if status != 200:
+            click.echo(f"HTTP {status}", err=True)
+            click.echo(json.dumps(body, indent=2, ensure_ascii=False))
+            return
+
+        data: dict = body  # type: ignore[assignment]
+        click.echo(f"Total segments:       {data['total_segments']}")
+        click.echo(f"By type:              {data['by_type']}")
+        click.echo(f"By is_through:        {data['by_is_through']}")
+        click.echo(f"By container_owner:   {data['by_container_owner']}")
+        click.echo("\nTop companies:")
+        for c in data["top_companies"]:
+            click.echo(f"  #{c['company_id']:>4} {c['name']:<30} {c['count']} segments")
+
+    asyncio.run(_run())
