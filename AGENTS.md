@@ -340,16 +340,18 @@ module_shared ───┬── backend_auth
 
 ### CLI Tools (`Python/cli/`)
 
-**Entry point:** `python -m cli <command>` (requires `PYTHONPATH=Python/apps`).
+**Entry point:** `PYTHONPATH=Python python -m cli <command>`.
 For sheets commands, also set `GSHEETS_URL` and `GOOGLE_SERVICE_ACCOUNT_PATH` env vars
 (or put them in `.env.cli` in the project root — see `.env.cli.example`).
 **Framework:** `click` (transitive dep via uvicorn; no explicit dependency needed)
-**Auth:** JWT login via `POST /login` on backend_auth; token stored in `~/.opencode-token`; sent as `Cookie: access_token_cookie=<token>` in subsequent requests. `api/user/` nginx route is used by default.
+**Auth:** `cli login` reads credentials from `.env.cli` (`ADMIN_USER`, `ADMIN_PASSWORD`),
+or accepts `--username`/`--password` (higher priority). No interactive prompt.
+Token stored in `~/.opencode-token`; sent as `Cookie: access_token_cookie=<token>`.
 
 **Commands:**
 
 ```
-python -m cli login                         # Authenticate and save JWT
+python -m cli login                         # Authenticate from .env.cli or --args
 python -m cli logout                        # Clear saved JWT
 python -m cli route-query                   # Query route calculator API
 python -m cli db list <resource>            # List resources via Admin API
@@ -358,6 +360,7 @@ python -m cli db create <resource>          # Create resource (--data JSON)
 python -m cli db update <resource>/<id>     # Full update PUT (--data JSON)
 python -m cli db patch <resource>/<id>      # Partial update PATCH (--data JSON)
 python -m cli db delete <resource>/<id>     # Delete resource
+python -m cli db stats route-segments       # Bulk segment stats (type, through, owner, top companies)
 python -m cli sheets worksheets             # List worksheets
 python -m cli sheets columns <ws>           # List column names + 0-based indices
 python -m cli sheets show <ws>              # Show data (--filter, --search, --columns, --csv, --output, --count)
@@ -380,7 +383,7 @@ All output is JSON by default (for AI/script parsing).
 | Companies | `GET/POST /db/companies`, `GET/PUT/PATCH/DELETE /db/companies/{id}` | `name: str` |
 | Points | `GET/POST /db/points`, `GET/PUT/PATCH/DELETE /db/points/{id}` | `city, country, RU_city?, RU_country?` |
 | Containers | `GET/POST /db/containers`, `GET/PUT/PATCH/DELETE /db/containers/{id}` | `size, type(DC/HC), weight_from, weight_to, name` |
-| Route Segments | `GET/POST /db/route-segments`, `GET/PUT/PATCH/DELETE /db/route-segments/{id}` | Composite: route fields + nested `prices[]` + `services[]` |
+| Route Segments | `GET/POST /db/route-segments`, `GET /db/route-segments/stats`, `GET/PUT/PATCH/DELETE /db/route-segments/{id}` | Composite: route fields + nested `prices[]` + `services[]` |
 | Services | `GET/POST /db/services`, `GET/PUT/PATCH/DELETE /db/services/{id}` | `name, internal_name, description, hint?, mandatory, default` |
 | Drop-off | `GET/POST /db/drop-off`, `GET/PUT/PATCH/DELETE /db/drop-off/{id}` | `container_id, company_id, dates, price, currency` |
 
@@ -391,6 +394,8 @@ All output is JSON by default (for AI/script parsing).
 - `service/crud_*.py` — per-entity service classes that override `_build_instance`, `_apply_update`, `_apply_patch` for entity-specific conversion logic (strip, enum/date parsing, nested prices/services)
 
 **Route Segment** is a composite resource — `crud_route_segments.py` overrides `create`/`update` to handle nested `prices[]` and `services[]` (fully replaced on PUT); PATCH only touches route-level fields via `_apply_patch`. The `get` method uses `selectinload` for eager relationship loading.
+- `RouteSegmentListResponse` includes `is_through` and `container_owner`
+- `RouteSegmentStatsResponse` is returned by `GET /db/route-segments/stats`: totals, type/through/owner distribution, top 20 companies
 
 ---
 
