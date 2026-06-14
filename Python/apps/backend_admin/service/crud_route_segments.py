@@ -99,7 +99,7 @@ class CRUDRouteSegment(CRUDBase):
         stmt = super()._apply_list_filters(stmt, **filters)
         type_filter = filters.get("type")
         if type_filter is not None and type_filter != "":
-            stmt = stmt.where(RouteModel.type == RouteType(type_filter))
+            stmt = stmt.where(RouteModel.type == RouteType(type_filter.upper()))
         return stmt
 
     async def create(
