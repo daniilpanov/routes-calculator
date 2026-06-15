@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import CalculationStatusIndicator from "@/components/CalculationStatusIndicator.vue";
 import LoadingSpinner from "@/components/LoadingSpinner.vue";
 import CalculatorForm from "@/widgets/CalculatorForm.vue";
 import CurrencySelect from "@/widgets/CurrencySelect.vue";
 import ResultsWidget from "@/widgets/ResultsWidget.vue";
 
 import { clearRoutes, revalidateRoutes, serializeCalculatorQueryParams, updateRoutesSSE } from "@/services/calculator";
+import { useCalculationStatus } from "@/composables/useCalculationStatus";
 import { useDemoAuth } from "@/stores/demoAuth";
 import { useRates } from "@/stores/rates";
 import { useRoutes } from "@/stores/routes";
@@ -119,6 +121,7 @@ function reset() {
     departureIdsModel.value = undefined;
     destinationIdsModel.value = undefined;
     clearRoutes();
+    useCalculationStatus().reset();
 }
 
 async function saveInPdf() {
@@ -196,6 +199,8 @@ onMounted(() => {
         <div class="text-center" v-if="loading"><LoadingSpinner /></div>
         <ResultsWidget v-if="routesRef" :routes="routesRef!" />
     </div>
+
+    <CalculationStatusIndicator />
 </template>
 
 <style scoped>

@@ -5,6 +5,7 @@ import { convertToCurrentRate } from "@/services/rates";
 import { useRates } from "@/stores/rates";
 import { useRoutes } from "@/stores/routes";
 import { roundPrice } from "@/helpers/roundPrice";
+import { useCalculationStatus } from "@/composables/useCalculationStatus";
 import { useToast } from "@/composables/useToast";
 
 import type { ICalculatorPayload, ICalculatorPayloadWithCurrency } from "@/interfaces/CalculatorPayload";
@@ -82,7 +83,10 @@ export async function updateRoutesSSE(payload: ICalculatorPayload) {
 
     const routesStore = useRoutes();
     const collected: RouteDescriptor[] = [];
+    const calcStatus = useCalculationStatus();
     let hasWarnings = false;
+
+    calcStatus.setStatus("loading");
 
     try {
         for await (const event of getRoutesSSE({
@@ -100,6 +104,7 @@ export async function updateRoutesSSE(payload: ICalculatorPayload) {
                 routesStore.setRoutes(processRoutes(collected, true));
             } else if (event.type === "error") {
                 hasWarnings = true;
+                calcStatus.setStatus("loading-warnings");
                 useToast().show(
                     `Ошибка: ${event.error.error_text}`,
                     "warning",
@@ -107,6 +112,7 @@ export async function updateRoutesSSE(payload: ICalculatorPayload) {
             }
         }
     } catch (e) {
+        calcStatus.setStatus("error");
         if (e instanceof DOMException && e.name === "AbortError") {
             useToast().show("Превышено время ожидания ответа от сервера", "error");
         } else {
@@ -121,12 +127,15 @@ export async function updateRoutesSSE(payload: ICalculatorPayload) {
     routesStore.setRoutes(processRoutes(collected, true));
 
     if (collected.length > 0) {
+        calcStatus.setStatus(hasWarnings ? "warnings" : "completed");
         useToast().show(
             hasWarnings
                 ? "Расчёт маршрутов завершён с предупреждениями"
                 : "Расчёт маршрутов завершён",
             "success",
         );
+    } else {
+        calcStatus.setStatus("error");
     }
 }
 
