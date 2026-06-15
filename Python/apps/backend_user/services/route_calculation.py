@@ -44,7 +44,7 @@ async def _get_routes(
     return await modul.find_all_paths(date, departure, destination, container_ids)
 
 
-async def calculate_routes(request: CalculateFormRequest) -> tuple[list[RouteResult], list[RouteError]]:
+def _build_calculation_coros(request: CalculateFormRequest):
     internal_coros = [
         _get_routes(
             aggregators,
@@ -69,6 +69,11 @@ async def calculate_routes(request: CalculateFormRequest) -> tuple[list[RouteRes
         for destination_id in request.destinationExternalIds
         for departure_id in request.departureExternalIds
     ]
+    return internal_coros, external_coros
+
+
+async def calculate_routes(request: CalculateFormRequest) -> tuple[list[RouteResult], list[RouteError]]:
+    internal_coros, external_coros = _build_calculation_coros(request)
 
     logger.info(
         "Calculating routes: %d internal / %d external pairs",
@@ -102,3 +107,35 @@ async def calculate_routes(request: CalculateFormRequest) -> tuple[list[RouteRes
 
     logger.info("Result: %d routes, %d errors", len(routes), len(errors))
     return routes, errors
+
+
+async def calculate_routes_stream(request: CalculateFormRequest):
+    internal_coros, external_coros = _build_calculation_coros(request)
+    source_map = ("internal", "external")
+
+    async def _run_tagged(is_external: bool, coro):
+        try:
+            result = await coro
+            return is_external, result, None
+        except Exception as e:
+            return is_external, None, e
+
+    tagged = [
+        _run_tagged(False, c) for c in internal_coros
+    ] + [
+        _run_tagged(True, c) for c in external_coros
+    ]
+
+    for future in asyncio.as_completed(tagged):
+        is_external, result, error = await future
+        if error:
+            source = source_map[int(is_external)]
+            logger.error("Route %s: calculation failed", source, exc_info=error)
+            yield RouteError(
+                error_type=type(error).__name__,
+                error_text=str(error),
+                source=source,
+            )
+        elif result:
+            for route in list(result):
+                yield route

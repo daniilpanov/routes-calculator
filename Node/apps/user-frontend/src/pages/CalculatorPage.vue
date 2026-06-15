@@ -1,11 +1,12 @@
 <script setup lang="ts">
+import CalculationStatusIndicator from "@/components/CalculationStatusIndicator.vue";
 import LoadingSpinner from "@/components/LoadingSpinner.vue";
 import CalculatorForm from "@/widgets/CalculatorForm.vue";
 import CurrencySelect from "@/widgets/CurrencySelect.vue";
 import ResultsWidget from "@/widgets/ResultsWidget.vue";
 
-import { clearRoutes, revalidateRoutes, serializeCalculatorQueryParams } from "@/services/calculator";
-import { updateRoutes } from "@/services/calculator";
+import { clearRoutes, revalidateRoutes, serializeCalculatorQueryParams, updateRoutesSSE } from "@/services/calculator";
+import { useCalculationStatus } from "@/composables/useCalculationStatus";
 import { useDemoAuth } from "@/stores/demoAuth";
 import { useRates } from "@/stores/rates";
 import { useRoutes } from "@/stores/routes";
@@ -102,7 +103,7 @@ async function calculate(pushURL: boolean = true) {
             }),
         });
 
-    await updateRoutes({
+    await updateRoutesSSE({
         date: dateModel.value,
         departureIds: departureIdsModel.value,
         destinationIds: destinationIdsModel.value,
@@ -111,9 +112,6 @@ async function calculate(pushURL: boolean = true) {
     });
 
     loading.value = false;
-
-    await nextTick();
-    resultsElementRef.value?.scrollIntoView({ behavior: "smooth" });
 }
 
 function reset() {
@@ -123,6 +121,7 @@ function reset() {
     departureIdsModel.value = undefined;
     destinationIdsModel.value = undefined;
     clearRoutes();
+    useCalculationStatus().reset();
 }
 
 async function saveInPdf() {
@@ -198,8 +197,10 @@ onMounted(() => {
 
     <div ref="resultsElementRef" class="results" v-if="loading || routesRef">
         <div class="text-center" v-if="loading"><LoadingSpinner /></div>
-        <ResultsWidget v-else :routes="routesRef!" />
+        <ResultsWidget v-if="routesRef" :routes="routesRef!" />
     </div>
+
+    <CalculationStatusIndicator />
 </template>
 
 <style scoped>

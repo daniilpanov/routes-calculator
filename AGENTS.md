@@ -257,8 +257,9 @@ module_shared ───┬── backend_auth
 ## Architecture & Design Decisions
 
 ### API Versioning
-- User API uses URL versioning: `/v1/`, `/v2/`
+- User API uses URL versioning: `/v1/`, `/v2/`, `/v3/`
 - Auth and Admin APIs are not versioned
+- `/v3/routes/calculate` (POST) is an SSE endpoint for progressive route streaming — each route/error is yielded as an SSE event when available
 
 ### Auth Flow
 1. Login sets JWT access + refresh cookies (httpOnly)

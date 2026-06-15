@@ -1,10 +1,12 @@
 import { deserializeIds, serializeIds } from "./points";
-import { getRoutes as fetchRoutes } from "@/api_helpers/routes";
+import { getRoutesSSE } from "@/api_helpers/routes";
 import { RouteType } from "@/interfaces/Routes";
 import { convertToCurrentRate } from "@/services/rates";
 import { useRates } from "@/stores/rates";
 import { useRoutes } from "@/stores/routes";
 import { roundPrice } from "@/helpers/roundPrice";
+import { useCalculationStatus } from "@/composables/useCalculationStatus";
+import { useToast } from "@/composables/useToast";
 
 import type { ICalculatorPayload, ICalculatorPayloadWithCurrency } from "@/interfaces/CalculatorPayload";
 import type {
@@ -47,7 +49,7 @@ export function deserializeCalculatorQueryParams(query: Record<string, unknown>)
     return params;
 }
 
-export async function updateRoutes(payload: ICalculatorPayload) {
+export async function updateRoutesSSE(payload: ICalculatorPayload) {
     if (
         !payload.date
         || !payload.departureIds?.length
@@ -79,18 +81,62 @@ export async function updateRoutes(payload: ICalculatorPayload) {
             destinationInternalIds.push(destinationIdDescriptor.id as number);
     }
 
-    const { routes } = await fetchRoutes({
-        dispatchDate: payload.date,
-        departureInternalIds,
-        destinationInternalIds,
-        departureExternalIds,
-        destinationExternalIds,
-        containerType: payload.containerType,
-        cargoWeight: payload.containerWeight,
-        currency: currentRate,
-    });
+    const routesStore = useRoutes();
+    const collected: RouteDescriptor[] = [];
+    const calcStatus = useCalculationStatus();
+    let hasWarnings = false;
 
-    useRoutes().setRoutes(processRoutes(routes, true));
+    calcStatus.setStatus("loading");
+
+    try {
+        for await (const event of getRoutesSSE({
+            dispatchDate: payload.date,
+            departureInternalIds,
+            destinationInternalIds,
+            departureExternalIds,
+            destinationExternalIds,
+            containerType: payload.containerType,
+            cargoWeight: payload.containerWeight,
+            currency: currentRate,
+        })) {
+            if (event.type === "route") {
+                collected.push(event.route);
+                routesStore.setRoutes(processRoutes(collected, true));
+            } else if (event.type === "error") {
+                hasWarnings = true;
+                calcStatus.setStatus("loading-warnings");
+                useToast().show(
+                    `Ошибка: ${event.error.error_text}`,
+                    "warning",
+                );
+            }
+        }
+    } catch (e) {
+        calcStatus.setStatus("error");
+        if (e instanceof DOMException && e.name === "AbortError") {
+            useToast().show("Превышено время ожидания ответа от сервера", "error");
+        } else {
+            useToast().show(
+                e instanceof Error ? e.message : "Неизвестная ошибка",
+                "error",
+            );
+        }
+        return;
+    }
+
+    routesStore.setRoutes(processRoutes(collected, true));
+
+    if (collected.length > 0) {
+        calcStatus.setStatus(hasWarnings ? "warnings" : "completed");
+        useToast().show(
+            hasWarnings
+                ? "Расчёт маршрутов завершён с предупреждениями"
+                : "Расчёт маршрутов завершён",
+            "success",
+        );
+    } else {
+        calcStatus.setStatus("error");
+    }
 }
 
 export function revalidateRoutes(resort: boolean = true) {
