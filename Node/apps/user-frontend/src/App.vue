@@ -3,7 +3,7 @@ import HeaderComponent from "@/components/HeaderComponent.vue";
 import ThemeSwitcher from "@/widgets/ThemeSwitcher.vue";
 
 import { setupRefreshingInterval } from "@/services/auth";
-import { lockRates, updateRates } from "@/services/rates";
+import { loadCachedRates, lockRates, updateRates } from "@/services/rates";
 import { useRates } from "@/stores/rates";
 import { useRouter } from "@/stores/router";
 import { getCurrentTheme, setCurrentTheme, Theme } from "@/services/theme";
@@ -13,6 +13,7 @@ import { computed, onMounted, provide, ref, watch } from "vue";
 import { useRouter as useVueRouter } from "vue-router";
 import { useUserUpdateIntervalInMinutes } from "@/stores/user.ts";
 
+loadCachedRates();
 lockRates(updateRates());
 
 const rates = computed(() => useRates().rates);
