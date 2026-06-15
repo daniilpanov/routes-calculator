@@ -4,8 +4,7 @@ import CalculatorForm from "@/widgets/CalculatorForm.vue";
 import CurrencySelect from "@/widgets/CurrencySelect.vue";
 import ResultsWidget from "@/widgets/ResultsWidget.vue";
 
-import { clearRoutes, revalidateRoutes, serializeCalculatorQueryParams } from "@/services/calculator";
-import { updateRoutes } from "@/services/calculator";
+import { clearRoutes, revalidateRoutes, serializeCalculatorQueryParams, updateRoutesSSE } from "@/services/calculator";
 import { useDemoAuth } from "@/stores/demoAuth";
 import { useRates } from "@/stores/rates";
 import { useRoutes } from "@/stores/routes";
@@ -102,7 +101,7 @@ async function calculate(pushURL: boolean = true) {
             }),
         });
 
-    await updateRoutes({
+    await updateRoutesSSE({
         date: dateModel.value,
         departureIds: departureIdsModel.value,
         destinationIds: destinationIdsModel.value,
