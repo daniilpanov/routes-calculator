@@ -110,9 +110,6 @@ async function calculate(pushURL: boolean = true) {
     });
 
     loading.value = false;
-
-    await nextTick();
-    resultsElementRef.value?.scrollIntoView({ behavior: "smooth" });
 }
 
 function reset() {

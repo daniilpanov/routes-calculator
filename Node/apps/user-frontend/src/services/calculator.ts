@@ -82,6 +82,7 @@ export async function updateRoutesSSE(payload: ICalculatorPayload) {
 
     const routesStore = useRoutes();
     const collected: RouteDescriptor[] = [];
+    let hasWarnings = false;
 
     try {
         for await (const event of getRoutesSSE({
@@ -96,8 +97,9 @@ export async function updateRoutesSSE(payload: ICalculatorPayload) {
         })) {
             if (event.type === "route") {
                 collected.push(event.route);
-                routesStore.setRoutes(processRoutes(collected, false));
+                routesStore.setRoutes(processRoutes(collected, true));
             } else if (event.type === "error") {
+                hasWarnings = true;
                 useToast().show(
                     `Ошибка: ${event.error.error_text}`,
                     "warning",
@@ -113,9 +115,19 @@ export async function updateRoutesSSE(payload: ICalculatorPayload) {
                 "error",
             );
         }
+        return;
     }
 
     routesStore.setRoutes(processRoutes(collected, true));
+
+    if (collected.length > 0) {
+        useToast().show(
+            hasWarnings
+                ? "Расчёт маршрутов завершён с предупреждениями"
+                : "Расчёт маршрутов завершён",
+            "success",
+        );
+    }
 }
 
 export function revalidateRoutes(resort: boolean = true) {
