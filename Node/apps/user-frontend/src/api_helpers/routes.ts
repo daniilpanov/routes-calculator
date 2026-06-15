@@ -1,14 +1,7 @@
-import type { ICalculatorResult, IError } from "@/interfaces/APIResponses";
+import type { IError } from "@/interfaces/APIResponses";
 import type { ICalculatorReadyToSendPayload } from "@/interfaces/CalculatorPayload";
 import type { RouteDescriptor } from "@/interfaces/Routes";
-import { fetchAsJSON, fetchSSE } from "@/helpers/requests";
-
-export const getRoutes = async (payload: ICalculatorReadyToSendPayload): Promise<ICalculatorResult> =>
-    await fetchAsJSON("/api/v2/routes/calculate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-    }) as ICalculatorResult;
+import { fetchSSE } from "@/helpers/requests";
 
 interface RouteResultSSE {
     segments: unknown[];

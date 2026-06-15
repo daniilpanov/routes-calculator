@@ -1,5 +1,5 @@
 import { deserializeIds, serializeIds } from "./points";
-import { getRoutes as fetchRoutes, getRoutesSSE } from "@/api_helpers/routes";
+import { getRoutesSSE } from "@/api_helpers/routes";
 import { RouteType } from "@/interfaces/Routes";
 import { convertToCurrentRate } from "@/services/rates";
 import { useRates } from "@/stores/rates";
@@ -46,52 +46,6 @@ export function deserializeCalculatorQueryParams(query: Record<string, unknown>)
     if (query.weight) params.containerWeight = Number(query.weight);
 
     return params;
-}
-
-export async function updateRoutes(payload: ICalculatorPayload) {
-    if (
-        !payload.date
-        || !payload.departureIds?.length
-        || !payload.destinationIds?.length
-        || !payload.containerType
-        || !payload.containerWeight
-    ) throw new Error(`Insufficient payload! ${JSON.stringify(payload)}`);
-
-    const { currentRate } = useRates();
-    if (!currentRate)
-        throw new Error("No current rate!");
-
-    const departureInternalIds: number[] = [];
-    const destinationInternalIds: number[] = [];
-    const departureExternalIds: string[] = [];
-    const destinationExternalIds: string[] = [];
-
-    for (const departureIdDescriptor of payload.departureIds) {
-        if (departureIdDescriptor.isExternal)
-            departureExternalIds.push(departureIdDescriptor.id as string);
-        else
-            departureInternalIds.push(departureIdDescriptor.id as number);
-    }
-
-    for (const destinationIdDescriptor of payload.destinationIds) {
-        if (destinationIdDescriptor.isExternal)
-            destinationExternalIds.push(destinationIdDescriptor.id as string);
-        else
-            destinationInternalIds.push(destinationIdDescriptor.id as number);
-    }
-
-    const { routes } = await fetchRoutes({
-        dispatchDate: payload.date,
-        departureInternalIds,
-        destinationInternalIds,
-        departureExternalIds,
-        destinationExternalIds,
-        containerType: payload.containerType,
-        cargoWeight: payload.containerWeight,
-        currency: currentRate,
-    });
-
-    useRoutes().setRoutes(processRoutes(routes, true));
 }
 
 export async function updateRoutesSSE(payload: ICalculatorPayload) {
