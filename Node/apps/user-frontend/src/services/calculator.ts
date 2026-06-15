@@ -5,6 +5,7 @@ import { convertToCurrentRate } from "@/services/rates";
 import { useRates } from "@/stores/rates";
 import { useRoutes } from "@/stores/routes";
 import { roundPrice } from "@/helpers/roundPrice";
+import { useToast } from "@/composables/useToast";
 
 import type { ICalculatorPayload, ICalculatorPayloadWithCurrency } from "@/interfaces/CalculatorPayload";
 import type {
@@ -128,19 +129,35 @@ export async function updateRoutesSSE(payload: ICalculatorPayload) {
     const routesStore = useRoutes();
     const collected: RouteDescriptor[] = [];
 
-    for await (const event of getRoutesSSE({
-        dispatchDate: payload.date,
-        departureInternalIds,
-        destinationInternalIds,
-        departureExternalIds,
-        destinationExternalIds,
-        containerType: payload.containerType,
-        cargoWeight: payload.containerWeight,
-        currency: currentRate,
-    })) {
-        if (event.type === "route") {
-            collected.push(event.route);
-            routesStore.setRoutes(processRoutes(collected, false));
+    try {
+        for await (const event of getRoutesSSE({
+            dispatchDate: payload.date,
+            departureInternalIds,
+            destinationInternalIds,
+            departureExternalIds,
+            destinationExternalIds,
+            containerType: payload.containerType,
+            cargoWeight: payload.containerWeight,
+            currency: currentRate,
+        })) {
+            if (event.type === "route") {
+                collected.push(event.route);
+                routesStore.setRoutes(processRoutes(collected, false));
+            } else if (event.type === "error") {
+                useToast().show(
+                    `Ошибка: ${event.error.error_text}`,
+                    "warning",
+                );
+            }
+        }
+    } catch (e) {
+        if (e instanceof DOMException && e.name === "AbortError") {
+            useToast().show("Превышено время ожидания ответа от сервера", "error");
+        } else {
+            useToast().show(
+                e instanceof Error ? e.message : "Неизвестная ошибка",
+                "error",
+            );
         }
     }
 

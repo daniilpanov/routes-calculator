@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import HeaderComponent from "@/components/HeaderComponent.vue";
+import ToastContainer from "@/components/ToastContainer.vue";
 import ThemeSwitcher from "@/widgets/ThemeSwitcher.vue";
 
 import { setupRefreshingInterval } from "@/services/auth";
@@ -68,4 +69,6 @@ watch(printMode, (val: boolean) => {
     <main class="container">
         <router-view />
     </main>
+
+    <ToastContainer />
 </template>
