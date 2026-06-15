@@ -31,7 +31,7 @@ export interface SSEEvent {
     data: string;
 }
 
-export async function* fetchSSE(url: string, options?: RequestInit): AsyncGenerator<SSEEvent> {
+export async function* fetchSSE(url: string, options?: RequestInit, timeoutMs?: number): AsyncGenerator<SSEEvent> {
     if (!options)
         options = {};
     if (!options.headers)
@@ -41,32 +41,44 @@ export async function* fetchSSE(url: string, options?: RequestInit): AsyncGenera
     if (Object.keys(dh).length > 0)
         options.headers = { ...options.headers, ...dh };
 
-    const resp = await fetch(url, options);
-    if (!resp.ok)
-        throw new Error(
-            `Got an error while executing ${options?.method ?? "POST"} ${url} [${resp.status}]\n${await resp.text()}`
-        );
+    const controller = new AbortController();
+    options.signal = controller.signal;
 
-    const reader = resp.body!.getReader();
-    const decoder = new TextDecoder();
-    let buffer = "";
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    if (timeoutMs) {
+        timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    }
 
-    while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+    try {
+        const resp = await fetch(url, options);
+        if (!resp.ok)
+            throw new Error(
+                `Got an error while executing ${options?.method ?? "POST"} ${url} [${resp.status}]\n${await resp.text()}`
+            );
 
-        buffer += decoder.decode(value, { stream: true });
-        const parts = buffer.split("\n\n");
-        buffer = parts.pop()!;
+        const reader = resp.body!.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
 
-        for (const part of parts) {
-            let event = "message";
-            let data = "";
-            for (const line of part.split("\n")) {
-                if (line.startsWith("event: ")) event = line.slice(7);
-                else if (line.startsWith("data: ")) data = line.slice(6);
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const parts = buffer.split("\n\n");
+            buffer = parts.pop()!;
+
+            for (const part of parts) {
+                let event = "message";
+                let data = "";
+                for (const line of part.split("\n")) {
+                    if (line.startsWith("event: ")) event = line.slice(7);
+                    else if (line.startsWith("data: ")) data = line.slice(6);
+                }
+                if (data) yield { event, data };
             }
-            if (data) yield { event, data };
         }
+    } finally {
+        if (timeoutId) clearTimeout(timeoutId);
     }
 }

@@ -197,7 +197,7 @@ onMounted(() => {
 
     <div ref="resultsElementRef" class="results" v-if="loading || routesRef">
         <div class="text-center" v-if="loading"><LoadingSpinner /></div>
-        <ResultsWidget v-else :routes="routesRef!" />
+        <ResultsWidget v-if="routesRef" :routes="routesRef!" />
     </div>
 </template>
 

@@ -24,7 +24,7 @@ export async function* getRoutesSSE(
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
-    });
+    }, 40000);
 
     for await (const { event, data } of stream) {
         if (event === "route") {
