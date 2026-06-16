@@ -51,7 +51,7 @@ export async function refresh(): Promise<ILoginResponse> {
             { withCredentials : true },
         );
         return response.data;
-    } catch (error) {
+    } catch {
         throw new Error("Unexpected error during refresh");
     }
 }

@@ -1,13 +1,14 @@
 import type { IError } from "@/interfaces/APIResponses";
 import type { ICalculatorReadyToSendPayload } from "@/interfaces/CalculatorPayload";
-import type { RouteDescriptor } from "@/interfaces/Routes";
+import type { RouteDescriptor, Route, IDrop } from "@/interfaces/Routes";
+import type { IService } from "@/interfaces/Service";
 import { fetchSSE } from "@/helpers/requests";
 
 interface RouteResultSSE {
-    segments: unknown[];
-    drop: unknown;
+    segments: Route;
+    drop: IDrop;
     may_be_invalid: boolean;
-    services: unknown[];
+    services: IService[];
 }
 
 export async function* getRoutesSSE(

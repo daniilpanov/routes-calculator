@@ -5,7 +5,6 @@ import Dashboard from "@/pages/Dashboard";
 import DataImport from "@/pages/DataImport";
 import DemoGuests from "@/pages/DemoGuests";
 import RequireAuth from "@/providers/RequireAuth";
-import React from "react";
 import EmptyLayout from "@/layouts/EmptyLayout";
 import Login from "@/pages/Login";
 

@@ -5,7 +5,7 @@ interface IFormInputProps {
     name: string;
     value?: string;
     placeholder?: string;
-    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    onChange: (_event: React.ChangeEvent<HTMLInputElement>) => void;
     required?: boolean;
     className?: string;
 }

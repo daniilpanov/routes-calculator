@@ -41,7 +41,7 @@ export default defineConfig([ globalIgnores([ "**/node_modules/", "**/dist/", "*
     },
 
     rules: {
-        "no-unused-vars": "warn",
+        "no-unused-vars": [ "warn", { argsIgnorePattern: "^_" } ],
         semi: [ "error", "always" ],
         "comma-dangle": [ "error", "always-multiline" ],
         indent: [ "error", 4 ],
