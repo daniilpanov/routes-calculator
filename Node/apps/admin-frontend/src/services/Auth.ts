@@ -10,7 +10,7 @@ async function updateUserInfo() {
         const response = await AuthAPI.me();
         if (getUserName() !== response.username)
             localStorage.setItem("username", response.username);
-    } catch (e) {
+    } catch {
         await logout();
     }
 }
@@ -82,7 +82,7 @@ export async function login(credentials: ILoginCredentials) {
 export async function logout() {
     try {
         await AuthAPI.logout();
-    } catch (e) {
+    } catch {
         /** @suppress no-empty due to we don't need to log this error */
     } finally {
         localStorage.removeItem("username");

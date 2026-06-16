@@ -8,7 +8,8 @@ interface IMeResponse {
     username: string;
 }
 
-export async function login(credentials: ILoginCredentials): Promise<ILoginResponse> {
+export async function login(_credentials: ILoginCredentials): Promise<ILoginResponse> {
+    void _credentials;
     return { status: "OK" };
 }
 
