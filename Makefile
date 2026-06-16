@@ -1,6 +1,6 @@
 ARGS = $(filter-out $@,$(MAKECMDGOALS))
 
-.PHONY: build prod dev test lint update export-deps alembic migrate
+.PHONY: build prod dev test lint lint-frontend lint-backend update export-deps alembic migrate
 
 build:
 	docker buildx bake $(ARGS)
@@ -15,6 +15,15 @@ test:
 	./scripts/run-test.sh $(ARGS)
 
 lint:
+	pre-commit run --all-files $(ARGS)
+	cd Node/apps/user-frontend && npm run lint && npm run build
+	cd Node/apps/admin-frontend && npm run lint
+
+lint-frontend:
+	cd Node/apps/user-frontend && npm run lint && npm run build
+	cd Node/apps/admin-frontend && npm run lint
+
+lint-backend:
 	pre-commit run --all-files $(ARGS)
 
 update:
