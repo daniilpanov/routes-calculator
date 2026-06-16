@@ -43,6 +43,44 @@ services:
       retries: 3
       start_period: 1m
 
+  ### REDIS
+  redis:
+    image: valkey/valkey:alpine
+    restart: always
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+    security_opt:
+      - no-new-privileges
+    volumes:
+      - "./config/redis/data/:/data/:rw"
+    expose:
+      - 6379
+    networks:
+      db:
+    command:
+      - "redis-server"
+      - "--save"
+      - "900 1"
+      - "--save"
+      - "300 10"
+      - "--save"
+      - "60 10000"
+      - "--appendonly"
+      - "yes"
+      - "--maxmemory"
+      - "512mb"
+      - "--maxmemory-policy"
+      - "volatile-lru"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
   dbadmin:
     image: phpmyadmin:latest
     environment:
@@ -69,7 +107,10 @@ services:
     env_file:
       - ".env"
     depends_on:
-      - database
+      database:
+        condition: service_started
+      redis:
+        condition: service_healthy
     restart: always
     cap_drop:
       - ALL

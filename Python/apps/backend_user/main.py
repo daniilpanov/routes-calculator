@@ -9,6 +9,7 @@ from module_shared.config import get_settings as get_shared_settings
 from module_shared.database import get_database
 from module_shared.jwt_error_handler import authjwt_exception_handler
 from module_shared.logger import setup_logging, setup_sqlalchemy_logging
+from module_shared.redis_client import get_redis_client
 
 from .autodiscover import api_discover
 from .config import get_settings
@@ -32,8 +33,10 @@ openapi_url = "/openapi.json" if settings.ENVIRONMENT != "prod" else None
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     await get_database().init()
+    await get_redis_client().init()
     yield
     await get_database().close()
+    await get_redis_client().close()
 
 
 app = FastAPI(
