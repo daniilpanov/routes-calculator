@@ -16,12 +16,12 @@ def _normalize_routes(routes: list[RouteResult]) -> NormalizedRoutes:
     return [(r.segments, r.drop, r.may_be_invalid, r.services) for r in routes]
 
 
-def _apply_demo_transforms(routes: NormalizedRoutes, auth: AuthContext) -> None:
+async def _apply_demo_transforms(routes: NormalizedRoutes, auth: AuthContext) -> None:
     if not auth.is_demo:
         return
 
     if auth.sea_profit or auth.rail_profit:
-        apply_demo_profit_to_routes(
+        await apply_demo_profit_to_routes(
             routes,
             auth.sea_profit,
             auth.sea_profit_currency,
@@ -39,7 +39,7 @@ async def calculate(
 ):
     routes, errors = await calculate_routes(request)
     formatted = _normalize_routes(routes)
-    _apply_demo_transforms(formatted, auth)
+    await _apply_demo_transforms(formatted, auth)
 
     return {
         "errors": errors,
