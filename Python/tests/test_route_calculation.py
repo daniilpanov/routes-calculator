@@ -48,6 +48,13 @@ def _make_full_route(company: str = "CompanyA", segments_count: int = 1, **segme
     return RouteResult(segments=segments)
 
 
+def _mock_redis():
+    mock_redis = AsyncMock()
+    mock_redis.get = AsyncMock(return_value=None)
+    mock_redis.set = AsyncMock()
+    return mock_redis
+
+
 def _make_request(
     dispatch_date: datetime.date | None = None,
     dep_internal: list[int] | None = None,
@@ -187,9 +194,11 @@ async def test_multiple_internal_pairs():
 @pytest.mark.asyncio
 async def test_fesco_external_source():
     route = _make_full_route(company="FESCO")
+    mock_redis = _mock_redis()
     with (
         patch("backend_user.services.route_calculation.aggregators") as mock_agg,
         patch("backend_user.services.route_calculation.api_client") as mock_fesco,
+        patch("backend_user.services.route_calculation.get_redis", return_value=mock_redis),
     ):
         mock_agg.get_containers = AsyncMock(return_value=[])
         mock_agg.search_container_ids = lambda containers, weight, size: []
@@ -211,9 +220,11 @@ async def test_fesco_external_source():
 async def test_mixed_internal_and_external():
     route_int = _make_full_route(company="CompanyA")
     route_ext = _make_full_route(company="FESCO")
+    mock_redis = _mock_redis()
     with (
         patch("backend_user.services.route_calculation.aggregators") as mock_agg,
         patch("backend_user.services.route_calculation.api_client") as mock_fesco,
+        patch("backend_user.services.route_calculation.get_redis", return_value=mock_redis),
     ):
         mock_agg.get_containers = AsyncMock(
             return_value=[ContainerItem(id=1, size=20, weight_from=0, weight_to=28000, type="DC", name="20DC")]
@@ -240,9 +251,11 @@ async def test_mixed_internal_and_external():
 @pytest.mark.asyncio
 async def test_fesco_api_error_does_not_break_all():
     route_int = _make_full_route(company="CompanyA")
+    mock_redis = _mock_redis()
     with (
         patch("backend_user.services.route_calculation.aggregators") as mock_agg,
         patch("backend_user.services.route_calculation.api_client") as mock_fesco,
+        patch("backend_user.services.route_calculation.get_redis", return_value=mock_redis),
     ):
         mock_agg.get_containers = AsyncMock(
             return_value=[ContainerItem(id=1, size=20, weight_from=0, weight_to=28000, type="DC", name="20DC")]
@@ -266,9 +279,11 @@ async def test_fesco_api_error_does_not_break_all():
 @pytest.mark.asyncio
 async def test_external_only_without_internal():
     route = _make_full_route(company="FESCO")
+    mock_redis = _mock_redis()
     with (
         patch("backend_user.services.route_calculation.aggregators") as mock_agg,
         patch("backend_user.services.route_calculation.api_client") as mock_fesco,
+        patch("backend_user.services.route_calculation.get_redis", return_value=mock_redis),
     ):
         mock_agg.get_containers = AsyncMock(return_value=[])
         mock_agg.search_container_ids = lambda containers, weight, size: []
@@ -331,46 +346,52 @@ async def test_container_fetch_fails_gracefully():
 # ──────────────────────────────────────────────
 
 
-def test_apply_demo_transforms_strips_company():
+@pytest.mark.asyncio
+async def test_apply_demo_transforms_strips_company():
     seg = _make_segment(company="CompanyA")
     route = RouteResult(segments=[seg])
     formatted = _normalize_routes([route])
     auth = AuthContext(is_demo=True)
-    _apply_demo_transforms(formatted, auth)
+    await _apply_demo_transforms(formatted, auth)
 
     assert not formatted[0][0][0].company
 
 
-def test_apply_demo_transforms_does_not_strip_for_non_demo():
+@pytest.mark.asyncio
+async def test_apply_demo_transforms_does_not_strip_for_non_demo():
     seg = _make_segment(company="CompanyA")
     route = RouteResult(segments=[seg])
     formatted = _normalize_routes([route])
     auth = AuthContext(is_demo=False)
-    _apply_demo_transforms(formatted, auth)
+    await _apply_demo_transforms(formatted, auth)
 
     assert formatted[0][0][0].company == "CompanyA"
 
 
-def test_apply_demo_transforms_with_profit():
+@pytest.mark.asyncio
+async def test_apply_demo_transforms_with_profit():
     seg = _make_segment(company="CompanyA", type="sea")
     route = RouteResult(segments=[seg])
     formatted = _normalize_routes([route])
     auth = AuthContext(is_demo=True, sea_profit=100.0, sea_profit_currency="USD")
 
-    with patch("backend_user.services.profit.get_rates", return_value={"RUB": 1, "USD": 90, "EUR": 100}):
-        _apply_demo_transforms(formatted, auth)
+    mock_rates = ({"RUB": 1, "USD": 90, "EUR": 100}, datetime.date.today())
+    with patch("backend_user.services.profit.get_rates", return_value=mock_rates):
+        await _apply_demo_transforms(formatted, auth)
 
     assert formatted[0][0][0].company is None
 
 
-def test_apply_demo_transforms_with_profit_and_rail():
+@pytest.mark.asyncio
+async def test_apply_demo_transforms_with_profit_and_rail():
     seg = _make_segment(company="CompanyA", type="rail")
     route = RouteResult(segments=[seg])
     formatted = _normalize_routes([route])
     auth = AuthContext(is_demo=True, rail_profit=50.0, rail_profit_currency="USD")
 
-    with patch("backend_user.services.profit.get_rates", return_value={"RUB": 1, "USD": 90, "EUR": 100}):
-        _apply_demo_transforms(formatted, auth)
+    mock_rates = ({"RUB": 1, "USD": 90, "EUR": 100}, datetime.date.today())
+    with patch("backend_user.services.profit.get_rates", return_value=mock_rates):
+        await _apply_demo_transforms(formatted, auth)
 
     assert formatted[0][0][0].company is None
 
