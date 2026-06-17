@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { ICompany } from "@/interfaces/Company";
 import type { IdIsExternal, IPoint } from "@/interfaces/Point";
 
 import SelectWithFilter from "@/components/SelectWithFilter.vue";
@@ -29,9 +28,25 @@ const { isFieldBlurred } = useBlurredFields();
 
 const pointOptions = computed(() =>
     props.points?.map((point: IPoint) => {
-        const companiesString = isFieldBlurred("company")
-            ? ""
-            : point.companies.map((company: ICompany) => company.name).join(",");
+        let companiesString = "";
+        if (!isFieldBlurred("company")) {
+            const seen = new Set<number>();
+            const names: string[] = [];
+            for (const c of point.companies)
+                if (!seen.has(c.id)) {
+                    seen.add(c.id);
+                    names.push(c.name);
+                }
+
+            for (const port of point.ports)
+                for (const c of port.companies)
+                    if (!seen.has(c.id)) {
+                        seen.add(c.id);
+                        names.push(c.name);
+                    }
+
+            companiesString = names.join(",");
+        }
 
         let ids: IdIsExternal[] = [
             ...point.ids.map(id => ({ id, isExternal: false })),

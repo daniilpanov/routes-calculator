@@ -86,6 +86,7 @@ export async function updateRoutesSSE(payload: ICalculatorPayload) {
     const calcStatus = useCalculationStatus();
     let hasWarnings = false;
 
+    routesStore.setRoutes();
     calcStatus.setStatus("loading");
 
     try {
@@ -135,7 +136,8 @@ export async function updateRoutesSSE(payload: ICalculatorPayload) {
             "success",
         );
     } else {
-        calcStatus.setStatus("error");
+        calcStatus.setStatus("completed");
+        useToast().show("Маршруты не найдены", "warning");
     }
 }
 

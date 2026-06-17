@@ -64,7 +64,7 @@ if (!dateModel.value) dateModel.value = new Date().toLocaleDateString("en-CA");
 
 const departureIdsModel = ref<IdIsExternal[]>();
 const destinationIdsModel = ref<IdIsExternal[]>();
-const containerTypeModel = ref<string>();
+const containerTypeModel = ref<string>("20");
 const containerWeightModel = ref<number>();
 
 const loading = ref(false);
@@ -116,6 +116,7 @@ async function calculate(pushURL: boolean = true) {
 
 function reset() {
     router.push({ query: {} });
+    dateModel.value = new Date().toLocaleDateString("en-CA");
     currentRateRef.value = "RUB";
     loading.value = false;
     departureIdsModel.value = undefined;
