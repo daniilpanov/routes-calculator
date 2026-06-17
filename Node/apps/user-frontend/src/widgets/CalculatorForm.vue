@@ -78,6 +78,7 @@ function setSelectedPoints(
 
     for (const port of pointFound.ports)
         allIds = [
+            ...allIds,
             ...port.ids.map(id => ({ id, isExternal: false })),
             ...port.external_ids.map(id => ({ id, isExternal: true })),
         ];
