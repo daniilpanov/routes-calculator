@@ -55,6 +55,7 @@ services:
       - SETUID
     security_opt:
       - no-new-privileges
+    user: 999:999
     volumes:
       - "./config/redis/data/:/data/:rw"
     expose:

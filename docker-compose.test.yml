@@ -6,6 +6,7 @@ services:
       - ALL
     security_opt:
       - no-new-privileges
+    user: 999:999
     expose:
       - 6379
     command:
