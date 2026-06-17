@@ -1,7 +1,7 @@
 services:
   ### REDIS
   redis:
-    image: redis:7-alpine
+    image: valkey/valkey:alpine
     cap_drop:
       - ALL
     security_opt:
