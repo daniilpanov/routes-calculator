@@ -135,7 +135,8 @@ export async function updateRoutesSSE(payload: ICalculatorPayload) {
             "success",
         );
     } else {
-        calcStatus.setStatus("error");
+        calcStatus.setStatus("completed");
+        useToast().show("Маршруты не найдены", "warning");
     }
 }
 

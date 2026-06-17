@@ -56,6 +56,14 @@ export async function* fetchSSE(url: string, options?: RequestInit, timeoutMs?: 
                 `Got an error while executing ${options?.method ?? "POST"} ${url} [${resp.status}]\n${await resp.text()}`
             );
 
+        const contentType = resp.headers.get("content-type") || "";
+        if (!contentType.includes("text/event-stream")) {
+            const body = await resp.text();
+            throw new Error(
+                `Expected SSE but got ${contentType} from ${options?.method ?? "POST"} ${url}\n${body}`
+            );
+        }
+
         const reader = resp.body!.getReader();
         const decoder = new TextDecoder();
         let buffer = "";
