@@ -3,6 +3,7 @@ import datetime
 import json
 import logging
 
+from module_shared.models.route import RouteResult
 from module_shared.redis_client import get_redis
 
 logger = logging.getLogger(__name__)
@@ -30,6 +31,30 @@ async def get_fesco_points_cached(cache_key: str, date: datetime.date, fetch_and
 
     ttl = _points_ttl(date)
     asyncio.create_task(_set_json_async(cache_key, data, ttl))
+
+    return data
+
+
+async def get_fesco_routes_cached(cache_key: str, fetch):
+    try:
+        redis = get_redis()
+        cached = await redis.get(cache_key)
+        if cached is not None:
+            try:
+                return [RouteResult.model_validate(r) for r in json.loads(cached)]
+            except Exception:
+                logger.warning("Corrupt cache data for %s, re-fetching", cache_key)
+    except Exception:
+        logger.warning("Redis unavailable for routes, falling back to API")
+
+    data = await fetch()
+    data = list(data)
+
+    asyncio.create_task(_set_json_async(
+        cache_key,
+        [r.model_dump(mode="json") for r in data],
+        FESCO_ROUTES_TTL,
+    ))
 
     return data
 

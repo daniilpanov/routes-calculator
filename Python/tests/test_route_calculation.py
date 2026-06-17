@@ -48,13 +48,6 @@ def _make_full_route(company: str = "CompanyA", segments_count: int = 1, **segme
     return RouteResult(segments=segments)
 
 
-def _mock_redis():
-    mock_redis = AsyncMock()
-    mock_redis.get = AsyncMock(return_value=None)
-    mock_redis.set = AsyncMock()
-    return mock_redis
-
-
 def _make_request(
     dispatch_date: datetime.date | None = None,
     dep_internal: list[int] | None = None,
@@ -194,11 +187,9 @@ async def test_multiple_internal_pairs():
 @pytest.mark.asyncio
 async def test_fesco_external_source():
     route = _make_full_route(company="FESCO")
-    mock_redis = _mock_redis()
     with (
         patch("backend_user.services.route_calculation.aggregators") as mock_agg,
         patch("backend_user.services.route_calculation.api_client") as mock_fesco,
-        patch("backend_user.services.route_calculation.get_redis", return_value=mock_redis),
     ):
         mock_agg.get_containers = AsyncMock(return_value=[])
         mock_agg.search_container_ids = lambda containers, weight, size: []
@@ -220,11 +211,9 @@ async def test_fesco_external_source():
 async def test_mixed_internal_and_external():
     route_int = _make_full_route(company="CompanyA")
     route_ext = _make_full_route(company="FESCO")
-    mock_redis = _mock_redis()
     with (
         patch("backend_user.services.route_calculation.aggregators") as mock_agg,
         patch("backend_user.services.route_calculation.api_client") as mock_fesco,
-        patch("backend_user.services.route_calculation.get_redis", return_value=mock_redis),
     ):
         mock_agg.get_containers = AsyncMock(
             return_value=[ContainerItem(id=1, size=20, weight_from=0, weight_to=28000, type="DC", name="20DC")]
@@ -251,11 +240,9 @@ async def test_mixed_internal_and_external():
 @pytest.mark.asyncio
 async def test_fesco_api_error_does_not_break_all():
     route_int = _make_full_route(company="CompanyA")
-    mock_redis = _mock_redis()
     with (
         patch("backend_user.services.route_calculation.aggregators") as mock_agg,
         patch("backend_user.services.route_calculation.api_client") as mock_fesco,
-        patch("backend_user.services.route_calculation.get_redis", return_value=mock_redis),
     ):
         mock_agg.get_containers = AsyncMock(
             return_value=[ContainerItem(id=1, size=20, weight_from=0, weight_to=28000, type="DC", name="20DC")]
@@ -279,11 +266,9 @@ async def test_fesco_api_error_does_not_break_all():
 @pytest.mark.asyncio
 async def test_external_only_without_internal():
     route = _make_full_route(company="FESCO")
-    mock_redis = _mock_redis()
     with (
         patch("backend_user.services.route_calculation.aggregators") as mock_agg,
         patch("backend_user.services.route_calculation.api_client") as mock_fesco,
-        patch("backend_user.services.route_calculation.get_redis", return_value=mock_redis),
     ):
         mock_agg.get_containers = AsyncMock(return_value=[])
         mock_agg.search_container_ids = lambda containers, weight, size: []

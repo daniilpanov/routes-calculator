@@ -1,3 +1,4 @@
+import datetime
 from unittest.mock import AsyncMock, patch
 
 from fastapi.sse import ServerSentEvent
@@ -208,8 +209,9 @@ class TestSSEGenerator:
         route = _make_full_route(company="CompanyA", type="sea")
         auth = AuthContext(is_demo=True, sea_profit=100.0, sea_profit_currency="USD")
 
+        mock_rates = ({"RUB": 1, "USD": 90, "EUR": 100}, datetime.date.today())
         with patch("backend_user.api.v3.routes.post.calculate_routes_stream") as mock_stream:
-            with patch("backend_user.services.profit.get_rates", return_value={"RUB": 1, "USD": 90, "EUR": 100}):
+            with patch("backend_user.services.profit.get_rates", return_value=mock_rates):
                 async def mock_gen(request):
                     yield route
 
