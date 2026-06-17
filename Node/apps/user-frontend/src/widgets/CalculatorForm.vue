@@ -92,8 +92,8 @@ const isDateValid = () => (dateModel.value && !isNaN(new Date(dateModel.value).g
 watch(dateModel, async () => {
     destinationInputDisabledModel.value = true;
     departureInputDisabledModel.value = true;
-    departureIdsModel.value = [];
-    destinationIdsModel.value = [];
+    departureIdsModel.value = undefined;
+    destinationIdsModel.value = undefined;
 
     if (!isDateValid()) return;
 
@@ -109,7 +109,7 @@ watch(dateModel, async () => {
 // Update destinations on 'dateModel' or 'selectedDepartures' changing
 watch([dateModel, departureIdsModel], async () => {
     destinationInputDisabledModel.value = true;
-    destinationIdsModel.value = [];
+    destinationIdsModel.value = undefined;
     destinationPoints.value = [];
 
     if (!isDateValid() || !departureIdsModel.value) return;
