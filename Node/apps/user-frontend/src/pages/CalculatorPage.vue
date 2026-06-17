@@ -116,6 +116,7 @@ async function calculate(pushURL: boolean = true) {
 
 function reset() {
     router.push({ query: {} });
+    dateModel.value = new Date().toLocaleDateString("en-CA");
     currentRateRef.value = "RUB";
     loading.value = false;
     departureIdsModel.value = undefined;
