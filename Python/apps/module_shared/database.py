@@ -51,6 +51,9 @@ class Database:
             class_=AsyncSession,
         )
 
+    async def close(self):
+        await self._engine.dispose(True)
+
     async def session(self) -> AsyncGenerator:
         if not self._sessionmaker:
             await self.init()
