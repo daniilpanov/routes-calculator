@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 FESCO_POINTS_TODAY_TTL = 86400
 FESCO_POINTS_OTHER_TTL = 43200
 FESCO_ROUTES_TTL = 43200
+FESCO_CONTAINERS_TTL = 86400
 
 
 def _points_ttl(date: datetime.date) -> int:
