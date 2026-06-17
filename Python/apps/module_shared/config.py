@@ -38,6 +38,12 @@ class Settings(BaseSettings):
     # LOGGING
     LOG_LEVEL: str = "INFO"
 
+    # REDIS
+    REDIS_HOST: str = "redis"
+    REDIS_PORT: int = 6379
+    REDIS_DB: int = 0
+    REDIS_PASSWORD: str | None = None
+
     # DEMO
     DEMO_EXCLUDED_FIELDS: set[str] = {"company"}
 

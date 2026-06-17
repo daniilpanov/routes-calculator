@@ -50,7 +50,7 @@ def _apply_profit_to_segments(
             price.value = float(price.value) + converted_profit
 
 
-def apply_demo_profit_to_routes(
+async def apply_demo_profit_to_routes(
     routes: NormalizedRoutes,
     sea_profit: float,
     sea_profit_currency: str,
@@ -64,13 +64,13 @@ def apply_demo_profit_to_routes(
         "Applying profit: sea=%.2f %s, rail=%.2f %s",
         sea_profit, sea_profit_currency, rail_profit, rail_profit_currency,
     )
-    rates = get_rates()
+    rates, _ = await get_rates()
 
     for route in routes:
         _apply_profit_to_segments(route[0], sea_profit, sea_profit_currency, rail_profit, rail_profit_currency, rates)
 
 
-def apply_demo_profit_to_route(
+async def apply_demo_profit_to_route(
     route: RouteResult,
     sea_profit: float,
     sea_profit_currency: str,
@@ -84,7 +84,7 @@ def apply_demo_profit_to_route(
         "Applying profit to route: sea=%.2f %s, rail=%.2f %s",
         sea_profit, sea_profit_currency, rail_profit, rail_profit_currency,
     )
-    rates = get_rates()
+    rates, _ = await get_rates()
 
     _apply_profit_to_segments(
         route.segments, sea_profit, sea_profit_currency, rail_profit, rail_profit_currency, rates

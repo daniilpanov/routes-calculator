@@ -14,9 +14,9 @@ from module_shared.models.route import RouteResult
 router = APIRouter(prefix="/v3/routes", tags=["v3", "routes"])
 
 
-def _apply_demo_transforms_to_route(route: RouteResult, auth: AuthContext) -> None:
+async def _apply_demo_transforms_to_route(route: RouteResult, auth: AuthContext) -> None:
     if auth.sea_profit or auth.rail_profit:
-        apply_demo_profit_to_route(
+        await apply_demo_profit_to_route(
             route,
             auth.sea_profit,
             auth.sea_profit_currency,
@@ -39,7 +39,7 @@ async def _sse_generator(
 
     async for item in calculate_routes_stream(request):
         if isinstance(item, RouteResult) and auth.is_demo:
-            _apply_demo_transforms_to_route(item, auth)
+            await _apply_demo_transforms_to_route(item, auth)
 
         event_type = "route" if isinstance(item, RouteResult) else "error"
         yield ServerSentEvent(data=item, event=event_type, id=str(current_id))

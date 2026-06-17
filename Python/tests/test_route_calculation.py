@@ -331,46 +331,52 @@ async def test_container_fetch_fails_gracefully():
 # ──────────────────────────────────────────────
 
 
-def test_apply_demo_transforms_strips_company():
+@pytest.mark.asyncio
+async def test_apply_demo_transforms_strips_company():
     seg = _make_segment(company="CompanyA")
     route = RouteResult(segments=[seg])
     formatted = _normalize_routes([route])
     auth = AuthContext(is_demo=True)
-    _apply_demo_transforms(formatted, auth)
+    await _apply_demo_transforms(formatted, auth)
 
     assert not formatted[0][0][0].company
 
 
-def test_apply_demo_transforms_does_not_strip_for_non_demo():
+@pytest.mark.asyncio
+async def test_apply_demo_transforms_does_not_strip_for_non_demo():
     seg = _make_segment(company="CompanyA")
     route = RouteResult(segments=[seg])
     formatted = _normalize_routes([route])
     auth = AuthContext(is_demo=False)
-    _apply_demo_transforms(formatted, auth)
+    await _apply_demo_transforms(formatted, auth)
 
     assert formatted[0][0][0].company == "CompanyA"
 
 
-def test_apply_demo_transforms_with_profit():
+@pytest.mark.asyncio
+async def test_apply_demo_transforms_with_profit():
     seg = _make_segment(company="CompanyA", type="sea")
     route = RouteResult(segments=[seg])
     formatted = _normalize_routes([route])
     auth = AuthContext(is_demo=True, sea_profit=100.0, sea_profit_currency="USD")
 
-    with patch("backend_user.services.profit.get_rates", return_value={"RUB": 1, "USD": 90, "EUR": 100}):
-        _apply_demo_transforms(formatted, auth)
+    mock_rates = ({"RUB": 1, "USD": 90, "EUR": 100}, datetime.date.today())
+    with patch("backend_user.services.profit.get_rates", return_value=mock_rates):
+        await _apply_demo_transforms(formatted, auth)
 
     assert formatted[0][0][0].company is None
 
 
-def test_apply_demo_transforms_with_profit_and_rail():
+@pytest.mark.asyncio
+async def test_apply_demo_transforms_with_profit_and_rail():
     seg = _make_segment(company="CompanyA", type="rail")
     route = RouteResult(segments=[seg])
     formatted = _normalize_routes([route])
     auth = AuthContext(is_demo=True, rail_profit=50.0, rail_profit_currency="USD")
 
-    with patch("backend_user.services.profit.get_rates", return_value={"RUB": 1, "USD": 90, "EUR": 100}):
-        _apply_demo_transforms(formatted, auth)
+    mock_rates = ({"RUB": 1, "USD": 90, "EUR": 100}, datetime.date.today())
+    with patch("backend_user.services.profit.get_rates", return_value=mock_rates):
+        await _apply_demo_transforms(formatted, auth)
 
     assert formatted[0][0][0].company is None
 

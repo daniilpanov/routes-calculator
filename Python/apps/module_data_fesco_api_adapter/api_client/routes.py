@@ -1,12 +1,50 @@
 import asyncio
 import datetime
+import json
 from collections.abc import Iterable
 
 import aiohttp
 from backend_user.config import get_settings
 from module_shared.models.route import RouteResult
 
+from ..cache import get_fesco_routes_cached
 from .transformers.routes import transform_routes
+
+
+async def find_all_paths(
+    date: datetime.date,
+    departure_id: str,
+    destination_id: str,
+    wte_ids: list[str],
+    _: bool = False,
+) -> Iterable[RouteResult]:
+    sorted_ids = json.dumps(wte_ids, sort_keys=True)
+    cache_key = f"backend_user:fesco:routes:{date}:{departure_id}:{destination_id}:{sorted_ids}"
+    return await get_fesco_routes_cached(
+        cache_key,
+        lambda: _fetch_all_paths(date, departure_id, destination_id, wte_ids),
+    )
+
+
+async def _fetch_all_paths(
+    date: datetime.date,
+    departure_id: str,
+    destination_id: str,
+    wte_ids: list[str],
+) -> Iterable[RouteResult]:
+    async with aiohttp.ClientSession() as session:
+        coroutines = [
+            _get_routes(date, departure_id, destination_id, wte_id, session)
+            for wte_id in wte_ids
+        ]
+        res = await asyncio.gather(*coroutines, return_exceptions=True)
+
+    routes = []
+    for routes_group in res:
+        if not isinstance(routes_group, BaseException):
+            routes.extend(routes_group)
+
+    return transform_routes(routes)
 
 
 async def _get_routes(
@@ -34,25 +72,3 @@ async def _get_routes(
     resp.raise_for_status()
 
     return (await resp.json()).get("data", [])
-
-
-async def find_all_paths(
-    date: datetime.date,
-    departure_id: str,
-    destination_id: str,
-    wte_ids: list[str],
-    _: bool = False,
-) -> Iterable[RouteResult]:
-    async with aiohttp.ClientSession() as session:
-        coroutines = [
-            _get_routes(date, departure_id, destination_id, wte_id, session)
-            for wte_id in wte_ids
-        ]
-        res = await asyncio.gather(*coroutines, return_exceptions=True)
-
-    routes = []
-    for routes_group in res:
-        if not isinstance(routes_group, BaseException):
-            routes.extend(routes_group)
-
-    return transform_routes(routes)

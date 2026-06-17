@@ -8,5 +8,6 @@ router = APIRouter(prefix="/v1/rates", tags=["v1", "rates"])
 
 
 @router.get("")
-def get_rates(dt_now: datetime.datetime | None = None):
-    return _get_rates(dt_now)
+async def get_rates(dt_now: datetime.datetime | None = None):
+    rates, _ = await _get_rates(dt_now)
+    return rates

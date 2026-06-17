@@ -129,6 +129,45 @@ The `.txt` files are what the Docker build uses, so they must stay in sync with 
 
 The `test-runner` stage copies `apps/` to `/app/apps/`, `tests/` to `/app/tests/`, and overrides rootdir via `--override-ini` flags (no pyproject.toml in build context). At runtime, the hot-dev compose mounts `pyproject.toml` for config.
 
+### Redis Caching
+
+**Status:** Active — Redis service available in all environments (prod, dev, test).
+
+**Redis client:** `module_shared/redis_client.py` — async singleton via `get_redis()` / `close_redis()`. Connection pool managed by `redis.asyncio`.
+- `decode_responses=True` — all values are strings (JSON serialized)
+- Config: `REDIS_HOST`, `REDIS_PORT`, `REDIS_DB`, `REDIS_PASSWORD` from `module_shared/config.py`
+
+**FESCO cache — transparent:** `module_data_fesco_api_adapter/api_client/cached.py` wraps `api_client` functions with transparent caching:
+- `get_departure_points_by_date`, `get_destination_points_by_date` — cached via `get_fesco_points_cached`
+- `get_containers(date, dep, dest)` — cached container lists
+- `find_all_paths(date, dep, dest, wte_ids)` — cached route results
+Backend code simply calls `api_client.*` as before — caching is handled transparently.
+Low-level cache-aside logic is in `module_data_fesco_api_adapter/cache.py` (`get_fesco_points_cached`, `_set_json_async`).
+
+**Cache key scheme:**
+
+| Data | Key pattern | TTL | Eviction |
+|------|-------------|-----|----------|
+| Currency rates | `backend_user:rates:latest` | 24h | — |
+| FESCO departures | `backend_user:fesco:departures:{date}` | 24h (today) / 12h (other) | volatile-lru |
+| FESCO destinations | `backend_user:fesco:destinations:{date}:{dep_id}` | 24h (today) / 12h (other) | volatile-lru |
+| FESCO routes | `backend_user:fesco:routes:{date}:{dep}:{dest}:{weight}:{type}` | 12h | volatile-lru |
+
+**Rates fetch logic** (`services/get_rates.py`):
+1. Always try CBR API first (`ExchangeRates`)
+2. On success: return `(rates, today)` + `asyncio.create_task()` writes to Redis
+3. On failure: fallback to Redis — return `(rates, cached_date)` from cache
+4. If both fail: `RuntimeError`
+
+**API endpoints:**
+- `GET /v1/rates` — returns `{USD: 90.0, ...}` (rates only, async now)
+- `GET /v2/rates` — returns `{rates: {...}, updated_at: "2026-06-16"}` (adds date)
+
+**Redis docker-compose:**
+- `docker-compose.yml`: `redis:7-alpine`, AOF+RDB persistence, `volatile-lru` (512mb maxmemory)
+- `docker-compose.hot-dev.backend.yml`: extends redis from base
+- `docker-compose.test.yml`: redis with 128mb maxmemory, `test` profile
+
 ### Nginx Routing
 
 | Location | Proxy Target | Purpose |
@@ -411,6 +450,21 @@ All output is JSON by default (for AI/script parsing).
 | `make export-deps` | `./scripts/export-python-dependencies.sh` |
 | `make alembic [args]` | `./scripts/alembic-proxy.sh` — pass alembic subcommand via args |
 | `make migrate [args]` | `./scripts/prod-db-migrate.sh` — pass alembic subcommand via args |
+
+---
+
+### Cache Pitfalls
+
+- `get_fesco_routes_cached` in `cache.py` must call `list(data)` on the fetch result because `transform_routes` returns a `map` object (consumable iterator). Without `list()`, the internal list comprehension `[r.model_dump(...) for r in data]` exhausts the iterator and `return data` returns an empty sequence.
+- Points caching (`get_fesco_points_cached`) is safe because its fetch functions return plain JSON dicts/lists, not iterators.
+- Container caching (`get_containers` in `api_client/containers.py`) is also safe — `transform_containers` returns a sorted list.
+
+### FESCO API Client Tests
+
+All tests in `test_fesco_api_client.py` that call `get_containers`, `get_departure_points_by_date`, `get_destination_points_by_date`, or `find_all_paths` must mock `redis` because these functions now use Redis caching directly. The mock targets:
+- `module_data_fesco_api_adapter.cache.get_redis` — for points/routes (functions go through `cache.py`)
+- `module_data_fesco_api_adapter.api_client.containers.get_redis` — for containers (imports directly in `containers.py`)
+- `module_data_fesco_api_adapter.api_client.routes.aiohttp.ClientSession` — for `find_all_paths` (uses `_fetch_all_paths`)
 
 ---
 

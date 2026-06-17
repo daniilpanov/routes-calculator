@@ -19,6 +19,12 @@ services:
       PMA_USER: "${DB_USER}"
       PMA_PASSWORD: "${DB_PASS}"
 
+  ### REDIS
+  redis:
+    extends:
+      service: redis
+      file: docker-compose.yml
+
   ### BACK
   calculator:
     extends:

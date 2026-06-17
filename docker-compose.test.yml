@@ -1,4 +1,22 @@
 services:
+  ### REDIS
+  redis:
+    image: redis:7-alpine
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges
+    expose:
+      - 6379
+    command:
+      - "redis-server"
+      - "--maxmemory"
+      - "128mb"
+      - "--maxmemory-policy"
+      - "volatile-lru"
+    profiles:
+      - test
+
   ### TEST
   test-runner:
     build:

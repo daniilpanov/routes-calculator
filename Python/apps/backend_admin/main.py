@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from importlib.util import find_spec
 
 from fastapi import FastAPI
@@ -5,6 +6,7 @@ from fastapi import FastAPI
 from fastapi_another_jwt_auth import AuthJWT
 from fastapi_another_jwt_auth.exceptions import AuthJWTException
 from module_shared.config import get_settings as get_shared_settings
+from module_shared.database import get_database
 from module_shared.jwt_error_handler import authjwt_exception_handler
 from module_shared.logger import setup_logging, setup_sqlalchemy_logging
 
@@ -26,7 +28,21 @@ docs_url = "/docs" if shared_settings.ENVIRONMENT != "prod" else None
 redoc_url = "/redoc" if shared_settings.ENVIRONMENT != "prod" else None
 openapi_url = "/openapi.json" if shared_settings.ENVIRONMENT != "prod" else None
 
-app = FastAPI(docs_url=docs_url, redoc_url=redoc_url, openapi_url=openapi_url, redirect_slashes=False)
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    await get_database().init()
+    yield
+    await get_database().close()
+
+
+app = FastAPI(
+    docs_url=docs_url,
+    redoc_url=redoc_url,
+    openapi_url=openapi_url,
+    redirect_slashes=False,
+    lifespan=lifespan,
+)
 
 if not get_settings().DISABLE_ADMIN_AUTH_CHECK:
     # Configure AuthJWT with settings

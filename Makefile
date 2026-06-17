@@ -1,6 +1,6 @@
 ARGS = $(filter-out $@,$(MAKECMDGOALS))
 
-.PHONY: build prod dev test lint lint-frontend lint-backend update export-deps alembic migrate
+.PHONY: build prod dev stop-prod stop-dev test lint lint-frontend lint-backend update export-deps alembic migrate
 
 build:
 	docker buildx bake $(ARGS)
@@ -10,6 +10,12 @@ prod:
 
 dev:
 	@trap './scripts/stop-dev.sh' EXIT; ./scripts/run-dev.sh $(ARGS)
+
+stop-prod:
+	docker compose down $(ARGS)
+
+stop-dev:
+	./scripts/stop-dev.sh $(ARGS)
 
 test:
 	./scripts/run-test.sh $(ARGS)

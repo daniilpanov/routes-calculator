@@ -1,29 +1,56 @@
+import asyncio
 import datetime
+import json
+import logging
 
+from module_shared.redis_client import get_redis
 from pycbrf.toolbox import ExchangeRates
 
-# Cache must be invalidated every day
-_rates: dict[str, float] = {}
-_last_update = None
+logger = logging.getLogger(__name__)
+
+RATES_CACHE_KEY = "backend_user:rates:latest"
+RATES_CACHE_TTL = 86400  # 24 hours
 
 
-def get_rates(dt_now: datetime.datetime | None = None):
-    global _rates, _last_update
+async def _set_rates_cache(rates: dict[str, float], dt: datetime.date) -> None:
+    try:
+        redis = get_redis()
+        payload = json.dumps({"rates": rates, "date": dt.isoformat()})
+        await redis.set(RATES_CACHE_KEY, payload, ex=RATES_CACHE_TTL)
+        logger.info("Rates cached in Redis for %s", dt)
+    except Exception:
+        logger.exception("Failed to cache rates in Redis")
 
-    # FOR DEBUG: return {"RUB": 1, "RUR": 1, "РУБ": 1, "USD": 75}
 
+async def get_rates(dt_now: datetime.datetime | None = None) -> tuple[dict[str, float], datetime.date]:
     if dt_now is None:
         dt_now = datetime.datetime.now()
 
-    if dt_now.date() == _last_update:
-        return _rates
+    today = dt_now.date()
 
-    rates = ExchangeRates(dt_now)
-    _rates = {currency.code: float(currency.value) for currency in rates.rates}
-    # _rates["RUB"] = 1 because RUB == RUB
-    _rates["RUB"] = 1
-    _rates["RUR"] = 1
-    _rates["РУБ"] = 1
+    try:
+        rates_obj = await asyncio.to_thread(ExchangeRates, dt_now)
+        rates = {currency.code: float(currency.value) for currency in rates_obj.rates}
+        rates["RUB"] = 1
+        rates["RUR"] = 1
+        rates["РУБ"] = 1
 
-    _last_update = dt_now.date()
-    return _rates
+        asyncio.create_task(_set_rates_cache(rates, today))
+        return rates, today
+    except Exception:
+        logger.warning("Failed to fetch rates from CBR API, trying Redis fallback", exc_info=True)
+
+    try:
+        redis = get_redis()
+        raw = await redis.get(RATES_CACHE_KEY)
+        if raw is not None:
+            payload = json.loads(raw)
+            cached_date = datetime.date.fromisoformat(payload["date"])
+            logger.info("Returning cached rates from %s", cached_date)
+            return payload["rates"], cached_date
+    except Exception:
+        logger.exception("Failed to read rates from Redis fallback")
+
+    msg = "No rates available from CBR API or Redis cache"
+    logger.error(msg)
+    raise RuntimeError(msg)
