@@ -27,6 +27,8 @@ const departurePoints = ref<IPoint[]>([]);
 const destinationPoints = ref<IPoint[]>([]);
 const calcForm = ref<HTMLFormElement>();
 
+const isInitialLoad = ref(true);
+
 function submit(e: Event) {
     if (!calcForm.value!.checkValidity()) return;
 
@@ -90,6 +92,7 @@ const isDateValid = () => (dateModel.value && !isNaN(new Date(dateModel.value).g
 
 // Update departures on 'dateModel' changing
 watch(dateModel, async () => {
+    if (isInitialLoad.value) return;
     destinationInputDisabledModel.value = true;
     departureInputDisabledModel.value = true;
     departureIdsModel.value = undefined;
@@ -108,6 +111,7 @@ watch(dateModel, async () => {
 
 // Update destinations on 'dateModel' or 'selectedDepartures' changing
 watch([dateModel, departureIdsModel], async () => {
+    if (isInitialLoad.value) return;
     destinationInputDisabledModel.value = true;
     destinationIdsModel.value = undefined;
     destinationPoints.value = [];
@@ -125,6 +129,7 @@ watch([dateModel, departureIdsModel], async () => {
 
 // If points is changed then try to set selected point based on the last value
 watch(departurePoints, () => {
+    if (isInitialLoad.value) return;
     if (isDateValid())
         setSelectedPoints(
             departurePoints,
@@ -136,6 +141,7 @@ watch(departurePoints, () => {
     }
 });
 watch([departurePoints, departureIdsModel, destinationPoints], () => {
+    if (isInitialLoad.value) return;
     if (!departurePoints.value?.length)
         return;
 
@@ -151,7 +157,10 @@ watch([departurePoints, departureIdsModel, destinationPoints], () => {
 });
 
 onMounted(async () => {
-    if (!isDateValid()) return;
+    if (!isDateValid()) {
+        isInitialLoad.value = false;
+        return;
+    }
 
     // Block before loading
     departureInputDisabledModel.value = true;
@@ -177,7 +186,6 @@ onMounted(async () => {
 
         // Restore selected destination if it is in URL
         if (initialDestinationIds && destinationPoints.value.length) {
-            // Rewrite model because 'watch' erases it
             destinationIdsModel.value = initialDestinationIds;
             setSelectedPoints(destinationPoints, destinationIdsModel);
         } else destinationIdsModel.value = undefined;
@@ -186,6 +194,8 @@ onMounted(async () => {
         destinationIdsModel.value = undefined;
         destinationInputDisabledModel.value = true;
     }
+
+    isInitialLoad.value = false;
 });
 </script>
 
