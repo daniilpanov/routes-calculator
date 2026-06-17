@@ -86,6 +86,7 @@ export async function updateRoutesSSE(payload: ICalculatorPayload) {
     const calcStatus = useCalculationStatus();
     let hasWarnings = false;
 
+    routesStore.setRoutes();
     calcStatus.setStatus("loading");
 
     try {
