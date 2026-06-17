@@ -1,11 +1,12 @@
 services:
   ### REDIS
   redis:
-    image: redis:7-alpine
+    image: valkey/valkey:alpine
     cap_drop:
       - ALL
     security_opt:
       - no-new-privileges
+    user: 999:999
     expose:
       - 6379
     command:
