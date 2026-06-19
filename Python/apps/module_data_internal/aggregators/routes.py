@@ -192,7 +192,7 @@ def process_results(
     container_ids: list[int],
 ) -> list[tuple[list[Base], bool]]:
     flat_result: list = []
-    seen_ids: set[tuple[tuple[int, int, int], ...]] = set()
+    seen_ids: set[tuple[int, ...]] = set()
 
     for result in results:
         if not result or isinstance(result, BaseException):
@@ -206,13 +206,9 @@ def process_results(
 
             routes: list[RouteModel] = row[:-1] if not row[-1] or isinstance(row[-1], DropModel) else row
 
-            uids = tuple((
-                segment.company_id,
-                segment.start_point_id,
-                segment.end_point_id,
-            ) for segment in routes)
+            ids = tuple(segment.id for segment in routes)
 
-            if uids in seen_ids:
+            if ids in seen_ids:
                 continue
 
             may_route_be_invalid = False
@@ -227,7 +223,7 @@ def process_results(
                     may_route_be_invalid = True
                     break
 
-            seen_ids.add(uids)
+            seen_ids.add(ids)
             flat_result.append((row, may_route_be_invalid))
 
     return flat_result
