@@ -108,13 +108,10 @@ def build_base_sea_rail_query(
         RailPrice.container_id.in_(container_ids),
         # COC/SOC logic
         or_(
+            RailRoute.container_owner == ContainerOwner.SOC,
             and_(
                 SeaRoute.company_id == RailRoute.company_id,
                 RailRoute.container_owner == ContainerOwner.COC,
-            ),
-            and_(
-                SeaRoute.company_id != RailRoute.company_id,
-                RailRoute.container_owner == ContainerOwner.SOC,
             ),
         ),
         # Through routes logic
