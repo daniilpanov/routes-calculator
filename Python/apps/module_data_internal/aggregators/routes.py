@@ -122,6 +122,11 @@ def build_base_sea_rail_query(
             ~RailRoute.is_through & ~SeaRoute.is_through,
             SeaRoute.company_id == RailRoute.company_id,
         ),
+        # Drop-off must exist: either via dropp_off_point_id or via DROPS table
+        or_(
+            SeaRoute.dropp_off_point_id.isnot(None),
+            DropModel.id.isnot(None),
+        ),
     )
 
     drop_join_clause = and_(

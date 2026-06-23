@@ -316,6 +316,15 @@ async def test_find_all_paths_sea_rail_different_company_soc(sqlite_db: Database
         price_sea = PriceFactory(route_id=sea_route.id, container_id=container.id)
         price_rail = PriceFactory(route_id=rail_route.id, container_id=container.id)
         session.add_all([price_sea, price_rail])
+        await session.flush()
+
+        drop = DropFactory(
+            company_id=company_a.id,
+            container_id=container.id,
+            start_point_id=point_mid.id,
+            end_point_id=point_b.id,
+        )
+        session.add(drop)
         await session.commit()
 
     with patch("module_data_internal.aggregators.routes.get_database", return_value=sqlite_db):
@@ -591,3 +600,53 @@ async def test_find_all_paths_sea_rail_drop_valid_on_shipping_date(sqlite_db: Da
     route = routes[0]
     assert route.drop is not None
     assert route.drop.price == 50.0
+
+
+@pytest.mark.asyncio
+async def test_find_all_paths_sea_rail_no_drop_filtered_out(sqlite_db: Database):
+    """Check regressions of bug#132"""
+    async with sqlite_db.session_context() as session:
+        company = CompanyFactory(name="NoDropCo")
+        point_a = PointFactory(**_unique_point())
+        point_mid = PointFactory(**_unique_point())
+        point_b = PointFactory(**_unique_point())
+        container = ContainerFactory(size=20, weight_from=0, weight_to=28000)
+        session.add_all([company, point_a, point_mid, point_b, container])
+        await session.flush()
+
+        sea_route = RouteFactory(
+            company_id=company.id,
+            start_point_id=point_a.id,
+            end_point_id=point_mid.id,
+            dropp_off_point_id=None,
+            type=RouteType.SEA,
+            container_owner=ContainerOwner.COC,
+            is_through=False,
+        )
+        rail_route = RouteFactory(
+            company_id=company.id,
+            start_point_id=point_mid.id,
+            end_point_id=point_b.id,
+            type=RouteType.RAIL,
+            container_owner=ContainerOwner.COC,
+            is_through=False,
+        )
+        session.add_all([sea_route, rail_route])
+        await session.flush()
+
+        price_sea = PriceFactory(route_id=sea_route.id, container_id=container.id)
+        price_rail = PriceFactory(route_id=rail_route.id, container_id=container.id)
+        session.add_all([price_sea, price_rail])
+        await session.commit()
+
+    with patch("module_data_internal.aggregators.routes.get_database", return_value=sqlite_db):
+        result = await find_all_paths(
+            date=datetime.date(2024, 6, 15),
+            start_point_id=point_a.id,
+            end_point_id=point_b.id,
+            container_ids=[container.id],
+        )
+
+    routes = list(result)
+    sea_rail_routes = [r for r in routes if len(r.segments) == 2]
+    assert len(sea_rail_routes) == 0
