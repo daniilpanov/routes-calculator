@@ -133,11 +133,9 @@ def build_base_sea_rail_query(
         RailPrice.container_id == DropModel.container_id,
         # Company
         SeaRoute.company_id == DropModel.company_id,
-        # Dates
-        DropModel.effective_from <= SeaRoute.effective_from,
-        DropModel.effective_to >= SeaRoute.effective_to,
-        DropModel.effective_from <= RailRoute.effective_from,
-        DropModel.effective_to >= RailRoute.effective_to,
+        # Drop-off must be valid on the shipping date
+        DropModel.effective_from <= date,
+        DropModel.effective_to >= date,
     )
 
     return (  # noqa: ECE001
