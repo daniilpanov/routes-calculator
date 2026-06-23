@@ -57,8 +57,21 @@ Python/
 │   │       ├── crud_containers.py     # Container CRUD service
 │   │       ├── crud_route_segments.py # Route segment CRUD (composite)
 │   │       ├── crud_services.py       # Service CRUD service
-│   │       └── crud_drop_off.py      # Drop-off CRUD service
+│   │       ├── crud_drop_off.py      # Drop-off CRUD service
+│   │       └── crud_settings.py     # Settings CRUD service
 │   ├── module_shared/
+│   │   ├── models/
+│   │   │   ├── route.py          # Pydantic route models
+│   │   │   ├── setting.py        # Pydantic SettingItem with _parse_value validator (converts str → bool|int|float|dict|list via value_type)
+│   │   │   └── errors.py         # RouteError model
+│   │   ├── schemas/
+│   │   │   ├── __init__.py       # re-exports Base, DemoGuestModel, SettingModel
+│   │   │   ├── demo_guest.py     # DemoGuest ORM model
+│   │   │   └── setting.py        # SettingModel ORM model (id, group, name, desc, value_type, value)
+│   │   ├── cache_settings.py  # Settings Redis cache (cache-aside, TTL 12h)
+│   │   └── repositories/
+│   │       ├── demo_guest.py     # get/list demo guests
+│   │       └── setting.py        # get_setting, list_settings
 │   ├── module_data_internal/
 │   └── module_data_fesco_api_adapter/
 ```
@@ -80,8 +93,8 @@ Node/apps/
 │       └── providers/    # Auth provider
 ├── admin-frontend/       # React 19 + Vite — Admin dashboard
 │   └── src/
-│       ├── pages/        # Login, Dashboard, DataImport, DemoGuests
-│       ├── api/          # Axios API clients (Auth, Data, DemoGuests)
+│       ├── pages/        # Login, Dashboard, DataImport, DemoGuests, Settings
+│       ├── api/          # Axios API clients (Auth, Data, DemoGuests, Settings)
 │       ├── services/     # Auth service
 │       ├── widgets/      # Sidebar, LoginForm
 │       ├── layouts/      # MainLayout, EmptyLayout
@@ -152,8 +165,14 @@ Low-level cache-aside logic is in `module_data_fesco_api_adapter/cache.py` (`get
 | FESCO departures | `backend_user:fesco:departures:{date}` | 24h (today) / 12h (other) | volatile-lru |
 | FESCO destinations | `backend_user:fesco:destinations:{date}:{dep_id}` | 24h (today) / 12h (other) | volatile-lru |
 | FESCO routes | `backend_user:fesco:routes:{date}:{dep}:{dest}:{weight}:{type}` | 12h | volatile-lru |
+| Settings | `backend_user:settings:{group}:{name}` | 12h | volatile-lru |
 
-**Rates fetch logic** (`services/get_rates.py`):
+**Settings cache — transparent:** `module_shared/cache_settings.py` implements cache-aside for DB-backed settings:
+- `get_setting_cached(session, group, name)` — Redis → DB → fire-and-forget write
+- `set_settings_cache(item)` — write single setting to Redis
+- `delete_settings_cache(group, name)` — remove single setting from Redis
+- `backend_admin` lifespan includes `get_redis_client().init()` / `.close()`
+- Admin CRUD endpoints (`POST/PUT/PATCH/DELETE /db/settings`) use `BackgroundTasks` to update/delete Redis after DB write so cache stays in sync
 1. Always try CBR API first (`ExchangeRates`)
 2. On success: return `(rates, today)` + `asyncio.create_task()` writes to Redis
 3. On failure: fallback to Redis — return `(rates, cached_date)` from cache
@@ -212,6 +231,7 @@ Module prefixes:
 
 ### Pre-Commit Checks
 - Before each Python commit: `pre-commit run --all-files` — this catches lint/type errors early, avoiding fix commits on top
+- On slow devices, use `pre-commit run --files <changed_file>` to speed up
 - Before each Node commit: run the project's lint script (if available)
 - Fix any lint/type errors before committing
 
@@ -244,7 +264,7 @@ Module prefixes:
 
 ### Python Tests
 - Tests live in `Python/tests/`, run with `pytest`
-- **71 tests** across 7 files:
+- **74 tests** across 8 files:
     - `test_route_calculation.py` (18) — route calculation (service-level: internal, FESCO, mixed, errors; handler-level: format conversion, demo transforms/strip/profit)
     - `test_internal_aggregators.py` (17) — containers, paths (rail/sea/COC/SOC/expired/services/drop/dropp_off/no_data/process_results)
     - `test_profit.py` (17) — currency conversion, profit application, segment type filtering, mixed segments, currency conversion in profit
@@ -252,6 +272,7 @@ Module prefixes:
     - `test_get_points.py` (4) — `get_departure_points`, `get_destination_points`, no routes, multiple companies
     - `test_demo_guest_repo.py` (5) — `get_demo_guest_by_uid` found/not found/profit overrides, `list_demo_guests` empty/multiple
     - `test_get_rates.py` (3) — `get_rates` returns dict, caching, with datetime
+    - `test_setting_cache.py` (3) — `get_setting_cached` cache hit/miss/not_found
 - **Test DB**: SQLite in-memory (`sqlite+aiosqlite`). Tables created via `Base.metadata.create_all()`, **not** via Alembic migrations (migrations have MySQL-specific code).
 - **Auth mocks**: patch `get_demo_guest_by_uid`, `get_database`, and `request_auth` directly
 - **FESCO API mocks**: use `unittest.mock.patch` on `module_data_fesco_api_adapter.api_client` directly
@@ -339,6 +360,13 @@ module_shared ───┬── backend_auth
 - `PriceItem` represents internal multi-price format (always has `value: float`)
 - `RouteSegment.prices` can be `list[PriceItem]` (internal) or `OnePrice` (FESCO) or `None`
 
+**`module_shared/models/setting.py`** — Setting entities (Pydantic V2 `BaseModel`):
+- `SettingItem(id, group, name, description?, value_type, value)` — unified settings model
+- `value: bool | int | float | str | dict | list | None` — auto-converted from DB string via `_parse_value` validator (`mode="before"`):
+  - `INT` → `int(v)`, `FLOAT` → `float(v)`, `BOOL` → `v.lower() in ("true", "1")`, `JSON` → `json.loads(v)`
+- `from_model(model: SettingModel) -> SettingItem` — factory from ORM model
+- `parse_setting_value(value, value_type)` — standalone function used by both `_parse_value` and admin CRUD validation
+
 **`module_shared/models/errors.py`** — Error model:
 - `RouteError(error_type: str, error_text: str, source: str | None)`
 - Used in services (no source) and points handlers (`"internal"`/`"external"`)
@@ -413,6 +441,7 @@ All output is JSON by default (for AI/script parsing).
 | Route Segments | `GET/POST /db/route-segments`, `GET /db/route-segments/stats`, `GET/PUT/PATCH/DELETE /db/route-segments/{id}` | Composite: route fields + nested `prices[]` + `services[]` |
 | Services | `GET/POST /db/services`, `GET/PUT/PATCH/DELETE /db/services/{id}` | `name, internal_name, description, hint?, mandatory, default` |
 | Drop-off | `GET/POST /db/drop-off`, `GET/PUT/PATCH/DELETE /db/drop-off/{id}` | `container_id, company_id, dates, price, currency` |
+| Settings | `GET/POST /db/settings`, `GET/PUT/PATCH/DELETE /db/settings/{id}` | `group, name, description?, value_type, value?` |
 
 **Architecture:**
 - `api/data_browser.py` — thin route definitions only (delegates to service layer)
@@ -423,6 +452,12 @@ All output is JSON by default (for AI/script parsing).
 **Route Segment** is a composite resource — `crud_route_segments.py` overrides `create`/`update` to handle nested `prices[]` and `services[]` (fully replaced on PUT); PATCH only touches route-level fields via `_apply_patch`. The `get` method uses `selectinload` for eager relationship loading.
 - `RouteSegmentListResponse` includes `is_through` and `container_owner`
 - `RouteSegmentStatsResponse` is returned by `GET /db/route-segments/stats`: totals, type/through/owner distribution, top 20 companies
+
+**Settings CRUD** (`crud_settings.py`) — value validation:
+- `parse_setting_value(value, value_type)` in `module_shared/models/setting.py` is a standalone function (also used by `SettingItem._parse_value` validator)
+- `_validate_value()` static method wraps it, raising `HTTPException(422)` on parse failure
+- `_build_instance` / `_apply_update` validate against `data.value_type` (known from request)
+- For PATCH: `patch()` method is overridden — gets the model from DB first, validates `data.value` against the **model's existing** `value_type`, then calls `_apply_patch` (which does no value validation)
 
 ---
 
