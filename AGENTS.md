@@ -363,20 +363,7 @@ module_shared ───┬── backend_auth
 
 ### Route Calculation — Key Logic
 
-**`containerType` parameter** is container size in feet (20 or 40), NOT DC/HC type.
-- Passed as `size` to `search_container_ids()` (`containers.py:19-24`), which filters by `ContainerModel.size` column.
-- `ContainerModel.type` (DC/HC) is never used for filtering in the calculate endpoint.
-- Frontend sends `containerType` as `"20"` or `"40"`.
-
-**COC/SOC matching logic** (`routes.py:_apply_container_owner_filter`, lines 270-296):
-- Same company → Rail must be `container_owner == COC`
-- Different companies → Rail must be `container_owner == SOC`
-- Sea and rail must share the same `RouteDate` (effective range).
-
-**Through-route condition** (sea-rail JOIN in `routes.py`):
-- A rail segment with `is_through=true` can only pair with sea from the same company.
-- Two non-through segments (both `is_through=false`) can pair across different companies.
-- Logic: `or_(~RailRoute.is_through & ~SeaRoute.is_through, SeaRoute.company_id == RailRoute.company_id)`.
+> Подробное описание логики расчёта маршрутов см. в [ROUTES-CALCULATION-LOGIC.md](./ROUTES-CALCULATION-LOGIC.md).
 
 ### CLI Tools (`Python/cli/`)
 
