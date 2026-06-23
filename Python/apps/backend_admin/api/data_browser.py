@@ -25,6 +25,9 @@ from backend_admin.schemas.data_browser import (
     ServiceCreate,
     ServicePatch,
     ServiceResponse,
+    SettingCreate,
+    SettingPatch,
+    SettingResponse,
 )
 from backend_admin.service.crud_companies import crud_companies
 from backend_admin.service.crud_containers import crud_containers
@@ -32,6 +35,7 @@ from backend_admin.service.crud_drop_off import crud_drop_off
 from backend_admin.service.crud_points import crud_points
 from backend_admin.service.crud_route_segments import crud_route_segments
 from backend_admin.service.crud_services import crud_services
+from backend_admin.service.crud_settings import crud_settings
 from module_shared.database import Database, get_database
 
 router = APIRouter(prefix="/db", tags=["data-browser"])
@@ -444,3 +448,69 @@ async def delete_drop_off(
 ):
     async with db.session_context() as session:
         await crud_drop_off.delete(session, drop_id)
+
+
+# ─── Settings ──────────────────────────────────────────────────────────────────
+
+
+@router.get("/settings", response_model=list[SettingResponse])
+async def list_settings(
+    _: Annotated[None, Depends(request_auth)],
+    db: Annotated[Database, Depends(get_database)],
+    group: str = Query("", description="Filter by group"),
+    q: str = Query("", description="Search by name"),
+):
+    async with db.session_context() as session:
+        return await crud_settings.list(session, group=group, q=q)
+
+
+@router.get("/settings/{setting_id}", response_model=SettingResponse)
+async def get_setting(
+    setting_id: int,
+    _: Annotated[None, Depends(request_auth)],
+    db: Annotated[Database, Depends(get_database)],
+):
+    async with db.session_context() as session:
+        return await crud_settings.get(session, setting_id)
+
+
+@router.post("/settings", response_model=SettingResponse, status_code=201)
+async def create_setting(
+    payload: SettingCreate,
+    _: Annotated[None, Depends(request_auth)],
+    db: Annotated[Database, Depends(get_database)],
+):
+    async with db.session_context() as session:
+        return await crud_settings.create(session, payload)
+
+
+@router.put("/settings/{setting_id}", response_model=SettingResponse)
+async def update_setting(
+    setting_id: int,
+    payload: SettingCreate,
+    _: Annotated[None, Depends(request_auth)],
+    db: Annotated[Database, Depends(get_database)],
+):
+    async with db.session_context() as session:
+        return await crud_settings.update(session, setting_id, payload)
+
+
+@router.patch("/settings/{setting_id}", response_model=SettingResponse)
+async def patch_setting(
+    setting_id: int,
+    payload: SettingPatch,
+    _: Annotated[None, Depends(request_auth)],
+    db: Annotated[Database, Depends(get_database)],
+):
+    async with db.session_context() as session:
+        return await crud_settings.patch(session, setting_id, payload)
+
+
+@router.delete("/settings/{setting_id}", status_code=204)
+async def delete_setting(
+    setting_id: int,
+    _: Annotated[None, Depends(request_auth)],
+    db: Annotated[Database, Depends(get_database)],
+):
+    async with db.session_context() as session:
+        await crud_settings.delete(session, setting_id)

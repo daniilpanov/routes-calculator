@@ -6,6 +6,8 @@ from module_data_internal.schemas import (
     ServiceModel,
 )
 from module_data_internal.schemas.route import PriceModel, RouteModel, ServicePriceModel
+from module_shared.schemas import SettingType
+from module_shared.schemas.setting import SettingModel
 from pydantic import BaseModel
 
 # ─── Companies ────────────────────────────────────────────────────────────────
@@ -362,4 +364,43 @@ class DropOffResponse(BaseModel):
             price=model.price,
             conversation_percents=model.conversation_percents,
             currency=model.currency,
+        )
+
+
+# ─── Settings ──────────────────────────────────────────────────────────────────
+
+
+class SettingCreate(BaseModel):
+    group: str
+    name: str
+    description: str | None = None
+    value_type: SettingType
+    value: str | None = None
+
+
+class SettingPatch(BaseModel):
+    group: str | None = None
+    name: str | None = None
+    description: str | None = None
+    value_type: SettingType | None = None
+    value: str | None = None
+
+
+class SettingResponse(BaseModel):
+    id: int  # noqa: A003
+    group: str
+    name: str
+    description: str | None
+    value_type: SettingType
+    value: str | None
+
+    @classmethod
+    def from_model(cls, model: SettingModel) -> "SettingResponse":
+        return cls(
+            id=model.id,
+            group=model.group,
+            name=model.name,
+            description=model.description,
+            value_type=model.value_type,
+            value=model.value,
         )
