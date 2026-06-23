@@ -13,4 +13,8 @@ export const API_ENDPOINTS = {
         ROOT: "/admin/api/demo-guests",
         byId: (id: number) => `/admin/api/demo-guests/${id}`,
     },
+    SETTINGS: {
+        ROOT: "/admin/api/db/settings",
+        byId: (id: number) => `/admin/api/db/settings/${id}`,
+    },
 };
