@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, BackgroundTasks, Query
 from fastapi.params import Depends
 
 from backend_admin.dependencies.auth import request_auth
@@ -36,7 +36,9 @@ from backend_admin.service.crud_points import crud_points
 from backend_admin.service.crud_route_segments import crud_route_segments
 from backend_admin.service.crud_services import crud_services
 from backend_admin.service.crud_settings import crud_settings
+from module_shared.cache_settings import delete_settings_cache, set_settings_cache
 from module_shared.database import Database, get_database
+from module_shared.models.setting import SettingItem
 
 router = APIRouter(prefix="/db", tags=["data-browser"])
 
@@ -479,9 +481,12 @@ async def create_setting(
     payload: SettingCreate,
     _: Annotated[None, Depends(request_auth)],
     db: Annotated[Database, Depends(get_database)],
+    background_tasks: BackgroundTasks,
 ):
     async with db.session_context() as session:
-        return await crud_settings.create(session, payload)
+        result = await crud_settings.create(session, payload)
+    background_tasks.add_task(set_settings_cache, SettingItem(**result.model_dump()))
+    return result
 
 
 @router.put("/settings/{setting_id}", response_model=SettingResponse)
@@ -490,9 +495,12 @@ async def update_setting(
     payload: SettingCreate,
     _: Annotated[None, Depends(request_auth)],
     db: Annotated[Database, Depends(get_database)],
+    background_tasks: BackgroundTasks,
 ):
     async with db.session_context() as session:
-        return await crud_settings.update(session, setting_id, payload)
+        result = await crud_settings.update(session, setting_id, payload)
+    background_tasks.add_task(set_settings_cache, SettingItem(**result.model_dump()))
+    return result
 
 
 @router.patch("/settings/{setting_id}", response_model=SettingResponse)
@@ -501,9 +509,12 @@ async def patch_setting(
     payload: SettingPatch,
     _: Annotated[None, Depends(request_auth)],
     db: Annotated[Database, Depends(get_database)],
+    background_tasks: BackgroundTasks,
 ):
     async with db.session_context() as session:
-        return await crud_settings.patch(session, setting_id, payload)
+        result = await crud_settings.patch(session, setting_id, payload)
+    background_tasks.add_task(set_settings_cache, SettingItem(**result.model_dump()))
+    return result
 
 
 @router.delete("/settings/{setting_id}", status_code=204)
@@ -511,6 +522,9 @@ async def delete_setting(
     setting_id: int,
     _: Annotated[None, Depends(request_auth)],
     db: Annotated[Database, Depends(get_database)],
+    background_tasks: BackgroundTasks,
 ):
     async with db.session_context() as session:
+        setting = await crud_settings.get(session, setting_id)
         await crud_settings.delete(session, setting_id)
+    background_tasks.add_task(delete_settings_cache, setting.group, setting.name)
