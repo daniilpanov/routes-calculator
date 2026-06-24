@@ -349,12 +349,12 @@ def create_dropp(
     }
 
     all_dropp: list[DropModel] = []
-    if price_20dc and not pd.isna(price_20dc):
+    if price_20dc is not None and not pd.isna(price_20dc):
         all_dropp.extend((
             DropModel(**base_config, price=price_20dc, container=containers[(20, 0, 24)]),
             DropModel(**base_config, price=price_20dc, container=containers[(20, 24, 28)]),
         ))
-    if price_40hc and not pd.isna(price_40hc):
+    if price_40hc is not None and not pd.isna(price_40hc):
         all_dropp.append(DropModel(**base_config, price=price_40hc, container=containers[(40, 0, 28)]))
 
     return all_dropp
