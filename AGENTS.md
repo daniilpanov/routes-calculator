@@ -264,15 +264,18 @@ Module prefixes:
 
 ### Python Tests
 - Tests live in `Python/tests/`, run with `pytest`
-- **74 tests** across 8 files:
-    - `test_route_calculation.py` (18) — route calculation (service-level: internal, FESCO, mixed, errors; handler-level: format conversion, demo transforms/strip/profit)
-    - `test_internal_aggregators.py` (17) — containers, paths (rail/sea/COC/SOC/expired/services/drop/dropp_off/no_data/process_results)
+- **139 tests** across 11 files:
+    - `test_route_calculation.py` (16) — route calculation (service-level: internal, FESCO, mixed, errors; handler-level: format conversion, demo transforms/strip/profit)
+    - `test_internal_aggregators.py` (22) — containers, paths (rail/sea/COC/SOC/expired/services/drop/dropp_off/no_data/process_results), hide-sea-soc feature flag
     - `test_profit.py` (17) — currency conversion, profit application, segment type filtering, mixed segments, currency conversion in profit
     - `test_auth_utils.py` (8) — `_strip_demo_fields`, `get_auth_context` with/without/invalid demo header, empty routes
     - `test_get_points.py` (4) — `get_departure_points`, `get_destination_points`, no routes, multiple companies
     - `test_demo_guest_repo.py` (5) — `get_demo_guest_by_uid` found/not found/profit overrides, `list_demo_guests` empty/multiple
-    - `test_get_rates.py` (3) — `get_rates` returns dict, caching, with datetime
+    - `test_get_rates.py` (4) — `get_rates` returns dict, caching, with datetime, API failure fallback
     - `test_setting_cache.py` (3) — `get_setting_cached` cache hit/miss/not_found
+    - `test_fesco_api_client.py` (34) — FESCO API transformations, container search, points, routes, caching
+    - `test_deduplication.py` (2) — route deduplication preserves distinct routes, multiple prices
+    - `test_route_calculation_v3_sse.py` (13) — SSE streaming, demo transforms, error handling
 - **Test DB**: SQLite in-memory (`sqlite+aiosqlite`). Tables created via `Base.metadata.create_all()`, **not** via Alembic migrations (migrations have MySQL-specific code).
 - **Auth mocks**: patch `get_demo_guest_by_uid`, `get_database`, and `request_auth` directly
 - **FESCO API mocks**: use `unittest.mock.patch` on `module_data_fesco_api_adapter.api_client` directly
@@ -392,6 +395,17 @@ module_shared ───┬── backend_auth
 ### Route Calculation — Key Logic
 
 > Подробное описание логики расчёта маршрутов см. в [ROUTES-CALCULATION-LOGIC.md](./ROUTES-CALCULATION-LOGIC.md).
+
+**Feature flags in route calculation (DB-backed settings):**
+
+| Setting group | Setting name | Type | Default | Effect |
+|---------------|-------------|------|---------|--------|
+| `feature-flag` | `hide-sea-soc` | `BOOL` | `false` | When `true`, sea segments with `container_owner == SOC` are excluded from SQL queries (both direct SEA and combined sea+rail) |
+
+- Read in `module_data_internal/aggregators/routes.py` → `find_all_paths()` via `get_setting_cached(session, "feature-flag", "hide-sea-soc")`
+- Affects `build_usual_query(RouteType.SEA, ...)` and `build_base_sea_rail_query(...)`
+- Falls back to `False` if setting not found or Redis/DB unavailable
+- Created via Admin API: `POST /admin/api/db/settings` with `{"group": "feature-flag", "name": "hide-sea-soc", "value_type": "BOOL", "value": "false"}`
 
 ### CLI Tools (`Python/cli/`)
 

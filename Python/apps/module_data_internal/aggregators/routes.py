@@ -10,6 +10,7 @@ from module_data_internal.schemas import (
     RouteType,
     ServicePriceModel,
 )
+from module_shared.cache_settings import get_setting_cached
 from module_shared.database import Base, get_database
 from module_shared.models.route import RouteResult
 from sqlalchemy import and_, desc, or_, select
@@ -89,9 +90,10 @@ def build_base_sea_rail_query(
     start_point_id: int,
     end_point_id: int,
     container_ids: list[int],
+    hide_sea_soc: bool = False,
 ) -> tuple:
     SeaRoute, RailRoute, SeaPrice, RailPrice, SeaServicePrice, RailServicePrice = _create_aliases()
-    where_clause = and_(
+    where_conditions = [
         # Types
         SeaRoute.type == RouteType.SEA,
         RailRoute.type == RouteType.RAIL,
@@ -124,7 +126,9 @@ def build_base_sea_rail_query(
             SeaRoute.dropp_off_point_id.isnot(None),
             DropModel.id.isnot(None),
         ),
-    )
+    ]
+    if hide_sea_soc:
+        where_conditions.append(SeaRoute.container_owner != ContainerOwner.SOC)
 
     drop_join_clause = and_(
         SeaRoute.dropp_off_point_id.is_(None),  # if not, drop is already included!
@@ -142,7 +146,7 @@ def build_base_sea_rail_query(
 
     return (  # noqa: ECE001
         select(SeaRoute, RailRoute, DropModel)
-        .where(where_clause)
+        .where(and_(*where_conditions))
         .join(SeaPrice, SeaRoute.id == SeaPrice.route_id)
         .join(RailRoute, and_(
             SeaRoute.end_point_id == RailRoute.start_point_id,
@@ -235,6 +239,15 @@ async def find_all_paths(
     end_point_id: int,
     container_ids: list[int],
 ) -> list[RouteResult]:
+    hide_sea_soc = False
+    try:
+        async with get_database().session_context() as session:
+            setting = await get_setting_cached(session, "feature-flag", "hide-sea-soc")
+            if setting is not None:
+                hide_sea_soc = bool(setting.value)
+    except Exception:
+        logger.warning("Failed to read hide-sea-soc setting, defaulting to False")
+
     query_rail = build_usual_query(
         RouteType.RAIL,
         date,
@@ -255,6 +268,7 @@ async def find_all_paths(
         start_point_id,
         end_point_id,
         container_ids,
+        hide_sea_soc=hide_sea_soc,
     )
 
     all_queries = [
