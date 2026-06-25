@@ -104,7 +104,7 @@ export default function Settings() {
     const renderValueInput = () => {
         const common = { value: form.value, onChange: (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => setForm({ ...form, value: e.target.value }) };
 
-        switch (form.value_type) {
+        switch (form.value_type.toLowerCase()) {
         case "bool":
             return (
                 <select { ...common }>
@@ -114,7 +114,7 @@ export default function Settings() {
                 </select>
             );
         case "int":
-            return <input type="number" { ...common } />;
+            return <input type="number" step="1" { ...common } />;
         case "float":
             return <input type="number" step="any" { ...common } />;
         case "json":
