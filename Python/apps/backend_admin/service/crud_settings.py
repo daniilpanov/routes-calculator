@@ -64,7 +64,7 @@ class CRUDSetting(CRUDBase):
     async def patch(self, session: AsyncSession, id: int, data: SettingPatch) -> SettingResponse:  # noqa: A002
         model = await self._get_or_404(session, id)
         if data.value is not None:
-            self._validate_value(data.value, model.value_type)
+            self._validate_value(data.value, data.value_type or model.value_type)
         self._apply_patch(model, data)
         await session.flush()
         await session.refresh(model)
