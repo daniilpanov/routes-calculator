@@ -44,9 +44,6 @@ class Settings(BaseSettings):
     REDIS_DB: int = 0
     REDIS_PASSWORD: str | None = None
 
-    # DEMO
-    DEMO_EXCLUDED_FIELDS: set[str] = {"company"}
-
 
 @cache
 def get_settings():

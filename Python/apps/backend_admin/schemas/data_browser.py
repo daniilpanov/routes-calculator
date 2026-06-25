@@ -393,6 +393,7 @@ class SettingResponse(BaseModel):
     description: str | None
     value_type: SettingType
     value: str | None
+    locked: bool = False
 
     @classmethod
     def from_model(cls, model: SettingModel) -> "SettingResponse":
@@ -403,4 +404,5 @@ class SettingResponse(BaseModel):
             description=model.description,
             value_type=model.value_type,
             value=model.value,
+            locked=model.locked,
         )

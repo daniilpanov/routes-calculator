@@ -5,6 +5,7 @@ from fastapi import FastAPI
 
 from fastapi_another_jwt_auth import AuthJWT
 from fastapi_another_jwt_auth.exceptions import AuthJWTException
+from module_shared.cache_settings import ensure_settings
 from module_shared.config import get_settings as get_shared_settings
 from module_shared.database import get_database
 from module_shared.jwt_error_handler import authjwt_exception_handler
@@ -34,6 +35,7 @@ openapi_url = "/openapi.json" if settings.ENVIRONMENT != "prod" else None
 async def lifespan(_: FastAPI):
     await get_database().init()
     await get_redis_client().init()
+    await ensure_settings()
     yield
     await get_database().close()
     await get_redis_client().close()
