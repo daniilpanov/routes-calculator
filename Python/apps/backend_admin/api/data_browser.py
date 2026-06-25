@@ -498,8 +498,11 @@ async def update_setting(
     background_tasks: BackgroundTasks,
 ):
     async with db.session_context() as session:
+        old = await crud_settings.get(session, setting_id)
         result = await crud_settings.update(session, setting_id, payload)
     background_tasks.add_task(set_settings_cache, SettingItem(**result.model_dump()))
+    if old.group != result.group or old.name != result.name:
+        background_tasks.add_task(delete_settings_cache, old.group, old.name)
     return result
 
 
@@ -512,8 +515,11 @@ async def patch_setting(
     background_tasks: BackgroundTasks,
 ):
     async with db.session_context() as session:
+        old = await crud_settings.get(session, setting_id)
         result = await crud_settings.patch(session, setting_id, payload)
     background_tasks.add_task(set_settings_cache, SettingItem(**result.model_dump()))
+    if old.group != result.group or old.name != result.name:
+        background_tasks.add_task(delete_settings_cache, old.group, old.name)
     return result
 
 
