@@ -1,13 +1,11 @@
 <script setup lang="ts">
-withDefaults(defineProps<{
+defineProps<{
     text?: string;
-}>(), {
-    text: "████████",
-});
+}>();
 </script>
 
 <template>
-    <span class="blurred-text" aria-hidden="true">{{ text }}</span>
+    <span class="blurred-text" aria-hidden="true">{{ text || "████████" }}</span>
 </template>
 
 <style scoped>
