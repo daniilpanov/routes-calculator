@@ -1,5 +1,5 @@
 import datetime
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 from fastapi.sse import ServerSentEvent
 
@@ -169,7 +169,13 @@ class TestSSEGenerator:
             assert events[0].id == "6"
 
     @pytest.mark.asyncio
-    async def test_sse_demo_transforms_strips_company(self):
+    @patch("backend_user.api.v3.routes.post.get_setting_cached", new_callable=AsyncMock)
+    @patch("backend_user.api.v3.routes.post.get_database")
+    async def test_sse_demo_transforms_strips_company(self, mock_db, mock_get_setting):
+        mock_get_setting.return_value = Mock(value=["company"])
+        mock_session = AsyncMock()
+        mock_db.return_value.session_context.return_value.__aenter__ = AsyncMock(return_value=mock_session)
+        mock_db.return_value.session_context.return_value.__aexit__ = AsyncMock(return_value=False)
         route = _make_full_route(company="CompanyA")
         auth = AuthContext(is_demo=True)
 
@@ -205,26 +211,32 @@ class TestSSEGenerator:
             assert events[0].data.segments[0].company == "CompanyA"
 
     @pytest.mark.asyncio
-    async def test_sse_demo_transforms_with_profit(self):
+    @patch("backend_user.api.v3.routes.post.get_setting_cached", new_callable=AsyncMock)
+    @patch("backend_user.api.v3.routes.post.get_database")
+    @patch("backend_user.services.profit.get_rates", new_callable=AsyncMock)
+    async def test_sse_demo_transforms_with_profit(self, mock_rates, mock_db, mock_get_setting):
+        mock_get_setting.return_value = Mock(value=["company"])
+        mock_rates.return_value = ({"RUB": 1, "USD": 90, "EUR": 100}, datetime.date.today())
+        mock_session = AsyncMock()
+        mock_db.return_value.session_context.return_value.__aenter__ = AsyncMock(return_value=mock_session)
+        mock_db.return_value.session_context.return_value.__aexit__ = AsyncMock(return_value=False)
         route = _make_full_route(company="CompanyA", type="sea")
         auth = AuthContext(is_demo=True, sea_profit=100.0, sea_profit_currency="USD")
 
-        mock_rates = ({"RUB": 1, "USD": 90, "EUR": 100}, datetime.date.today())
         with patch("backend_user.api.v3.routes.post.calculate_routes_stream") as mock_stream:
-            with patch("backend_user.services.profit.get_rates", return_value=mock_rates):
-                async def mock_gen(request):
-                    yield route
+            async def mock_gen(request):
+                yield route
 
-                mock_stream.side_effect = mock_gen
+            mock_stream.side_effect = mock_gen
 
-                request = _make_request()
-                events: list[ServerSentEvent] = []
-                async for event in _sse_generator(request, auth):
-                    events.append(event)
+            request = _make_request()
+            events: list[ServerSentEvent] = []
+            async for event in _sse_generator(request, auth):
+                events.append(event)
 
-            assert events[0].data.segments[0].company is None
-            price = events[0].data.segments[0].prices[0]
-            assert price.value == 1100.0
+        assert events[0].data.segments[0].company is None
+        price = events[0].data.segments[0].prices[0]
+        assert price.value == 1100.0
 
     @pytest.mark.asyncio
     async def test_sse_empty_results(self):

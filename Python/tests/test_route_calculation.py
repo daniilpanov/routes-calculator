@@ -332,7 +332,13 @@ async def test_container_fetch_fails_gracefully():
 
 
 @pytest.mark.asyncio
-async def test_apply_demo_transforms_strips_company():
+@patch("backend_user.api.v2.routes.post.get_setting_cached", new_callable=AsyncMock)
+@patch("backend_user.api.v2.routes.post.get_database")
+async def test_apply_demo_transforms_strips_company(mock_db, mock_get_setting):
+    mock_get_setting.return_value = Mock(value=["company"])
+    mock_session = AsyncMock()
+    mock_db.return_value.session_context.return_value.__aenter__ = AsyncMock(return_value=mock_session)
+    mock_db.return_value.session_context.return_value.__aexit__ = AsyncMock(return_value=False)
     seg = _make_segment(company="CompanyA")
     route = RouteResult(segments=[seg])
     formatted = _normalize_routes([route])
@@ -354,29 +360,39 @@ async def test_apply_demo_transforms_does_not_strip_for_non_demo():
 
 
 @pytest.mark.asyncio
-async def test_apply_demo_transforms_with_profit():
+@patch("backend_user.api.v2.routes.post.get_setting_cached", new_callable=AsyncMock)
+@patch("backend_user.api.v2.routes.post.get_database")
+@patch("backend_user.services.profit.get_rates", new_callable=AsyncMock)
+async def test_apply_demo_transforms_with_profit(mock_rates, mock_db, mock_get_setting):
+    mock_get_setting.return_value = Mock(value=["company"])
+    mock_session = AsyncMock()
+    mock_db.return_value.session_context.return_value.__aenter__ = AsyncMock(return_value=mock_session)
+    mock_db.return_value.session_context.return_value.__aexit__ = AsyncMock(return_value=False)
+    mock_rates.return_value = ({"RUB": 1, "USD": 90, "EUR": 100}, datetime.date.today())
     seg = _make_segment(company="CompanyA", type="sea")
     route = RouteResult(segments=[seg])
     formatted = _normalize_routes([route])
     auth = AuthContext(is_demo=True, sea_profit=100.0, sea_profit_currency="USD")
-
-    mock_rates = ({"RUB": 1, "USD": 90, "EUR": 100}, datetime.date.today())
-    with patch("backend_user.services.profit.get_rates", return_value=mock_rates):
-        await _apply_demo_transforms(formatted, auth)
+    await _apply_demo_transforms(formatted, auth)
 
     assert formatted[0][0][0].company is None
 
 
 @pytest.mark.asyncio
-async def test_apply_demo_transforms_with_profit_and_rail():
+@patch("backend_user.api.v2.routes.post.get_setting_cached", new_callable=AsyncMock)
+@patch("backend_user.api.v2.routes.post.get_database")
+@patch("backend_user.services.profit.get_rates", new_callable=AsyncMock)
+async def test_apply_demo_transforms_with_profit_and_rail(mock_rates, mock_db, mock_get_setting):
+    mock_get_setting.return_value = Mock(value=["company"])
+    mock_session = AsyncMock()
+    mock_db.return_value.session_context.return_value.__aenter__ = AsyncMock(return_value=mock_session)
+    mock_db.return_value.session_context.return_value.__aexit__ = AsyncMock(return_value=False)
+    mock_rates.return_value = ({"RUB": 1, "USD": 90, "EUR": 100}, datetime.date.today())
     seg = _make_segment(company="CompanyA", type="rail")
     route = RouteResult(segments=[seg])
     formatted = _normalize_routes([route])
     auth = AuthContext(is_demo=True, rail_profit=50.0, rail_profit_currency="USD")
-
-    mock_rates = ({"RUB": 1, "USD": 90, "EUR": 100}, datetime.date.today())
-    with patch("backend_user.services.profit.get_rates", return_value=mock_rates):
-        await _apply_demo_transforms(formatted, auth)
+    await _apply_demo_transforms(formatted, auth)
 
     assert formatted[0][0][0].company is None
 

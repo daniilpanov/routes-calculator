@@ -18,17 +18,17 @@ from module_data_fesco_api_adapter.api_client.transformers.points import (
 from module_data_internal import aggregators
 from module_data_internal.aggregators.transformers.points import transform_points as map_custom
 from module_data_internal.schemas import CompanyModel, PointModel
-from module_shared.config import get_settings as get_shared_settings
+from module_shared.cache_settings import get_setting_cached
+from module_shared.database import get_database
 
 router = APIRouter(prefix="/v2/points", tags=["v2", "points"])
 
 
-def _strip_demo_fields_from_points(data: list, auth: AuthContext) -> None:
+def _strip_demo_fields_from_points(data: list, auth: AuthContext, excluded_fields: list[str] | None = None) -> None:
     if not auth.is_demo:
         return
 
-    excluded = get_shared_settings().DEMO_EXCLUDED_FIELDS
-    if "company" not in excluded:
+    if excluded_fields is None or "company" not in excluded_fields:
         return
 
     for point in data:
@@ -77,7 +77,10 @@ async def all_departure_by_date(date: datetime.date, auth: Annotated[AuthContext
         data.extend(map_custom(custom_points))
 
     result = group_transfers(group_companies([raw_point_from_dict(point) for point in data], {"FESCO"}), {"FESCO"})
-    _strip_demo_fields_from_points(result, auth)
+    async with get_database().session_context() as session:
+        setting = await get_setting_cached(session, "feature-flag", "demo-excluded-fields")
+        excluded_fields = setting.value if setting and isinstance(setting.value, list) else []
+    _strip_demo_fields_from_points(result, auth, excluded_fields)
 
     return {
         "errors": errors,
@@ -125,7 +128,10 @@ async def all_destination_by_date(
             data.extend(map_fesco(fesco_points))
 
     result = group_transfers(group_companies([raw_point_from_dict(point) for point in data], {"FESCO"}), {"FESCO"})
-    _strip_demo_fields_from_points(result, auth)
+    async with get_database().session_context() as session:
+        setting = await get_setting_cached(session, "feature-flag", "demo-excluded-fields")
+        excluded_fields = setting.value if setting and isinstance(setting.value, list) else []
+    _strip_demo_fields_from_points(result, auth, excluded_fields)
 
     return {
         "errors": errors,

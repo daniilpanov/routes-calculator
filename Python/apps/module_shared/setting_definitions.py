@@ -21,6 +21,13 @@ SETTING_DEFINITIONS: list[SettingDefinition] = [
         default="false",
         description="Hide sea SOC segments from combined sea+rail route calculation",
     ),
+    SettingDefinition(
+        group="feature-flag",
+        name="demo-excluded-fields",
+        value_type=SettingType.JSON,
+        default='["company"]',
+        description="List of fields to blur for demo users",
+    ),
 ]
 
 

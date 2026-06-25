@@ -10,14 +10,14 @@ class TestStripDemoFields:
         seg1 = _make_segment(company="CompanyA")
         seg2 = _make_segment(company="CompanyB", id=2)
         routes = [([seg1, seg2], None, False, [])]
-        _strip_demo_fields(routes)
+        _strip_demo_fields(routes, ["company"])
         assert seg1.company is None
         assert seg2.company is None
 
     def test_preserves_other_fields(self):
         seg = _make_segment(company="CompanyA")
         routes = [([seg], None, False, [])]
-        _strip_demo_fields(routes)
+        _strip_demo_fields(routes, ["company"])
         assert seg.company is None
         assert seg.id == 1
         assert seg.type == "RAIL"
@@ -29,7 +29,7 @@ class TestStripDemoFields:
             ([seg1], None, False, []),
             ([seg2], None, False, []),
         ]
-        _strip_demo_fields(routes)
+        _strip_demo_fields(routes, ["company"])
         assert seg1.company is None
         assert seg2.company is None
 

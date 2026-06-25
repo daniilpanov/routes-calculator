@@ -7,6 +7,8 @@ from backend_user.schemas.form_requests import CalculateFormRequest
 from backend_user.schemas.routes import NormalizedRoutes, RoutesDataResponse
 from backend_user.services.profit import apply_demo_profit_to_routes
 from backend_user.services.route_calculation import _strip_demo_fields, calculate_routes
+from module_shared.cache_settings import get_setting_cached
+from module_shared.database import get_database
 from module_shared.models.route import RouteResult
 
 router = APIRouter(prefix="/v2/routes", tags=["v2", "routes"])
@@ -29,7 +31,10 @@ async def _apply_demo_transforms(routes: NormalizedRoutes, auth: AuthContext) ->
             auth.rail_profit_currency,
         )
 
-    _strip_demo_fields(routes)
+    async with get_database().session_context() as session:
+        setting = await get_setting_cached(session, "feature-flag", "demo-excluded-fields")
+        excluded_fields = setting.value if setting and isinstance(setting.value, list) else []
+    _strip_demo_fields(routes, excluded_fields)
 
 
 @router.post("/calculate", response_model=RoutesDataResponse)

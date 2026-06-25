@@ -8,14 +8,14 @@ from backend_user.schemas.form_requests import CalculateFormRequest
 from backend_user.schemas.routes import NormalizedRoutes
 from module_data_fesco_api_adapter import api_client
 from module_data_internal import aggregators
-from module_shared.config import get_settings as get_shared_settings
 from module_shared.models.route import RouteResult
 
 logger = logging.getLogger(__name__)
 
 
-def _strip_demo_fields(routes: NormalizedRoutes) -> None:
-    excluded_fields = get_shared_settings().DEMO_EXCLUDED_FIELDS
+def _strip_demo_fields(routes: NormalizedRoutes, excluded_fields: Iterable[str] | None = None) -> None:
+    if excluded_fields is None:
+        return
 
     for route in routes:
         segments = route[0]
