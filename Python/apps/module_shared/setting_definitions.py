@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from module_shared.schemas.setting import SettingType
 
@@ -10,6 +10,7 @@ class SettingDefinition:
     value_type: SettingType
     default: str
     description: str
+    locked: bool = field(default=True, kw_only=True)
 
 
 SETTING_DEFINITIONS: list[SettingDefinition] = [

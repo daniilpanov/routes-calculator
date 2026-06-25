@@ -5,6 +5,7 @@ export interface ISetting {
     description: string | null;
     value_type: string;
     value: string | null;
+    locked: boolean;
 }
 
 export interface ISettingPayload {

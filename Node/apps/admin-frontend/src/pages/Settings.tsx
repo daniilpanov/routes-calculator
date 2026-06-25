@@ -101,6 +101,9 @@ export default function Settings() {
         void loadSettings();
     };
 
+    const editingSetting = editingId ? settings.find(s => s.id === editingId) : null;
+    const isLockedEditing = editingSetting?.locked ?? false;
+
     const renderValueInput = () => {
         const common = { value: form.value, onChange: (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => setForm({ ...form, value: e.target.value }) };
 
@@ -142,11 +145,11 @@ export default function Settings() {
             <form onSubmit={ handleSubmit } className="button-group">
                 <label>
                     Group
-                    <input value={ form.group } onChange={ e => setForm({ ...form, group: e.target.value }) } placeholder="general" />
+                    <input value={ form.group } onChange={ e => setForm({ ...form, group: e.target.value }) } placeholder="general" disabled={ isLockedEditing } />
                 </label>
                 <label>
                     Name
-                    <input value={ form.name } onChange={ e => setForm({ ...form, name: e.target.value }) } placeholder="setting_name" />
+                    <input value={ form.name } onChange={ e => setForm({ ...form, name: e.target.value }) } placeholder="setting_name" disabled={ isLockedEditing } />
                 </label>
                 <label>
                     Description
@@ -154,7 +157,7 @@ export default function Settings() {
                 </label>
                 <label>
                     Type
-                    <select value={ form.value_type } onChange={ e => setForm({ ...form, value_type: e.target.value }) }>
+                    <select value={ form.value_type } onChange={ e => setForm({ ...form, value_type: e.target.value }) } disabled={ isLockedEditing }>
                         { VALUE_TYPES.map(t => <option key={ t } value={ t }>{ t }</option>) }
                     </select>
                 </label>
@@ -175,6 +178,7 @@ export default function Settings() {
                         <th>Description</th>
                         <th>Type</th>
                         <th>Value</th>
+                        <th>Locked</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -187,9 +191,10 @@ export default function Settings() {
                             <td>{ setting.description }</td>
                             <td>{ setting.value_type }</td>
                             <td style={ { maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }>{ setting.value }</td>
+                            <td>{ setting.locked ? "🔒" : "" }</td>
                             <td>
                                 <button type="button" onClick={ () => handleEdit(setting) }>Изменить</button>
-                                <button type="button" onClick={ () => void handleDelete(setting) }>Удалить</button>
+                                {!setting.locked && <button type="button" onClick={ () => void handleDelete(setting) }>Удалить</button>}
                             </td>
                         </tr>
                     ))}

@@ -40,6 +40,7 @@ class SettingItem(BaseModel):
     name: str
     value_type: SettingType
     value: bool | int | float | str | dict | list | None = None
+    locked: bool = False
 
     @field_validator("value", mode="before")
     @classmethod
@@ -53,4 +54,5 @@ class SettingItem(BaseModel):
             name=model.name,
             value_type=model.value_type,
             value=model.value,
+            locked=model.locked,
         )
