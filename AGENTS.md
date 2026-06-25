@@ -62,13 +62,14 @@ Python/
 │   ├── module_shared/
 │   │   ├── models/
 │   │   │   ├── route.py          # Pydantic route models
-│   │   │   ├── setting.py        # Pydantic SettingItem with _parse_value validator (converts str → bool|int|float|dict|list via value_type)
+│   │   │   ├── setting.py        # Pydantic SettingItem with _parse_value validator (converts str → bool|int|float|dict|list via value_type) and locked field
 │   │   │   └── errors.py         # RouteError model
 │   │   ├── schemas/
 │   │   │   ├── __init__.py       # re-exports Base, DemoGuestModel, SettingModel
 │   │   │   ├── demo_guest.py     # DemoGuest ORM model
-│   │   │   └── setting.py        # SettingModel ORM model (id, group, name, desc, value_type, value)
-│   │   ├── cache_settings.py  # Settings Redis cache (cache-aside, TTL 12h)
+│   │   │   └── setting.py        # SettingModel ORM model (id, group, name, desc, value_type, value, locked)
+│   │   ├── cache_settings.py  # Settings Redis cache (cache-aside, TTL 12h) + ensure_settings
+│   │   ├── setting_definitions.py  # Setting definition registry (SettingDefinition dataclass)
 │   │   └── repositories/
 │   │       ├── demo_guest.py     # get/list demo guests
 │   │       └── setting.py        # get_setting, list_settings
@@ -154,8 +155,8 @@ The `test-runner` stage copies `apps/` to `/app/apps/`, `tests/` to `/app/tests/
 - `get_departure_points_by_date`, `get_destination_points_by_date` — cached via `get_fesco_points_cached`
 - `get_containers(date, dep, dest)` — cached container lists
 - `find_all_paths(date, dep, dest, wte_ids)` — cached route results
-Backend code simply calls `api_client.*` as before — caching is handled transparently.
-Low-level cache-aside logic is in `module_data_fesco_api_adapter/cache.py` (`get_fesco_points_cached`, `_set_json_async`).
+  Backend code simply calls `api_client.*` as before — caching is handled transparently.
+  Low-level cache-aside logic is in `module_data_fesco_api_adapter/cache.py` (`get_fesco_points_cached`, `_set_json_async`).
 
 **Cache key scheme:**
 
@@ -366,7 +367,8 @@ module_shared ───┬── backend_auth
 **`module_shared/models/setting.py`** — Setting entities (Pydantic V2 `BaseModel`):
 - `SettingItem(id, group, name, description?, value_type, value)` — unified settings model
 - `value: bool | int | float | str | dict | list | None` — auto-converted from DB string via `_parse_value` validator (`mode="before"`):
-  - `INT` → `int(v)`, `FLOAT` → `float(v)`, `BOOL` → `v.lower() in ("true", "1")`, `JSON` → `json.loads(v)`
+    - `INT` → `int(v)`, `FLOAT` → `float(v)`, `BOOL` → `v.lower() in ("true", "1")`, `JSON` → `json.loads(v)`
+- `locked: bool = False` — prevents rename, type change, and deletion (CRUD enforcement)
 - `from_model(model: SettingModel) -> SettingItem` — factory from ORM model
 - `parse_setting_value(value, value_type)` — standalone function used by both `_parse_value` and admin CRUD validation
 
@@ -380,8 +382,8 @@ module_shared ───┬── backend_auth
 - Models in `module_shared/models/route.py` are Pydantic V2 `BaseModel` (not dataclasses) — they serve as both domain objects and response schemas
 - `calculate_routes()` returns `tuple[list[RouteResult], list[RouteError]]` (raw Pydantic models + errors)
 - V2 handler (`api/v2/routes/post.py`) owns: `_route_result_to_tuple`, `_normalize_routes`, `_apply_demo_transforms`
-  - `_seg_to_price_dict` was removed — models are returned as-is (no OnePrice flattening to `price`/`currency`/`container`/`beginCond`/`finishCond` flat fields)
-  - Response format: `[segments: list[RouteSegment], drop: DropItem | None, bool, services: list[ServiceItem]]` — tuple with raw model objects
+    - `_seg_to_price_dict` was removed — models are returned as-is (no OnePrice flattening to `price`/`currency`/`container`/`beginCond`/`finishCond` flat fields)
+    - Response format: `[segments: list[RouteSegment], drop: DropItem | None, bool, services: list[ServiceItem]]` — tuple with raw model objects
 - V1 handler (`api/v1/routes/post.py`) has its own copies of these functions (legacy, separate format)
 - `_strip_demo_fields` stays in `services/route_calculation.py` (data manipulation, not format conversion)
 - No duplicate Pydantic response models — `backend_user/schemas/routes_responses.py` imports `RouteSegment`, `DropItem`, `ServiceItem` from `module_shared.models.route`
@@ -472,6 +474,7 @@ All output is JSON by default (for AI/script parsing).
 - `_validate_value()` static method wraps it, raising `HTTPException(422)` on parse failure
 - `_build_instance` / `_apply_update` validate against `data.value_type` (known from request)
 - For PATCH: `patch()` method is overridden — gets the model from DB first, validates `data.value` against the **model's existing** `value_type`, then calls `_apply_patch` (which does no value validation)
+- **Locked settings** (`model.locked`): PUT, DELETE, PATCH on group/name/type are blocked with `HTTP_403_FORBIDDEN`; only `value` is editable for locked settings
 
 ---
 
