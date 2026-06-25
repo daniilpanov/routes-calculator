@@ -5,6 +5,7 @@ import Dashboard from "@/pages/Dashboard";
 import DataImport from "@/pages/DataImport";
 import DemoGuests from "@/pages/DemoGuests";
 import RequireAuth from "@/providers/RequireAuth";
+import Settings from "@/pages/Settings";
 import EmptyLayout from "@/layouts/EmptyLayout";
 import Login from "@/pages/Login";
 
@@ -23,6 +24,7 @@ export const routesConfig = [
             { path: ROUTES.DASHBOARD, element: <Dashboard /> },
             { path: ROUTES.DATA_IMPORT, element: <DataImport /> },
             { path: ROUTES.DEMO_GUESTS, element: <DemoGuests /> },
+            { path: ROUTES.SETTINGS, element: <Settings /> },
         ],
     },
 ];

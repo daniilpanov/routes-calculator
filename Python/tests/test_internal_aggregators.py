@@ -7,6 +7,8 @@ from module_data_internal.aggregators.routes import find_all_paths, process_resu
 from module_data_internal.schemas import ContainerOwner, ContainerType, RouteType
 from module_shared.database import Database
 from module_shared.models.route import ContainerItem
+from module_shared.models.setting import SettingItem
+from module_shared.schemas.setting import SettingType
 
 from .data import (
     CompanyFactory,
@@ -700,6 +702,202 @@ async def test_find_all_paths_sea_rail_no_drop_filtered_out(sqlite_db: Database)
         await session.commit()
 
     with patch("module_data_internal.aggregators.routes.get_database", return_value=sqlite_db):
+        result = await find_all_paths(
+            date=datetime.date(2024, 6, 15),
+            start_point_id=point_a.id,
+            end_point_id=point_b.id,
+            container_ids=[container.id],
+        )
+
+    routes = list(result)
+    sea_rail_routes = [r for r in routes if len(r.segments) == 2]
+    assert len(sea_rail_routes) == 0
+
+
+@pytest.mark.asyncio
+async def test_find_all_paths_sea_soc_shown_when_flag_off(sqlite_db: Database):
+    async with sqlite_db.session_context() as session:
+        company, point_a, point_b, container = await _seed_basic_data(session)
+
+        drop_point = PointFactory(**_unique_point())
+        session.add(drop_point)
+        await session.flush()
+
+        sea_soc_route = RouteFactory(
+            company_id=company.id,
+            start_point_id=point_a.id,
+            end_point_id=drop_point.id,
+            type=RouteType.SEA,
+            container_owner=ContainerOwner.SOC,
+            is_through=False,
+        )
+        sea_coc_route = RouteFactory(
+            company_id=company.id,
+            start_point_id=point_a.id,
+            end_point_id=drop_point.id,
+            type=RouteType.SEA,
+            container_owner=ContainerOwner.COC,
+            is_through=False,
+        )
+        rail_route = RouteFactory(
+            company_id=company.id,
+            start_point_id=drop_point.id,
+            end_point_id=point_b.id,
+            type=RouteType.RAIL,
+            container_owner=ContainerOwner.COC,
+            is_through=False,
+        )
+        session.add_all([sea_soc_route, sea_coc_route, rail_route])
+        await session.flush()
+
+        price_sea_soc = PriceFactory(route_id=sea_soc_route.id, container_id=container.id)
+        price_sea_coc = PriceFactory(route_id=sea_coc_route.id, container_id=container.id)
+        price_rail = PriceFactory(route_id=rail_route.id, container_id=container.id)
+        session.add_all([price_sea_soc, price_sea_coc, price_rail])
+        await session.flush()
+
+        drop = DropFactory(
+            company_id=company.id,
+            container_id=container.id,
+            start_point_id=drop_point.id,
+            end_point_id=point_b.id,
+        )
+        session.add(drop)
+        await session.commit()
+
+    setting = SettingItem(
+        group="feature-flag", name="hide-sea-soc",
+        value_type=SettingType.BOOL, value=False,
+    )
+
+    with (
+        patch("module_data_internal.aggregators.routes.get_database", return_value=sqlite_db),
+        patch("module_data_internal.aggregators.routes.get_setting_cached", return_value=setting),
+    ):
+        result = await find_all_paths(
+            date=datetime.date(2024, 6, 15),
+            start_point_id=point_a.id,
+            end_point_id=point_b.id,
+            container_ids=[container.id],
+        )
+
+    routes = list(result)
+    sea_rail_routes = [r for r in routes if len(r.segments) == 2]
+    assert len(sea_rail_routes) == 2
+    sea_owners = {r.segments[0].container_owner for r in sea_rail_routes}
+    assert sea_owners == {"SOC", "COC"}
+
+
+@pytest.mark.asyncio
+async def test_find_all_paths_sea_soc_default_when_setting_missing(sqlite_db: Database):
+    async with sqlite_db.session_context() as session:
+        company, point_a, point_b, container = await _seed_basic_data(session)
+
+        drop_point = PointFactory(**_unique_point())
+        session.add(drop_point)
+        await session.flush()
+
+        sea_soc_route = RouteFactory(
+            company_id=company.id,
+            start_point_id=point_a.id,
+            end_point_id=drop_point.id,
+            type=RouteType.SEA,
+            container_owner=ContainerOwner.SOC,
+            is_through=False,
+        )
+        rail_route = RouteFactory(
+            company_id=company.id,
+            start_point_id=drop_point.id,
+            end_point_id=point_b.id,
+            type=RouteType.RAIL,
+            container_owner=ContainerOwner.COC,
+            is_through=False,
+        )
+        session.add_all([sea_soc_route, rail_route])
+        await session.flush()
+
+        price_sea = PriceFactory(route_id=sea_soc_route.id, container_id=container.id)
+        price_rail = PriceFactory(route_id=rail_route.id, container_id=container.id)
+        session.add_all([price_sea, price_rail])
+        await session.flush()
+
+        drop = DropFactory(
+            company_id=company.id,
+            container_id=container.id,
+            start_point_id=drop_point.id,
+            end_point_id=point_b.id,
+        )
+        session.add(drop)
+        await session.commit()
+
+    with (
+        patch("module_data_internal.aggregators.routes.get_database", return_value=sqlite_db),
+        patch("module_data_internal.aggregators.routes.get_setting_cached", return_value=None),
+    ):
+        result = await find_all_paths(
+            date=datetime.date(2024, 6, 15),
+            start_point_id=point_a.id,
+            end_point_id=point_b.id,
+            container_ids=[container.id],
+        )
+
+    routes = list(result)
+    sea_rail_routes = [r for r in routes if len(r.segments) == 2]
+    assert len(sea_rail_routes) == 1
+    assert sea_rail_routes[0].segments[0].container_owner == "SOC"
+
+
+@pytest.mark.asyncio
+async def test_find_all_paths_sea_soc_hidden_by_flag(sqlite_db: Database):
+    async with sqlite_db.session_context() as session:
+        company, point_a, point_b, container = await _seed_basic_data(session)
+
+        drop_point = PointFactory(**_unique_point())
+        session.add(drop_point)
+        await session.flush()
+
+        sea_soc_route = RouteFactory(
+            company_id=company.id,
+            start_point_id=point_a.id,
+            end_point_id=drop_point.id,
+            type=RouteType.SEA,
+            container_owner=ContainerOwner.SOC,
+            is_through=False,
+        )
+        rail_route = RouteFactory(
+            company_id=company.id,
+            start_point_id=drop_point.id,
+            end_point_id=point_b.id,
+            type=RouteType.RAIL,
+            container_owner=ContainerOwner.SOC,
+            is_through=False,
+        )
+        session.add_all([sea_soc_route, rail_route])
+        await session.flush()
+
+        price_sea = PriceFactory(route_id=sea_soc_route.id, container_id=container.id)
+        price_rail = PriceFactory(route_id=rail_route.id, container_id=container.id)
+        session.add_all([price_sea, price_rail])
+        await session.flush()
+
+        drop = DropFactory(
+            company_id=company.id,
+            container_id=container.id,
+            start_point_id=drop_point.id,
+            end_point_id=point_b.id,
+        )
+        session.add(drop)
+        await session.commit()
+
+    setting = SettingItem(
+        group="feature-flag", name="hide-sea-soc",
+        value_type=SettingType.BOOL, value=True,
+    )
+
+    with (
+        patch("module_data_internal.aggregators.routes.get_database", return_value=sqlite_db),
+        patch("module_data_internal.aggregators.routes.get_setting_cached", return_value=setting),
+    ):
         result = await find_all_paths(
             date=datetime.date(2024, 6, 15),
             start_point_id=point_a.id,
