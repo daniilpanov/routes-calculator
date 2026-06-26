@@ -4,7 +4,7 @@ import json
 from collections.abc import Iterable
 
 import aiohttp
-from backend_user.config import get_settings
+from module_shared.config import get_settings
 from module_shared.models.route import RouteResult
 
 from ..cache import get_fesco_routes_cached

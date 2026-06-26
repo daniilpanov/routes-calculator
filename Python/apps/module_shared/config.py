@@ -44,6 +44,9 @@ class Settings(BaseSettings):
     REDIS_DB: int = 0
     REDIS_PASSWORD: str | None = None
 
+    # FESCO API
+    FESCO_API_KEY: str
+
 
 @cache
 def get_settings():
