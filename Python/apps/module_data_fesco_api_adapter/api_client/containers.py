@@ -4,7 +4,7 @@ import json
 import logging
 
 import aiohttp
-from backend_user.config import get_settings
+from module_shared.config import get_settings
 from module_shared.models.route import ContainerItem
 from module_shared.redis_client import get_redis
 
