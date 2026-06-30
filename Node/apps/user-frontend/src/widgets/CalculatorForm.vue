@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { IPoint, IdIsExternal } from "@/interfaces/Point";
+import type { IPoint, IPointIds, IdIsExternal } from "@/interfaces/Point";
 import PointsSelect from "@/widgets/PointsSelect.vue";
 
 import { getDepartures, getDestinations } from "@/api_helpers/points";
@@ -37,29 +37,27 @@ function submit(e: Event) {
     emit("calculate");
 }
 
+function idMatches(entity: IPointIds, selectedId: IdIsExternal): boolean {
+    return entity.ids.includes(Number(selectedId.id)) || entity.external_ids.includes(String(selectedId.id));
+}
+
 function setSelectedPoints(
-    points: typeof departurePoints | typeof destinationPoints,
-    idsModel: typeof departureIdsModel | typeof destinationIdsModel,
-) {
-    if (!idsModel.value?.length)
-        return;
+    points: IPoint[],
+    ids: IdIsExternal[],
+): IdIsExternal[] | undefined {
+    if (!ids.length)
+        return undefined;
 
     let pointFound: IPoint | undefined;
-    for (const selectedId of idsModel.value) {
-        for (const point of points.value) {
-            if (
-                !selectedId.isExternal && point.ids.includes(selectedId.id as number) ||
-                selectedId.isExternal && point.external_ids.includes(selectedId.id as string)
-            ) {
+    for (const selectedId of ids) {
+        for (const point of points) {
+            if (idMatches(point, selectedId)) {
                 pointFound = point;
                 break;
             }
 
             for (const port of point.ports) {
-                if (
-                    !selectedId.isExternal && port.ids.includes(selectedId.id as number) ||
-                    selectedId.isExternal && port.external_ids.includes(selectedId.id as string)
-                ) {
+                if (idMatches(port, selectedId)) {
                     pointFound = point;
                     break;
                 }
@@ -69,12 +67,10 @@ function setSelectedPoints(
         if (pointFound) break;
     }
 
-    if (!pointFound) {
-        idsModel.value = undefined;
-        return;
-    }
+    if (!pointFound)
+        return undefined;
 
-    let allIds = [
+    let allIds: IdIsExternal[] = [
         ...pointFound.ids.map(id => ({ id, isExternal: false })),
         ...pointFound.external_ids.map(id => ({ id, isExternal: true })),
     ];
@@ -86,7 +82,7 @@ function setSelectedPoints(
             ...port.external_ids.map(id => ({ id, isExternal: true })),
         ];
 
-    idsModel.value = allIds.length ? allIds : undefined;
+    return allIds.length ? allIds : undefined;
 }
 
 const isDateValid = () => (dateModel.value && !isNaN(new Date(dateModel.value).getDay()));
@@ -121,8 +117,8 @@ watch(dateModel, async () => {
 
         // 2. Try to restore departure
         if (prevDepartureIds) {
-            departureIdsModel.value = prevDepartureIds;
-            setSelectedPoints(departurePoints, departureIdsModel);
+            const depFound = setSelectedPoints(depData, prevDepartureIds);
+            departureIdsModel.value = depFound ?? undefined;
         }
 
         // 3. Fetch destinations if departure is selected
@@ -139,8 +135,8 @@ watch(dateModel, async () => {
 
             // 4. Try to restore destination
             if (prevDestinationIds) {
-                destinationIdsModel.value = prevDestinationIds;
-                setSelectedPoints(destinationPoints, destinationIdsModel);
+                const destFound = setSelectedPoints(destData, prevDestinationIds);
+                destinationIdsModel.value = destFound ?? undefined;
             }
         } else {
             destinationPoints.value = [];
@@ -193,20 +189,22 @@ onMounted(async () => {
     departureInputDisabledModel.value = false;
 
     // Restore selected departure if it is in URL
-    if (initialDepartureIds && departurePoints.value.length)
-        setSelectedPoints(departurePoints, departureIdsModel);
-    else departureIdsModel.value = undefined;
+    if (initialDepartureIds && departurePoints.value.length) {
+        const depFound = setSelectedPoints(departurePoints.value, initialDepartureIds);
+        departureIdsModel.value = depFound ?? undefined;
+    } else departureIdsModel.value = undefined;
 
     // Load destinations if a departure is selected
     if (departureIdsModel.value) {
         const destResponse = await getDestinations(dateModel.value!, departureIdsModel.value);
-        destinationPoints.value = destResponse.data;
+        const { data: destData } = destResponse;
+        destinationPoints.value = destData;
         destinationInputDisabledModel.value = false;
 
         // Restore selected destination if it is in URL
-        if (initialDestinationIds && destinationPoints.value.length) {
-            destinationIdsModel.value = initialDestinationIds;
-            setSelectedPoints(destinationPoints, destinationIdsModel);
+        if (initialDestinationIds && destData.length) {
+            const destFound = setSelectedPoints(destData, initialDestinationIds);
+            destinationIdsModel.value = destFound ?? undefined;
         } else destinationIdsModel.value = undefined;
     } else {
         destinationPoints.value = [];
