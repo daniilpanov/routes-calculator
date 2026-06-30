@@ -28,6 +28,7 @@ const destinationPoints = ref<IPoint[]>([]);
 const calcForm = ref<HTMLFormElement>();
 
 const isInitialLoad = ref(true);
+const isDateChanging = ref(false);
 
 function submit(e: Event) {
     if (!calcForm.value!.checkValidity()) return;
@@ -90,70 +91,88 @@ function setSelectedPoints(
 
 const isDateValid = () => (dateModel.value && !isNaN(new Date(dateModel.value).getDay()));
 
-// Update departures on 'dateModel' changing
+// Update departures on 'dateModel' changing — save/restore selections
 watch(dateModel, async () => {
     if (isInitialLoad.value) return;
-    destinationInputDisabledModel.value = true;
-    departureInputDisabledModel.value = true;
-    departureIdsModel.value = undefined;
-    destinationIdsModel.value = undefined;
 
     if (!isDateValid()) return;
 
-    const response = await getDepartures(dateModel.value!);
+    const prevDepartureIds = departureIdsModel.value?.length ? [...departureIdsModel.value] : undefined;
+    const prevDestinationIds = destinationIdsModel.value?.length ? [...destinationIdsModel.value] : undefined;
 
-    const { data } = response;
-    departureInputDisabledModel.value = !data.length;
-    if (departureInputDisabledModel.value) return;
+    isDateChanging.value = true;
+    departureInputDisabledModel.value = true;
+    destinationInputDisabledModel.value = true;
 
-    departurePoints.value = data;
+    try {
+        // 1. Fetch departures
+        const depResponse = await getDepartures(dateModel.value!);
+        const { data: depData } = depResponse;
+        departurePoints.value = depData;
+        departureInputDisabledModel.value = !depData.length;
+
+        if (!depData.length) {
+            departureIdsModel.value = undefined;
+            destinationPoints.value = [];
+            destinationIdsModel.value = undefined;
+            destinationInputDisabledModel.value = true;
+            return;
+        }
+
+        // 2. Try to restore departure
+        if (prevDepartureIds) {
+            departureIdsModel.value = prevDepartureIds;
+            setSelectedPoints(departurePoints, departureIdsModel);
+        }
+
+        // 3. Fetch destinations if departure is selected
+        if (departureIdsModel.value?.length) {
+            const destResponse = await getDestinations(dateModel.value!, departureIdsModel.value);
+            const { data: destData } = destResponse;
+            destinationPoints.value = destData;
+            destinationInputDisabledModel.value = !destData.length;
+
+            if (!destData.length) {
+                destinationIdsModel.value = undefined;
+                return;
+            }
+
+            // 4. Try to restore destination
+            if (prevDestinationIds) {
+                destinationIdsModel.value = prevDestinationIds;
+                setSelectedPoints(destinationPoints, destinationIdsModel);
+            }
+        } else {
+            destinationPoints.value = [];
+            destinationInputDisabledModel.value = true;
+            if (prevDepartureIds)
+                destinationIdsModel.value = undefined;
+        }
+    } finally {
+        isDateChanging.value = false;
+    }
 });
 
-// Update destinations on 'dateModel' or 'selectedDepartures' changing
-watch([dateModel, departureIdsModel], async () => {
-    if (isInitialLoad.value) return;
+// Update destinations on departure change — skip during date change
+watch(departureIdsModel, async () => {
+    if (isInitialLoad.value || isDateChanging.value) return;
+
+    if (!departureIdsModel.value?.length) {
+        destinationInputDisabledModel.value = true;
+        destinationPoints.value = [];
+        return;
+    }
+
     destinationInputDisabledModel.value = true;
     destinationIdsModel.value = undefined;
     destinationPoints.value = [];
 
-    if (!isDateValid() || !departureIdsModel.value) return;
+    if (!isDateValid()) return;
 
     const response = await getDestinations(dateModel.value!, departureIdsModel.value);
-
     const { data } = response;
-    destinationInputDisabledModel.value = false;
-    if (destinationInputDisabledModel.value) return;
-
     destinationPoints.value = data;
-});
-
-// If points is changed then try to set selected point based on the last value
-watch(departurePoints, () => {
-    if (isInitialLoad.value) return;
-    if (isDateValid())
-        setSelectedPoints(
-            departurePoints,
-            departureIdsModel,
-        );
-    else {
-        departureIdsModel.value = undefined;
-        departureInputDisabledModel.value = true;
-    }
-});
-watch([departurePoints, departureIdsModel, destinationPoints], () => {
-    if (isInitialLoad.value) return;
-    if (!departurePoints.value?.length)
-        return;
-
-    if (departureIdsModel.value?.length && isDateValid())
-        setSelectedPoints(
-            destinationPoints,
-            destinationIdsModel,
-        );
-    else {
-        destinationIdsModel.value = undefined;
-        destinationInputDisabledModel.value = true;
-    }
+    destinationInputDisabledModel.value = !data.length;
 });
 
 onMounted(async () => {
