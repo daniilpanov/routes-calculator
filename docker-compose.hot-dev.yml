@@ -82,7 +82,7 @@ services:
       - "./Node/apps/user-frontend/tsconfig.node.json:/app/tsconfig.node.json:ro"
       - "./Node/apps/user-frontend/eslint.config.ts:/app/eslint.config.ts:ro"
       - "./Node/apps/user-frontend/vite.config.ts:/app/vite.config.ts:ro"
-      - "./Node/apps/user-frontend/env.d.ts:/app/end.d.ts:ro"
+      - "./Node/apps/user-frontend/env.d.ts:/app/env.d.ts:ro"
       - "./Node/apps/user-frontend/package.json:/app/package.json:ro"
       - "./Node/apps/user-frontend/package-lock.json:/app/package-lock.json:ro"
     expose:
