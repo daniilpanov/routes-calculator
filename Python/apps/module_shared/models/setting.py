@@ -48,7 +48,7 @@ class SettingItem(BaseModel):
         return parse_setting_value(v, info.data.get("value_type"))
 
     @classmethod
-    def from_model(cls, model: SettingModel) -> "SettingItem":
+    def from_model(cls, model: SettingModel) -> SettingItem:
         return cls(
             group=model.group,
             name=model.name,

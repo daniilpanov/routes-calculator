@@ -101,7 +101,7 @@ class ResourceFile:
         """Ensure the parent directory exists."""
         self._path.parent.mkdir(parents=True, exist_ok=True)
 
-    def fopen(self, mode: str = 'r', **kwargs) -> 'ResourceFile':
+    def fopen(self, mode: str = 'r', **kwargs) -> ResourceFile:
         """
         Open the file and return self for method chaining.
 
@@ -261,7 +261,7 @@ class ResourceFile:
             self.fclose()
             raise
 
-    def __enter__(self) -> 'ResourceFile':
+    def __enter__(self) -> ResourceFile:
         """
         Context manager entry - opens the file in read mode by default.
 
@@ -291,7 +291,7 @@ class ResourceFile:
         """
         self.fclose()
 
-    def open_for(self, mode: str = 'r', **kwargs) -> 'ResourceFile':
+    def open_for(self, mode: str = 'r', **kwargs) -> ResourceFile:
         """
         Open the file for a specific operation and return self for use in with statements.
 
@@ -412,7 +412,7 @@ class Resources:
         return ResourceFile(file_path.resolve())
 
     @classmethod
-    def get_scoped(cls, scope: str) -> 'ScopedResources':
+    def get_scoped(cls, scope: str) -> ScopedResources:
         """
         Get a scoped resources helper.
 

@@ -127,9 +127,7 @@ scripts/                  # Dev workflow scripts (run, stop, rebuild, migrate)
 
 **Export commands** (run after every `poetry add` / `poetry remove`):
 ```bash
-poetry export -f requirements.txt --output Python/requirements.txt --without-hashes
-poetry export -f requirements.txt --output Python/requirements-dev.txt --without-hashes --with dev
-poetry export -f requirements.txt --output Python/requirements-tests.txt --without-hashes --with tests
+make export-deps
 ```
 
 The `.txt` files are what the Docker build uses, so they must stay in sync with `poetry.lock`.
@@ -137,11 +135,11 @@ The `.txt` files are what the Docker build uses, so they must stay in sync with 
 **Dockerfile stages** (`Python/Dockerfile`):
 | Stage | Base | Purpose |
 |-------|------|---------|
-| `python-apps` | `python:3.12-slim` | Runs FastAPI microservices via uvicorn |
-| `db-migration` | `python:3.12-slim` | Runs Alembic database migrations |
-| `test-runner` | `python:3.12-slim` | Runs pytest (install from `requirements-tests.txt`) |
+| `python-apps` | `python:3.14-slim` | Runs FastAPI microservices via uvicorn |
+| `db-migration` | `python:3.14-slim` | Runs Alembic database migrations |
+| `test-runner` | `python:3.14-slim` | Runs pytest (install from `requirements-tests.txt`) |
 
-The `test-runner` stage copies `apps/` to `/app/apps/`, `tests/` to `/app/tests/`, and overrides rootdir via `--override-ini` flags (no pyproject.toml in build context). At runtime, the hot-dev compose mounts `pyproject.toml` for config.
+The `test-runner` stage copies `apps/` to `/workspace/apps/`, `tests/` to `/workspace/tests/`, and uses hardcoded `/workspace` paths in CMD (JSON exec form, no `ENV`/shell expansion needed). `APP_DIR` is a build-time `ARG` only (default `/workspace`), never used at runtime. At runtime, the hot-dev compose mounts `pyproject.toml` for config.
 
 ### Redis Caching
 
@@ -184,7 +182,7 @@ The `test-runner` stage copies `apps/` to `/app/apps/`, `tests/` to `/app/tests/
 - `GET /v2/rates` — returns `{rates: {...}, updated_at: "2026-06-16"}` (adds date)
 
 **Redis docker-compose:**
-- `docker-compose.yml`: `redis:7-alpine`, AOF+RDB persistence, `volatile-lru` (512mb maxmemory)
+- `docker-compose.yml`: `valkey/valkey:alpine`, AOF+RDB persistence, `volatile-lru` (512mb maxmemory)
 - `docker-compose.hot-dev.backend.yml`: extends redis from base
 - `docker-compose.test.yml`: redis with 128mb maxmemory, `test` profile
 

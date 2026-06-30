@@ -367,7 +367,7 @@ async def load_routes(db_session, routes):
         joinedload(RouteModel.company),
     ))).scalars().all()
 
-    existing_routes_set = {(  # noqa: ECE001
+    existing_routes_set = {(
         route.company.name,
         route.start_point.city,
         route.end_point.city,
@@ -410,7 +410,7 @@ async def load_dropp(db_session, dropp: list[Iterable[DropModel]]):
         joinedload(DropModel.container),
     ))).scalars().all()
 
-    existing_dropp_set = {(  # noqa: ECE001
+    existing_dropp_set = {(
         item.start_point.city,
         item.end_point.city,
         item.company.name,

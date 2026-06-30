@@ -43,7 +43,7 @@ def build_usual_query(
         RouteModel.dropp_off_point_id.is_(None),
     )
 
-    return (  # noqa: ECE001
+    return (
         select(RouteModel)
         .where(where_clause)
         .join(
@@ -144,7 +144,7 @@ def build_base_sea_rail_query(
         DropModel.effective_to >= date,
     )
 
-    return (  # noqa: ECE001
+    return (
         select(SeaRoute, RailRoute, DropModel)
         .where(and_(*where_conditions))
         .join(SeaPrice, SeaRoute.id == SeaPrice.route_id)

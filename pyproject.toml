@@ -3,7 +3,7 @@ name = "TransferEnigma"
 version = "1.0.0"
 description = "Transfer Enigma - routes calculator (rail and sea)"
 authors = [{email = "Daniel Panov <daniilpanov016@gmail.com>"}]
-requires-python = "^3.12"
+requires-python = "^3.14"
 
 [tool.poetry]
 name = "TransferEnigma"
@@ -20,7 +20,7 @@ poetry-plugin-export = ">=1.8"
 [tool.poetry.dependencies]
 bcrypt = "*"
 pandas = "*"
-python = "^3.12"
+python = "^3.14"
 aiomysql = "*"
 sqlalchemy = "*"
 pydantic = "*"
@@ -40,7 +40,7 @@ openpyxl = "^3.1.5"
 redis = "^8.0.0"
 
 [tool.poetry.group.dev.dependencies]
-black = {version = "*", python = "^3.12"}
+black = {version = "*", python = "^3.14"}
 pre-commit = "*"
 ipython = "*"
 icecream = "*"

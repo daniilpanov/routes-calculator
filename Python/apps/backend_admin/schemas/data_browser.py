@@ -26,7 +26,7 @@ class CompanyResponse(BaseModel):
     name: str
 
     @classmethod
-    def from_model(cls, model: CompanyModel) -> "CompanyResponse":
+    def from_model(cls, model: CompanyModel) -> CompanyResponse:
         return cls(id=model.id, name=model.name)
 
 
@@ -55,7 +55,7 @@ class PointResponse(BaseModel):
     RU_country: str | None
 
     @classmethod
-    def from_model(cls, model: PointModel) -> "PointResponse":
+    def from_model(cls, model: PointModel) -> PointResponse:
         return cls(
             id=model.id,
             city=model.city,
@@ -93,7 +93,7 @@ class ContainerResponse(BaseModel):
     type: str  # noqa: A003
 
     @classmethod
-    def from_model(cls, model: ContainerModel) -> "ContainerResponse":
+    def from_model(cls, model: ContainerModel) -> ContainerResponse:
         return cls(
             id=model.id,
             size=model.size,
@@ -129,7 +129,7 @@ class PriceResponse(BaseModel):
     conversation_percents: float
 
     @classmethod
-    def from_model(cls, model: PriceModel) -> "PriceResponse":
+    def from_model(cls, model: PriceModel) -> PriceResponse:
         return cls(
             id=model.id,
             container_id=model.container_id,
@@ -147,7 +147,7 @@ class ServicePriceResponse(BaseModel):
     price: float
 
     @classmethod
-    def from_model(cls, model: ServicePriceModel) -> "ServicePriceResponse":
+    def from_model(cls, model: ServicePriceModel) -> ServicePriceResponse:
         return cls(
             id=model.id,
             service_id=model.service_id,
@@ -213,7 +213,7 @@ class RouteSegmentListResponse(BaseModel):
     container_owner: str
 
     @classmethod
-    def from_model(cls, model: RouteModel) -> "RouteSegmentListResponse":
+    def from_model(cls, model: RouteModel) -> RouteSegmentListResponse:
         return cls(
             id=model.id,
             company_id=model.company_id,
@@ -248,7 +248,7 @@ class RouteSegmentResponse(BaseModel):
     services: list[ServicePriceResponse]
 
     @classmethod
-    def from_model(cls, model: RouteModel) -> "RouteSegmentResponse":
+    def from_model(cls, model: RouteModel) -> RouteSegmentResponse:
         return cls(
             id=model.id,
             company_id=model.company_id,
@@ -300,7 +300,7 @@ class ServiceResponse(BaseModel):
     default: bool
 
     @classmethod
-    def from_model(cls, model: ServiceModel) -> "ServiceResponse":
+    def from_model(cls, model: ServiceModel) -> ServiceResponse:
         return cls(
             id=model.id,
             name=model.name,
@@ -352,7 +352,7 @@ class DropOffResponse(BaseModel):
     currency: str
 
     @classmethod
-    def from_model(cls, model: DropModel) -> "DropOffResponse":
+    def from_model(cls, model: DropModel) -> DropOffResponse:
         return cls(
             id=model.id,
             container_id=model.container_id,
@@ -396,7 +396,7 @@ class SettingResponse(BaseModel):
     locked: bool = False
 
     @classmethod
-    def from_model(cls, model: SettingModel) -> "SettingResponse":
+    def from_model(cls, model: SettingModel) -> SettingResponse:
         return cls(
             id=model.id,
             group=model.group,
