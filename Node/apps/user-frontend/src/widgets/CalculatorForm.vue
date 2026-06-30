@@ -3,7 +3,8 @@ import type { IPoint, IPointIds, IdIsExternal } from "@/interfaces/Point";
 import PointsSelect from "@/widgets/PointsSelect.vue";
 
 import { getDepartures, getDestinations } from "@/api_helpers/points";
-import { onMounted, ref, useId, watch } from "vue";
+import { useToast } from "@/composables/useToast";
+import { computed, onMounted, ref, useId, watch } from "vue";
 
 const dateModel = defineModel<string>("date");
 const departureIdsModel = defineModel<IdIsExternal[]>("departure");
@@ -109,6 +110,8 @@ watch(dateModel, async () => {
         departureInputDisabledModel.value = !depData.length;
 
         if (!depData.length) {
+            if (prevDepartureIds)
+                useToast().show("Выбранные пункты отправления недоступны на выбранную дату", "warning");
             departureIdsModel.value = undefined;
             destinationPoints.value = [];
             destinationIdsModel.value = undefined;
@@ -120,6 +123,8 @@ watch(dateModel, async () => {
         if (prevDepartureIds) {
             const depFound = setSelectedPoints(depData, prevDepartureIds);
             departureIdsModel.value = depFound ?? undefined;
+            if (!depFound)
+                useToast().show("Выбранные пункты отправления недоступны на выбранную дату", "warning");
         }
 
         // 3. Fetch destinations if departure is selected
@@ -130,6 +135,8 @@ watch(dateModel, async () => {
             destinationInputDisabledModel.value = !destData.length;
 
             if (!destData.length) {
+                if (prevDestinationIds)
+                    useToast().show("Выбранные пункты прибытия недоступны на выбранную дату", "warning");
                 destinationIdsModel.value = undefined;
                 pendingDestinationIds.value = undefined;
                 return;
@@ -139,6 +146,8 @@ watch(dateModel, async () => {
             if (prevDestinationIds) {
                 const destFound = setSelectedPoints(destData, prevDestinationIds);
                 destinationIdsModel.value = destFound ?? undefined;
+                if (!destFound)
+                    useToast().show("Выбранные пункты прибытия недоступны на выбранную дату", "warning");
             }
         } else {
             destinationPoints.value = [];
@@ -181,6 +190,8 @@ watch(departureIdsModel, async () => {
     if (prevDestinationIds && data.length) {
         const destFound = setSelectedPoints(data, prevDestinationIds);
         destinationIdsModel.value = destFound ?? undefined;
+        if (!destFound)
+            useToast().show("Выбранные пункты прибытия недоступны для нового пункта отправления", "warning");
     }
 });
 
@@ -190,6 +201,13 @@ watch(destinationIdsModel, () => {
     if (!departureIdsModel.value?.length && pendingDestinationIds.value?.length && !destinationIdsModel.value?.length)
         pendingDestinationIds.value = undefined;
 });
+
+const isCalculateDisabled = computed(() =>
+    departureInputDisabledModel.value ||
+    destinationInputDisabledModel.value ||
+    !departureIdsModel.value?.length ||
+    !destinationIdsModel.value?.length
+);
 
 onMounted(async () => {
     if (!isDateValid()) {
@@ -305,7 +323,7 @@ onMounted(async () => {
         <hr />
 
         <div class="md-3 row">
-            <button type="submit" @click.stop="submit" class="btn btn-primary col-md">
+            <button type="submit" @click.stop="submit" :disabled="isCalculateDisabled" class="btn btn-primary col-md">
                 Расcчитать
             </button>
             <button type="reset" @click.stop="$emit('reset')" class="btn btn-danger col-md">Очистить</button>
