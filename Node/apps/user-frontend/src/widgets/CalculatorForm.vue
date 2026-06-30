@@ -29,6 +29,7 @@ const calcForm = ref<HTMLFormElement>();
 
 const isInitialLoad = ref(true);
 const isDateChanging = ref(false);
+const pendingDestinationIds = ref<IdIsExternal[]>();
 
 function submit(e: Event) {
     if (!calcForm.value!.checkValidity()) return;
@@ -130,6 +131,7 @@ watch(dateModel, async () => {
 
             if (!destData.length) {
                 destinationIdsModel.value = undefined;
+                pendingDestinationIds.value = undefined;
                 return;
             }
 
@@ -143,6 +145,7 @@ watch(dateModel, async () => {
             destinationInputDisabledModel.value = true;
             if (prevDepartureIds)
                 destinationIdsModel.value = undefined;
+            pendingDestinationIds.value = undefined;
         }
     } finally {
         isDateChanging.value = false;
@@ -154,10 +157,15 @@ watch(departureIdsModel, async () => {
     if (isInitialLoad.value || isDateChanging.value) return;
 
     if (!departureIdsModel.value?.length) {
+        if (destinationIdsModel.value?.length)
+            pendingDestinationIds.value = [...destinationIdsModel.value];
         destinationInputDisabledModel.value = true;
         destinationPoints.value = [];
         return;
     }
+
+    const prevDestinationIds = pendingDestinationIds.value;
+    pendingDestinationIds.value = undefined;
 
     destinationInputDisabledModel.value = true;
     destinationIdsModel.value = undefined;
@@ -169,6 +177,18 @@ watch(departureIdsModel, async () => {
     const { data } = response;
     destinationPoints.value = data;
     destinationInputDisabledModel.value = !data.length;
+
+    if (prevDestinationIds && data.length) {
+        const destFound = setSelectedPoints(data, prevDestinationIds);
+        destinationIdsModel.value = destFound ?? undefined;
+    }
+});
+
+// Clear pending destination when user manually clears it via ×
+watch(destinationIdsModel, () => {
+    if (isInitialLoad.value || isDateChanging.value) return;
+    if (!departureIdsModel.value?.length && pendingDestinationIds.value?.length && !destinationIdsModel.value?.length)
+        pendingDestinationIds.value = undefined;
 });
 
 onMounted(async () => {
