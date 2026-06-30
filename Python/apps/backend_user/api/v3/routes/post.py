@@ -39,7 +39,7 @@ async def _sse_generator(
     request: CalculateFormRequest,
     auth: AuthContext,
     last_event_id: int | None = None,
-) -> AsyncGenerator[ServerSentEvent, None]:
+) -> AsyncGenerator[ServerSentEvent]:
     current_id = last_event_id + 1 if last_event_id is not None else 0
 
     async for item in calculate_routes_stream(request):
@@ -81,7 +81,7 @@ async def calculate_sse(
     auth: Annotated[AuthContext, Depends(get_auth_context)],
     last_event_id: Annotated[int | None, Header()] = None,
     response: Response = None,
-) -> AsyncGenerator[ServerSentEvent, None]:
+) -> AsyncGenerator[ServerSentEvent]:
     if response is not None:
         response.headers["Cache-Control"] = "no-cache"
         response.headers["X-Accel-Buffering"] = "no"

@@ -51,7 +51,7 @@ class PriceModel(Base):
     conversation_percents: Mapped[float] = mapped_column(default=0)
 
     container: Mapped[ContainerModel] = relationship()
-    route: Mapped['RouteModel'] = relationship("RouteModel", back_populates="prices")
+    route: Mapped[RouteModel] = relationship("RouteModel", back_populates="prices")
 
 
 class RouteModel(Base):
@@ -127,7 +127,7 @@ class RouteModel(Base):
     dropp_off_point: Mapped[PointModel] = relationship(PointModel, foreign_keys=[dropp_off_point_id])
     company: Mapped[CompanyModel] = relationship()
     prices: Mapped[list[PriceModel]] = relationship("PriceModel", back_populates="route")
-    services: Mapped[list['ServicePriceModel']] = relationship("ServicePriceModel", back_populates="route")
+    services: Mapped[list[ServicePriceModel]] = relationship("ServicePriceModel", back_populates="route")
 
 
 class ServicePriceModel(Base):

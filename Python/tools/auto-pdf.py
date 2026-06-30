@@ -19,7 +19,7 @@ def parse_pdf(service, path, transfer_type, output_suffix=""):
     start_date = parsed_path[-2]
     end_date = parsed_path[-1][:-4]
     logger.info("%s — %s", start_date, end_date)
-    output_path = (  # noqa: ECE001
+    output_path = (
         service
         + "."
         + transfer_type

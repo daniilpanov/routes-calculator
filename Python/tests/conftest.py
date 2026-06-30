@@ -24,7 +24,7 @@ from module_shared.database import Base, Database  # noqa: E402
 
 
 @pytest_asyncio.fixture
-async def sqlite_db() -> AsyncGenerator[Database, None]:
+async def sqlite_db() -> AsyncGenerator[Database]:
     engine = create_async_engine("sqlite+aiosqlite://", echo=False)
     sessionmaker = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
 
@@ -41,6 +41,6 @@ async def sqlite_db() -> AsyncGenerator[Database, None]:
 
 
 @pytest_asyncio.fixture
-async def sqlite_session(sqlite_db: Database) -> AsyncGenerator[AsyncSession, None]:
+async def sqlite_session(sqlite_db: Database) -> AsyncGenerator[AsyncSession]:
     async with sqlite_db.session_context() as session:
         yield session

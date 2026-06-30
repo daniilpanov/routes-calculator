@@ -42,7 +42,7 @@ def process_numeric_and_string_cols(processed_df: DataFrame, numeric_cols: set[s
 
     if string_cols:
         string_cols_list = list(string_cols)
-        processed_df[string_cols_list] = (  # noqa: ECE001
+        processed_df[string_cols_list] = (
             processed_df[string_cols_list]
             .apply(lambda x: x.str.strip() if x.dtype == "str" else x)
             .apply(remove_extra_spaces)
@@ -50,7 +50,7 @@ def process_numeric_and_string_cols(processed_df: DataFrame, numeric_cols: set[s
 
     if numeric_cols:
         numeric_cols_list = list(numeric_cols)
-        processed_df[numeric_cols_list] = processed_df[numeric_cols_list].map(  # noqa: ECE001
+        processed_df[numeric_cols_list] = processed_df[numeric_cols_list].map(
             lambda x: (
                 x.replace("%", "").replace("$", "").replace(" ", "")
                 if isinstance(x, str) else x
@@ -67,13 +67,13 @@ def process_points_services_effectivity(
     UploaderFieldsConfig,
     ws_name: str,
 ):
-    processed_df[fields_config.company] = (  # noqa: ECE001
+    processed_df[fields_config.company] = (
         processed_df[fields_config.company].apply(none_filter).str.strip().str.upper()
     )
 
     processed_df[fields_config.start_point] = processed_df[fields_config.start_point].apply(none_filter).str.strip()
     processed_df[fields_config.end_point] = processed_df[fields_config.end_point].apply(none_filter).str.strip()
-    processed_df[fields_config.terminal] = processed_df[fields_config.terminal].str.strip().str.upper()  # noqa: ECE001
+    processed_df[fields_config.terminal] = processed_df[fields_config.terminal].str.strip().str.upper()
 
     if fields_config.dropp_off_point in processed_df.columns:
         processed_df[fields_config.dropp_off_point] = (
@@ -104,7 +104,7 @@ def process_points_services_effectivity(
 
 
 def process_conversion_percents(processed_df: DataFrame, fields_config: UploaderFieldsConfig):
-    processed_df[fields_config.conversation_percents] = (  # noqa: ECE001
+    processed_df[fields_config.conversation_percents] = (
         processed_df[fields_config.conversation_percents].apply(
             lambda x: (
                 remove_extra_spaces(x.strip()).rstrip("%").rstrip()
@@ -341,7 +341,7 @@ async def load_data(  # noqa: C901
     points_df = points_df.apply(lambda x: x.str.strip() if x.dtype == "str" else x)
     points_df = points_df.drop_duplicates(subset=["city", "country"], ignore_index=False)
 
-    points_rows_with_nan = [i + 2 for i in points_df[points_df.isna().any(axis=1)].index.tolist()]  # noqa: ECE001
+    points_rows_with_nan = [i + 2 for i in points_df[points_df.isna().any(axis=1)].index.tolist()]
     if points_rows_with_nan:
         raise PointsWithNanException(points_rows_with_nan)
 

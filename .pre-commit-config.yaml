@@ -3,7 +3,7 @@ exclude: 'Python/alembic/.*'
 repos:
   # pre-commit
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: end-of-file-fixer
       - id: trailing-whitespace
@@ -20,10 +20,6 @@ repos:
       - id: debug-statements
       - id: mixed-line-ending
       - id: detect-private-key
-      - id: fix-encoding-pragma
-        args: [
-          --remove,
-        ]
       - id: check-docstring-first
       - id: check-case-conflict
       - id: check-added-large-files
@@ -45,11 +41,11 @@ repos:
       - id: text-unicode-replacement-char
   # pyupgrade
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.15.1
+    rev: v3.21.2
     hooks:
       - id: pyupgrade
         args: [
-          --py312-plus,
+          --py314-plus,
         ]
   # isort
   - repo: https://github.com/pre-commit/mirrors-isort
@@ -61,23 +57,21 @@ repos:
         ]
   # flake8
   - repo: https://github.com/pycqa/flake8
-    rev: 7.0.0
+    rev: 7.3.0
     hooks:
       - id: flake8
         additional_dependencies:
           - flake8-builtins
           - flake8-comprehensions
           - flake8-eradicate
-          - flake8-expression-complexity
           - flake8-simplify
           - flake8-bugbear
-          - flake8-pie
           - flake8-print
           - flake8-noqa
           - flake8-broken-line
   # mypy
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.9.0
+    rev: v2.1.0
     hooks:
       - id: mypy
         args: [
