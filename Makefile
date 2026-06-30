@@ -5,6 +5,9 @@ ARGS = $(filter-out $@,$(MAKECMDGOALS))
 build:
 	docker buildx bake $(ARGS)
 
+build-dev:
+	docker buildx bake $(ARGS) && ./scripts/rebuild-hot-dev.sh $(ARGS)
+
 prod:
 	@trap 'docker compose down' EXIT; docker compose up $(ARGS)
 
