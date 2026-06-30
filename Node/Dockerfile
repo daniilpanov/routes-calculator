@@ -1,8 +1,12 @@
-FROM node:alpine AS frontend
+FROM node:alpine AS node-base
+
+ARG APP_DIR="/workspace"
 
 USER "node"
+WORKDIR "${APP_DIR}"
 
-WORKDIR "/app"
+
+FROM node-base AS frontend
 # install
 COPY ./apps/user-frontend/package.json ./package.json
 COPY ./apps/user-frontend/package-lock.json ./package-lock.json
@@ -16,11 +20,7 @@ FROM frontend AS frontend-builder
 RUN ["npm", "run", "build"]
 
 
-FROM node:alpine AS frontadmin
-
-USER "node"
-
-WORKDIR "/app"
+FROM node-base AS frontadmin
 # install
 COPY ./apps/admin-frontend/package.json ./package.json
 COPY ./apps/admin-frontend/package-lock.json ./package-lock.json
