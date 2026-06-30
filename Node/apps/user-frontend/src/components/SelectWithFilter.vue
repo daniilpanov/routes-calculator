@@ -131,7 +131,7 @@ onBeforeUnmount(() => {
                 autocomplete="off"
             />
             <button
-                v-show="searchText && !disabled"
+                v-show="searchText"
                 class="autocomplete-clear-button"
                 type="button"
                 @click.stop="clearInput"

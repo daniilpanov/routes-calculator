@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import type { IPoint, IdIsExternal } from "@/interfaces/Point";
+import type { IPoint, IPointIds, IdIsExternal } from "@/interfaces/Point";
 import PointsSelect from "@/widgets/PointsSelect.vue";
 
 import { getDepartures, getDestinations } from "@/api_helpers/points";
-import { onMounted, ref, useId, watch } from "vue";
+import { useToast } from "@/composables/useToast";
+import { computed, onMounted, ref, useId, watch } from "vue";
 
 const dateModel = defineModel<string>("date");
 const departureIdsModel = defineModel<IdIsExternal[]>("departure");
@@ -28,6 +29,8 @@ const destinationPoints = ref<IPoint[]>([]);
 const calcForm = ref<HTMLFormElement>();
 
 const isInitialLoad = ref(true);
+const isDateChanging = ref(false);
+const pendingDestinationIds = ref<IdIsExternal[]>();
 
 function submit(e: Event) {
     if (!calcForm.value!.checkValidity()) return;
@@ -36,29 +39,27 @@ function submit(e: Event) {
     emit("calculate");
 }
 
+function idMatches(entity: IPointIds, selectedId: IdIsExternal): boolean {
+    return entity.ids.includes(Number(selectedId.id)) || entity.external_ids.includes(String(selectedId.id));
+}
+
 function setSelectedPoints(
-    points: typeof departurePoints | typeof destinationPoints,
-    idsModel: typeof departureIdsModel | typeof destinationIdsModel,
-) {
-    if (!idsModel.value?.length)
-        return;
+    points: IPoint[],
+    ids: IdIsExternal[],
+): IdIsExternal[] | undefined {
+    if (!ids.length)
+        return undefined;
 
     let pointFound: IPoint | undefined;
-    for (const selectedId of idsModel.value) {
-        for (const point of points.value) {
-            if (
-                !selectedId.isExternal && point.ids.includes(selectedId.id as number) ||
-                selectedId.isExternal && point.external_ids.includes(selectedId.id as string)
-            ) {
+    for (const selectedId of ids) {
+        for (const point of points) {
+            if (idMatches(point, selectedId)) {
                 pointFound = point;
                 break;
             }
 
             for (const port of point.ports) {
-                if (
-                    !selectedId.isExternal && port.ids.includes(selectedId.id as number) ||
-                    selectedId.isExternal && port.external_ids.includes(selectedId.id as string)
-                ) {
+                if (idMatches(port, selectedId)) {
                     pointFound = point;
                     break;
                 }
@@ -68,12 +69,10 @@ function setSelectedPoints(
         if (pointFound) break;
     }
 
-    if (!pointFound) {
-        idsModel.value = undefined;
-        return;
-    }
+    if (!pointFound)
+        return undefined;
 
-    let allIds = [
+    let allIds: IdIsExternal[] = [
         ...pointFound.ids.map(id => ({ id, isExternal: false })),
         ...pointFound.external_ids.map(id => ({ id, isExternal: true })),
     ];
@@ -85,76 +84,137 @@ function setSelectedPoints(
             ...port.external_ids.map(id => ({ id, isExternal: true })),
         ];
 
-    idsModel.value = allIds.length ? allIds : undefined;
+    return allIds.length ? allIds : undefined;
 }
 
 const isDateValid = () => (dateModel.value && !isNaN(new Date(dateModel.value).getDay()));
 
-// Update departures on 'dateModel' changing
+// Update departures on 'dateModel' changing — save/restore selections
 watch(dateModel, async () => {
     if (isInitialLoad.value) return;
-    destinationInputDisabledModel.value = true;
-    departureInputDisabledModel.value = true;
-    departureIdsModel.value = undefined;
-    destinationIdsModel.value = undefined;
 
     if (!isDateValid()) return;
 
-    const response = await getDepartures(dateModel.value!);
+    const prevDepartureIds = departureIdsModel.value?.length ? [...departureIdsModel.value] : undefined;
+    const prevDestinationIds = destinationIdsModel.value?.length ? [...destinationIdsModel.value] : undefined;
 
-    const { data } = response;
-    departureInputDisabledModel.value = !data.length;
-    if (departureInputDisabledModel.value) return;
+    isDateChanging.value = true;
+    departureInputDisabledModel.value = true;
+    destinationInputDisabledModel.value = true;
 
-    departurePoints.value = data;
+    try {
+        // 1. Fetch departures
+        const depResponse = await getDepartures(dateModel.value!);
+        const { data: depData } = depResponse;
+        departurePoints.value = depData;
+        departureInputDisabledModel.value = !depData.length;
+
+        if (!depData.length) {
+            if (prevDepartureIds)
+                useToast().show("Выбранные пункты отправления недоступны на выбранную дату", "warning");
+            departureIdsModel.value = undefined;
+            destinationPoints.value = [];
+            destinationIdsModel.value = undefined;
+            destinationInputDisabledModel.value = true;
+            return;
+        }
+
+        // 2. Try to restore departure
+        if (prevDepartureIds) {
+            const depFound = setSelectedPoints(depData, prevDepartureIds);
+            departureIdsModel.value = depFound ?? undefined;
+            if (!depFound)
+                useToast().show("Выбранные пункты отправления недоступны на выбранную дату", "warning");
+        }
+
+        // 3. Fetch destinations if departure is selected
+        if (departureIdsModel.value?.length) {
+            const destResponse = await getDestinations(dateModel.value!, departureIdsModel.value);
+            const { data: destData } = destResponse;
+            destinationPoints.value = destData;
+            destinationInputDisabledModel.value = !destData.length;
+
+            if (!destData.length) {
+                if (prevDestinationIds)
+                    useToast().show("Выбранные пункты прибытия недоступны на выбранную дату", "warning");
+                destinationIdsModel.value = undefined;
+                pendingDestinationIds.value = undefined;
+                return;
+            }
+
+            // 4. Try to restore destination
+            if (prevDestinationIds) {
+                const destFound = setSelectedPoints(destData, prevDestinationIds);
+                destinationIdsModel.value = destFound ?? undefined;
+                if (!destFound)
+                    useToast().show("Выбранные пункты прибытия недоступны на выбранную дату", "warning");
+            }
+        } else {
+            destinationPoints.value = [];
+            destinationInputDisabledModel.value = true;
+            if (prevDepartureIds)
+                destinationIdsModel.value = undefined;
+            pendingDestinationIds.value = undefined;
+        }
+    } catch {
+        useToast().show("Ошибка загрузки данных", "error");
+    } finally {
+        isDateChanging.value = false;
+    }
 });
 
-// Update destinations on 'dateModel' or 'selectedDepartures' changing
-watch([dateModel, departureIdsModel], async () => {
-    if (isInitialLoad.value) return;
+// Update destinations on departure change — skip during date change
+watch(departureIdsModel, async () => {
+    if (isInitialLoad.value || isDateChanging.value) return;
+
+    if (!departureIdsModel.value?.length) {
+        if (destinationIdsModel.value?.length)
+            pendingDestinationIds.value = [...destinationIdsModel.value];
+        destinationInputDisabledModel.value = true;
+        destinationPoints.value = [];
+        return;
+    }
+
+    const prevDestinationIds = pendingDestinationIds.value;
+    pendingDestinationIds.value = undefined;
+
     destinationInputDisabledModel.value = true;
     destinationIdsModel.value = undefined;
     destinationPoints.value = [];
 
-    if (!isDateValid() || !departureIdsModel.value) return;
+    if (!isDateValid()) return;
 
-    const response = await getDestinations(dateModel.value!, departureIdsModel.value);
+    try {
+        const response = await getDestinations(dateModel.value!, departureIdsModel.value);
+        const { data } = response;
+        destinationPoints.value = data;
+        destinationInputDisabledModel.value = !data.length;
 
-    const { data } = response;
-    destinationInputDisabledModel.value = false;
-    if (destinationInputDisabledModel.value) return;
-
-    destinationPoints.value = data;
-});
-
-// If points is changed then try to set selected point based on the last value
-watch(departurePoints, () => {
-    if (isInitialLoad.value) return;
-    if (isDateValid())
-        setSelectedPoints(
-            departurePoints,
-            departureIdsModel,
-        );
-    else {
-        departureIdsModel.value = undefined;
-        departureInputDisabledModel.value = true;
+        if (prevDestinationIds && data.length) {
+            const destFound = setSelectedPoints(data, prevDestinationIds);
+            destinationIdsModel.value = destFound ?? undefined;
+            if (!destFound)
+                useToast().show("Выбранные пункты прибытия недоступны для нового пункта отправления", "warning");
+        }
+    } catch {
+        useToast().show("Ошибка загрузки данных", "error");
+        destinationInputDisabledModel.value = false;
     }
 });
-watch([departurePoints, departureIdsModel, destinationPoints], () => {
-    if (isInitialLoad.value) return;
-    if (!departurePoints.value?.length)
-        return;
 
-    if (departureIdsModel.value?.length && isDateValid())
-        setSelectedPoints(
-            destinationPoints,
-            destinationIdsModel,
-        );
-    else {
-        destinationIdsModel.value = undefined;
-        destinationInputDisabledModel.value = true;
-    }
+// Clear pending destination when user manually clears it via ×
+watch(destinationIdsModel, () => {
+    if (isInitialLoad.value || isDateChanging.value) return;
+    if (!departureIdsModel.value?.length && pendingDestinationIds.value?.length && !destinationIdsModel.value?.length)
+        pendingDestinationIds.value = undefined;
 });
+
+const isCalculateDisabled = computed(() =>
+    departureInputDisabledModel.value ||
+    destinationInputDisabledModel.value ||
+    !departureIdsModel.value?.length ||
+    !destinationIdsModel.value?.length
+);
 
 onMounted(async () => {
     if (!isDateValid()) {
@@ -169,33 +229,39 @@ onMounted(async () => {
     const initialDepartureIds = departureIdsModel.value;
     const initialDestinationIds = destinationIdsModel.value;
 
-    const depResponse = await getDepartures(dateModel.value!);
-    departurePoints.value = depResponse.data;
-    departureInputDisabledModel.value = false;
+    try {
+        const depResponse = await getDepartures(dateModel.value!);
+        departurePoints.value = depResponse.data;
+        departureInputDisabledModel.value = false;
 
-    // Restore selected departure if it is in URL
-    if (initialDepartureIds && departurePoints.value.length)
-        setSelectedPoints(departurePoints, departureIdsModel);
-    else departureIdsModel.value = undefined;
+        // Restore selected departure if it is in URL
+        if (initialDepartureIds && departurePoints.value.length) {
+            const depFound = setSelectedPoints(departurePoints.value, initialDepartureIds);
+            departureIdsModel.value = depFound ?? undefined;
+        } else departureIdsModel.value = undefined;
 
-    // Load destinations if a departure is selected
-    if (departureIdsModel.value) {
-        const destResponse = await getDestinations(dateModel.value!, departureIdsModel.value);
-        destinationPoints.value = destResponse.data;
-        destinationInputDisabledModel.value = false;
+        // Load destinations if a departure is selected
+        if (departureIdsModel.value) {
+            const destResponse = await getDestinations(dateModel.value!, departureIdsModel.value);
+            const { data: destData } = destResponse;
+            destinationPoints.value = destData;
+            destinationInputDisabledModel.value = false;
 
-        // Restore selected destination if it is in URL
-        if (initialDestinationIds && destinationPoints.value.length) {
-            destinationIdsModel.value = initialDestinationIds;
-            setSelectedPoints(destinationPoints, destinationIdsModel);
-        } else destinationIdsModel.value = undefined;
-    } else {
-        destinationPoints.value = [];
-        destinationIdsModel.value = undefined;
-        destinationInputDisabledModel.value = true;
+            // Restore selected destination if it is in URL
+            if (initialDestinationIds && destData.length) {
+                const destFound = setSelectedPoints(destData, initialDestinationIds);
+                destinationIdsModel.value = destFound ?? undefined;
+            } else destinationIdsModel.value = undefined;
+        } else {
+            destinationPoints.value = [];
+            destinationIdsModel.value = undefined;
+            destinationInputDisabledModel.value = true;
+        }
+    } catch {
+        useToast().show("Ошибка загрузки данных", "error");
+    } finally {
+        isInitialLoad.value = false;
     }
-
-    isInitialLoad.value = false;
 });
 </script>
 
@@ -268,7 +334,7 @@ onMounted(async () => {
         <hr />
 
         <div class="md-3 row">
-            <button type="submit" @click.stop="submit" class="btn btn-primary col-md">
+            <button type="submit" @click.stop="submit" :disabled="isCalculateDisabled" class="btn btn-primary col-md">
                 Расcчитать
             </button>
             <button type="reset" @click.stop="$emit('reset')" class="btn btn-danger col-md">Очистить</button>
